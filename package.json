@@ -1,0 +1,10 @@
+{
+  "name": "campusmesh",
+  "private": true,
+  "version": "1.0.0",
+  "engines": { "node": ">=22.12.0 <23" },
+  "scripts": {
+    "build": "npm ci --prefix frontend --include=dev && node scripts/build-frontend.cjs && npm ci --prefix backend --omit=dev",
+    "start": "node backend/src/db/migrate.js && node backend/src/server.js"
+  }
+}

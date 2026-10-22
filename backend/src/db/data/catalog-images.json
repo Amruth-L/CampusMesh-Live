@@ -1,0 +1,272 @@
+[
+  {
+    "slug": "scientific-calculator",
+    "title": "Scientific Calculator",
+    "source": "/Users/amruth/.codex/generated_images/01a13a84-956e-7c60-8b77-568f83a49593/exec-d306cfd1-c269-4c2a-8348-644ecf2104f8.png",
+    "asset": "frontend/public/images/catalog/scientific-calculator.jpg",
+    "prompt": "Studio catalog photo of one black scientific calculator with a small monochrome LCD, many scientific function keys and a sliding protective cover beside it. Off-white background, isolated entire object, no unrelated props or brands.",
+    "engine": "built-in imagegen",
+    "encoding": "JPEG quality 85, original dimensions"
+  },
+  {
+    "slug": "laptop-stand",
+    "title": "Laptop Stand",
+    "source": "/Users/amruth/.codex/generated_images/01a13a84-956e-7c60-8b77-568f83a49593/exec-16b2366d-796d-4f65-b9fd-fb9618e72ae4.png",
+    "asset": "frontend/public/images/catalog/laptop-stand.jpg",
+    "prompt": "Use case: product-mockup. Asset: a square rental catalog product photograph for a demo listing titled \"Laptop Stand\". Subject: one silver aluminium folding laptop stand, empty, raised with two angled support arms, no laptop. Clean neutral off-white seamless studio background, soft daylight, subtle contact shadow, accurate recognizable practical product construction, entire object fully visible with generous 12 percent margins, centered three-quarter view. Realistic materials. No people, hands, unrelated props, brand logos, watermark or promotional lettering. Only include cover text when the subject is a textbook. This represents sample inventory, not a real student's item.",
+    "engine": "built-in imagegen",
+    "encoding": "JPEG quality 85, original dimensions"
+  },
+  {
+    "slug": "headphones",
+    "title": "Over-ear Headphones",
+    "source": "/Users/amruth/.codex/generated_images/01a13a84-956e-7c60-8b77-568f83a49593/exec-65e00c75-c3b9-4e13-a43b-668261caf483.png",
+    "asset": "frontend/public/images/catalog/headphones.jpg",
+    "prompt": "Use case: product-mockup. Asset: a square rental catalog product photograph for a demo listing titled \"Over-ear Headphones\". Subject: one pair of matte black over-ear wireless headphones with padded earcups and an adjustable headband. Clean neutral off-white seamless studio background, soft daylight, subtle contact shadow, accurate recognizable practical product construction, entire object fully visible with generous 12 percent margins, centered three-quarter view. Realistic materials. No people, hands, unrelated props, brand logos, watermark or promotional lettering. Only include cover text when the subject is a textbook. This represents sample inventory, not a real student's item.",
+    "engine": "built-in imagegen",
+    "encoding": "JPEG quality 85, original dimensions"
+  },
+  {
+    "slug": "power-bank",
+    "title": "20000 mAh Power Bank",
+    "source": "/Users/amruth/.codex/generated_images/01a13a84-956e-7c60-8b77-568f83a49593/exec-0e840b03-e43c-4a1d-af34-9356a8c3e7f7.png",
+    "asset": "frontend/public/images/catalog/power-bank.jpg",
+    "prompt": "Use case: product-mockup. Asset: a square rental catalog product photograph for a demo listing titled \"20000 mAh Power Bank\". Subject: one compact dark grey rectangular USB power bank with visible USB ports and a short USB-C charging cable beside it. Clean neutral off-white seamless studio background, soft daylight, subtle contact shadow, accurate recognizable practical product construction, entire object fully visible with generous 12 percent margins, centered three-quarter view. Realistic materials. No people, hands, unrelated props, brand logos, watermark or promotional lettering. Only include cover text when the subject is a textbook. This represents sample inventory, not a real student's item.",
+    "engine": "built-in imagegen",
+    "encoding": "JPEG quality 85, original dimensions"
+  },
+  {
+    "slug": "mini-projector",
+    "title": "Portable Mini Projector",
+    "source": "/Users/amruth/.codex/generated_images/01a13a84-956e-7c60-8b77-568f83a49593/exec-0df7d458-b336-4ca2-87fc-5cdd639b43d5.png",
+    "asset": "frontend/public/images/catalog/mini-projector.jpg",
+    "prompt": "Use case: product-mockup. Asset: a square rental catalog product photograph for a demo listing titled \"Portable Mini Projector\". Subject: one compact white portable projector with a prominent round front lens, ventilation slots and a small remote control beside it. Clean neutral off-white seamless studio background, soft daylight, subtle contact shadow, accurate recognizable practical product construction, entire object fully visible with generous 12 percent margins, centered three-quarter view. Realistic materials. No people, hands, unrelated props, brand logos, watermark or promotional lettering. Only include cover text when the subject is a textbook. This represents sample inventory, not a real student's item.",
+    "engine": "built-in imagegen",
+    "encoding": "JPEG quality 85, original dimensions"
+  },
+  {
+    "slug": "engineering-mathematics",
+    "title": "Engineering Mathematics Textbook",
+    "source": "/Users/amruth/.codex/generated_images/01a13a84-956e-7c60-8b77-568f83a49593/exec-ec7732b0-1637-4409-8f9c-d696dd1186e2.png",
+    "asset": "frontend/public/images/catalog/engineering-mathematics.jpg",
+    "prompt": "Use case: product-mockup. Asset: a square rental catalog product photograph for a demo listing titled \"Engineering Mathematics Textbook\". Subject: one substantial blue paperback engineering mathematics textbook, front cover clearly titled ENGINEERING MATHEMATICS, simple geometric cover design, no author or publisher. Clean neutral off-white seamless studio background, soft daylight, subtle contact shadow, accurate recognizable practical product construction, entire object fully visible with generous 12 percent margins, centered three-quarter view. Realistic materials. No people, hands, unrelated props, brand logos, watermark or promotional lettering. Only include cover text when the subject is a textbook. This represents sample inventory, not a real student's item.",
+    "engine": "built-in imagegen",
+    "encoding": "JPEG quality 85, original dimensions"
+  },
+  {
+    "slug": "engineering-physics",
+    "title": "Engineering Physics Textbook",
+    "source": "/Users/amruth/.codex/generated_images/01a13a84-956e-7c60-8b77-568f83a49593/exec-16f54a43-ed8e-4fb1-9a59-8a0cbbb9797d.png",
+    "asset": "frontend/public/images/catalog/engineering-physics.jpg",
+    "prompt": "Use case: product-mockup. Asset: a square rental catalog product photograph for a demo listing titled \"Engineering Physics Textbook\". Subject: one substantial teal paperback textbook, front cover clearly titled ENGINEERING PHYSICS, subtle wave diagram on cover, no author or publisher. Clean neutral off-white seamless studio background, soft daylight, subtle contact shadow, accurate recognizable practical product construction, entire object fully visible with generous 12 percent margins, centered three-quarter view. Realistic materials. No people, hands, unrelated props, brand logos, watermark or promotional lettering. Only include cover text when the subject is a textbook. This represents sample inventory, not a real student's item.",
+    "engine": "built-in imagegen",
+    "encoding": "JPEG quality 85, original dimensions"
+  },
+  {
+    "slug": "programming-c",
+    "title": "C Programming Textbook",
+    "source": "/Users/amruth/.codex/generated_images/01a13a84-956e-7c60-8b77-568f83a49593/exec-f5f1eb62-1c6f-4995-a9e4-280bca4d5908.png",
+    "asset": "frontend/public/images/catalog/programming-c.jpg",
+    "prompt": "Use case: product-mockup. Asset: a square rental catalog product photograph for a demo listing titled \"C Programming Textbook\". Subject: one substantial orange paperback textbook, front cover clearly titled C PROGRAMMING, minimal code bracket pattern, no author or publisher. Clean neutral off-white seamless studio background, soft daylight, subtle contact shadow, accurate recognizable practical product construction, entire object fully visible with generous 12 percent margins, centered three-quarter view. Realistic materials. No people, hands, unrelated props, brand logos, watermark or promotional lettering. Only include cover text when the subject is a textbook. This represents sample inventory, not a real student's item.",
+    "engine": "built-in imagegen",
+    "encoding": "JPEG quality 85, original dimensions"
+  },
+  {
+    "slug": "engineering-drawing",
+    "title": "Engineering Drawing Handbook",
+    "source": "/Users/amruth/.codex/generated_images/01a13a84-956e-7c60-8b77-568f83a49593/exec-387853cc-77e5-4a67-811c-fb4b57cf99b9.png",
+    "asset": "frontend/public/images/catalog/engineering-drawing.jpg",
+    "prompt": "Use case: product-mockup. Asset: a square rental catalog product photograph for a demo listing titled \"Engineering Drawing Handbook\". Subject: one large landscape dark green paperback handbook, front cover clearly titled ENGINEERING DRAWING, a white mechanical orthographic drawing on cover, no author or publisher. Clean neutral off-white seamless studio background, soft daylight, subtle contact shadow, accurate recognizable practical product construction, entire object fully visible with generous 12 percent margins, centered three-quarter view. Realistic materials. No people, hands, unrelated props, brand logos, watermark or promotional lettering. Only include cover text when the subject is a textbook. This represents sample inventory, not a real student's item.",
+    "engine": "built-in imagegen",
+    "encoding": "JPEG quality 85, original dimensions"
+  },
+  {
+    "slug": "data-structures",
+    "title": "Data Structures Textbook",
+    "source": "/Users/amruth/.codex/generated_images/01a13a84-956e-7c60-8b77-568f83a49593/exec-0e38ec76-ea09-4298-b026-4a4d6389162e.png",
+    "asset": "frontend/public/images/catalog/data-structures.jpg",
+    "prompt": "Use case: product-mockup. Asset: a square rental catalog product photograph for a demo listing titled \"Data Structures Textbook\". Subject: one substantial purple paperback textbook, front cover clearly titled DATA STRUCTURES, small connected tree diagram on cover, no author or publisher. Clean neutral off-white seamless studio background, soft daylight, subtle contact shadow, accurate recognizable practical product construction, entire object fully visible with generous 12 percent margins, centered three-quarter view. Realistic materials. No people, hands, unrelated props, brand logos, watermark or promotional lettering. Only include cover text when the subject is a textbook. This represents sample inventory, not a real student's item.",
+    "engine": "built-in imagegen",
+    "encoding": "JPEG quality 85, original dimensions"
+  },
+  {
+    "slug": "drafting-set",
+    "title": "Geometry & Drafting Set",
+    "source": "/Users/amruth/.codex/generated_images/01a13a84-956e-7c60-8b77-568f83a49593/exec-51720d72-976e-456b-a417-2b8c719d35fc.png",
+    "asset": "frontend/public/images/catalog/drafting-set.jpg",
+    "prompt": "Use case: product-mockup. Asset: a square rental catalog product photograph for a demo listing titled \"Geometry & Drafting Set\". Subject: one open slim geometry box containing a metal drawing compass, divider, transparent protractor, a small ruler and two set squares, neatly arranged. Clean neutral off-white seamless studio background, soft daylight, subtle contact shadow, accurate recognizable practical product construction, entire object fully visible with generous 12 percent margins, centered three-quarter view. Realistic materials. No people, hands, unrelated props, brand logos, watermark or promotional lettering. Only include cover text when the subject is a textbook. This represents sample inventory, not a real student's item.",
+    "engine": "built-in imagegen",
+    "encoding": "JPEG quality 85, original dimensions"
+  },
+  {
+    "slug": "drawing-board",
+    "title": "A3 Drawing Board",
+    "source": "/Users/amruth/.codex/generated_images/01a13a84-956e-7c60-8b77-568f83a49593/exec-614369c2-07ae-43e5-b545-d8940928bf59.png",
+    "asset": "frontend/public/images/catalog/drawing-board.jpg",
+    "prompt": "Use case: product-mockup. Asset: a square rental catalog product photograph for a demo listing titled \"A3 Drawing Board\". Subject: one A3 pale wooden technical drawing board with a white blank sheet clipped on it and a parallel straightedge ruler across the board. Clean neutral off-white seamless studio background, soft daylight, subtle contact shadow, accurate recognizable practical product construction, entire object fully visible with generous 12 percent margins, centered three-quarter view. Realistic materials. No people, hands, unrelated props, brand logos, watermark or promotional lettering. Only include cover text when the subject is a textbook. This represents sample inventory, not a real student's item.",
+    "engine": "built-in imagegen",
+    "encoding": "JPEG quality 85, original dimensions"
+  },
+  {
+    "slug": "stapler-punch",
+    "title": "Stapler & Hole Punch Set",
+    "source": "/Users/amruth/.codex/generated_images/01a13a84-956e-7c60-8b77-568f83a49593/exec-fb7a6d0a-0278-465b-9561-f264de834a44.png",
+    "asset": "frontend/public/images/catalog/stapler-punch.jpg",
+    "prompt": "Use case: product-mockup. Asset: a square rental catalog product photograph for a demo listing titled \"Stapler & Hole Punch Set\". Subject: a matching black metal desktop stapler and two-hole paper punch side by side, with a small box of staples. Clean neutral off-white seamless studio background, soft daylight, subtle contact shadow, accurate recognizable practical product construction, entire object fully visible with generous 12 percent margins, centered three-quarter view. Realistic materials. No people, hands, unrelated props, brand logos, watermark or promotional lettering. Only include cover text when the subject is a textbook. This represents sample inventory, not a real student's item.",
+    "engine": "built-in imagegen",
+    "encoding": "JPEG quality 85, original dimensions"
+  },
+  {
+    "slug": "whiteboard",
+    "title": "Portable Whiteboard",
+    "source": "/Users/amruth/.codex/generated_images/01a13a84-956e-7c60-8b77-568f83a49593/exec-9a890ca6-a2f5-4bd0-b352-ab0e425ad810.png",
+    "asset": "frontend/public/images/catalog/whiteboard.jpg",
+    "prompt": "Use case: product-mockup. Asset: a square rental catalog product photograph for a demo listing titled \"Portable Whiteboard\". Subject: one small rectangular blank white dry-erase board with a thin silver frame, black marker and compact eraser below it. Clean neutral off-white seamless studio background, soft daylight, subtle contact shadow, accurate recognizable practical product construction, entire object fully visible with generous 12 percent margins, centered three-quarter view. Realistic materials. No people, hands, unrelated props, brand logos, watermark or promotional lettering. Only include cover text when the subject is a textbook. This represents sample inventory, not a real student's item.",
+    "engine": "built-in imagegen",
+    "encoding": "JPEG quality 85, original dimensions"
+  },
+  {
+    "slug": "brush-pen-set",
+    "title": "Reusable Brush Pen Set",
+    "source": "/Users/amruth/.codex/generated_images/01a13a84-956e-7c60-8b77-568f83a49593/exec-a49b355d-bce4-482a-a017-68bb39769c79.png",
+    "asset": "frontend/public/images/catalog/brush-pen-set.jpg",
+    "prompt": "Use case: product-mockup. Asset: a square rental catalog product photograph for a demo listing titled \"Reusable Brush Pen Set\". Subject: a neatly opened black zip case holding twelve colorful reusable brush pens in a rainbow row, no sheets of paper or artwork. Clean neutral off-white seamless studio background, soft daylight, subtle contact shadow, accurate recognizable practical product construction, entire object fully visible with generous 12 percent margins, centered three-quarter view. Realistic materials. No people, hands, unrelated props, brand logos, watermark or promotional lettering. Only include cover text when the subject is a textbook. This represents sample inventory, not a real student's item.",
+    "engine": "built-in imagegen",
+    "encoding": "JPEG quality 85, original dimensions"
+  },
+  {
+    "slug": "multimeter",
+    "title": "Digital Multimeter Lab Kit",
+    "source": "/Users/amruth/.codex/generated_images/01a13a84-956e-7c60-8b77-568f83a49593/exec-8ef0f3c6-9eec-41c3-88c2-f778c3bd8a9b.png",
+    "asset": "frontend/public/images/catalog/multimeter.jpg",
+    "prompt": "Use case: product-mockup. Asset: a square rental catalog product photograph for a demo listing titled \"Digital Multimeter Lab Kit\". Subject: one yellow digital multimeter with a black central rotary dial and small LCD, a red and a black test probe with their cables neatly coiled beside it. Clean neutral off-white seamless studio background, soft daylight, subtle contact shadow, accurate recognizable practical product construction, entire object fully visible with generous 12 percent margins, centered three-quarter view. Realistic materials. No people, hands, unrelated props, brand logos, watermark or promotional lettering. Only include cover text when the subject is a textbook. This represents sample inventory, not a real student's item.",
+    "engine": "built-in imagegen",
+    "encoding": "JPEG quality 85, original dimensions"
+  },
+  {
+    "slug": "breadboard-kit",
+    "title": "Breadboard & Jumper Wire Kit",
+    "source": "/Users/amruth/.codex/generated_images/01a13a84-956e-7c60-8b77-568f83a49593/exec-59504fcf-6b46-4b20-8564-bd1768e4d163.png",
+    "asset": "frontend/public/images/catalog/breadboard-kit.jpg",
+    "prompt": "Use case: product-mockup. Asset: a square rental catalog product photograph for a demo listing titled \"Breadboard & Jumper Wire Kit\". Subject: one white solderless electronics breadboard with red and blue rails, a bundle of colorful jumper wires and a small assortment of resistors and LEDs beside it. Clean neutral off-white seamless studio background, soft daylight, subtle contact shadow, accurate recognizable practical product construction, entire object fully visible with generous 12 percent margins, centered three-quarter view. Realistic materials. No people, hands, unrelated props, brand logos, watermark or promotional lettering. Only include cover text when the subject is a textbook. This represents sample inventory, not a real student's item.",
+    "engine": "built-in imagegen",
+    "encoding": "JPEG quality 85, original dimensions"
+  },
+  {
+    "slug": "arduino-kit",
+    "title": "Microcontroller Starter Kit",
+    "source": "/Users/amruth/.codex/generated_images/01a13a84-956e-7c60-8b77-568f83a49593/exec-6a5bfbbd-6657-4ad8-8641-83f9dd21fa49.png",
+    "asset": "frontend/public/images/catalog/arduino-kit.jpg",
+    "prompt": "Use case: product-mockup. Asset: a square rental catalog product photograph for a demo listing titled \"Microcontroller Starter Kit\". Subject: one blue microcontroller development board with a silver USB port and black pin headers, a USB cable, small breadboard and neatly grouped sensors and LEDs. Clean neutral off-white seamless studio background, soft daylight, subtle contact shadow, accurate recognizable practical product construction, entire object fully visible with generous 12 percent margins, centered three-quarter view. Realistic materials. No people, hands, unrelated props, brand logos, watermark or promotional lettering. Only include cover text when the subject is a textbook. This represents sample inventory, not a real student's item.",
+    "engine": "built-in imagegen",
+    "encoding": "JPEG quality 85, original dimensions"
+  },
+  {
+    "slug": "vernier-caliper",
+    "title": "Digital Vernier Caliper",
+    "source": "/Users/amruth/.codex/generated_images/01a13a84-956e-7c60-8b77-568f83a49593/exec-c65f38d8-0385-41b5-abea-82c959d84be3.png",
+    "asset": "frontend/public/images/catalog/vernier-caliper.jpg",
+    "prompt": "Use case: product-mockup. Asset: a square rental catalog product photograph for a demo listing titled \"Digital Vernier Caliper\". Subject: one stainless steel digital vernier caliper with two measurement jaws, a small rectangular black digital display housing and a fitted open protective case behind it. Clean neutral off-white seamless studio background, soft daylight, subtle contact shadow, accurate recognizable practical product construction, entire object fully visible with generous 12 percent margins, centered three-quarter view. Realistic materials. No people, hands, unrelated props, brand logos, watermark or promotional lettering. Only include cover text when the subject is a textbook. This represents sample inventory, not a real student's item.",
+    "engine": "built-in imagegen",
+    "encoding": "JPEG quality 85, original dimensions"
+  },
+  {
+    "slug": "soldering-kit",
+    "title": "Soldering Iron Kit",
+    "source": "/Users/amruth/.codex/generated_images/01a13a84-956e-7c60-8b77-568f83a49593/exec-17b5f0ec-a975-4847-8c58-f14d44db0c1e.png",
+    "asset": "frontend/public/images/catalog/soldering-kit.jpg",
+    "prompt": "Use case: product-mockup. Asset: a square rental catalog product photograph for a demo listing titled \"Soldering Iron Kit\". Subject: one blue-handled electric soldering iron resting safely in a coiled metal stand, with a spool of solder and a yellow cleaning sponge, unplugged and no smoke. Clean neutral off-white seamless studio background, soft daylight, subtle contact shadow, accurate recognizable practical product construction, entire object fully visible with generous 12 percent margins, centered three-quarter view. Realistic materials. No people, hands, unrelated props, brand logos, watermark or promotional lettering. Only include cover text when the subject is a textbook. This represents sample inventory, not a real student's item.",
+    "engine": "built-in imagegen",
+    "encoding": "JPEG quality 85, original dimensions"
+  },
+  {
+    "slug": "badminton-pair",
+    "title": "Badminton Racquet Pair",
+    "source": "/Users/amruth/.codex/generated_images/01a13a84-956e-7c60-8b77-568f83a49593/exec-33a55545-bb76-4eb5-ab92-a5486e4d91ce.png",
+    "asset": "frontend/public/images/catalog/badminton-pair.jpg",
+    "prompt": "Use case: product-mockup. Asset: a square rental catalog product photograph for a demo listing titled \"Badminton Racquet Pair\". Subject: exactly two badminton rackets with slender shafts and oval strung heads, crossed neatly beside two white feather shuttlecocks. Clean neutral off-white seamless studio background, soft daylight, subtle contact shadow, accurate recognizable practical product construction, entire object fully visible with generous 12 percent margins, centered three-quarter view. Realistic materials. No people, hands, unrelated props, brand logos, watermark or promotional lettering. Only include cover text when the subject is a textbook. This represents sample inventory, not a real student's item.",
+    "engine": "built-in imagegen",
+    "encoding": "JPEG quality 85, original dimensions"
+  },
+  {
+    "slug": "football",
+    "title": "Football",
+    "source": "/Users/amruth/.codex/generated_images/01a13a84-956e-7c60-8b77-568f83a49593/exec-23fc860b-6e72-4b8e-b54e-025b2c3a64f5.png",
+    "asset": "frontend/public/images/catalog/football.jpg",
+    "prompt": "Use case: product-mockup. Asset: a square rental catalog product photograph for a demo listing titled \"Football\". Subject: one inflated regulation football with classic black pentagonal and white hexagonal panels, no brand marks. Clean neutral off-white seamless studio background, soft daylight, subtle contact shadow, accurate recognizable practical product construction, entire object fully visible with generous 12 percent margins, centered three-quarter view. Realistic materials. No people, hands, unrelated props, brand logos, watermark or promotional lettering. Only include cover text when the subject is a textbook. This represents sample inventory, not a real student's item.",
+    "engine": "built-in imagegen",
+    "encoding": "JPEG quality 85, original dimensions"
+  },
+  {
+    "slug": "basketball",
+    "title": "Basketball",
+    "source": "/Users/amruth/.codex/generated_images/01a13a84-956e-7c60-8b77-568f83a49593/exec-beb229c6-7fb1-4ec0-89a0-ac36575f424f.png",
+    "asset": "frontend/public/images/catalog/basketball.jpg",
+    "prompt": "Use case: product-mockup. Asset: a square rental catalog product photograph for a demo listing titled \"Basketball\". Subject: one orange regulation basketball with pebbled rubber texture and black curved seams, no brand marks. Clean neutral off-white seamless studio background, soft daylight, subtle contact shadow, accurate recognizable practical product construction, entire object fully visible with generous 12 percent margins, centered three-quarter view. Realistic materials. No people, hands, unrelated props, brand logos, watermark or promotional lettering. Only include cover text when the subject is a textbook. This represents sample inventory, not a real student's item.",
+    "engine": "built-in imagegen",
+    "encoding": "JPEG quality 85, original dimensions"
+  },
+  {
+    "slug": "table-tennis",
+    "title": "Table Tennis Set",
+    "source": "/Users/amruth/.codex/generated_images/01a13a84-956e-7c60-8b77-568f83a49593/exec-b0639ea1-56c5-468d-972a-43f92bc1eece.png",
+    "asset": "frontend/public/images/catalog/table-tennis.jpg",
+    "prompt": "Use case: product-mockup. Asset: a square rental catalog product photograph for a demo listing titled \"Table Tennis Set\". Subject: two table tennis paddles, one red rubber face and one black rubber face visible, with three white table tennis balls, no other sports equipment. Clean neutral off-white seamless studio background, soft daylight, subtle contact shadow, accurate recognizable practical product construction, entire object fully visible with generous 12 percent margins, centered three-quarter view. Realistic materials. No people, hands, unrelated props, brand logos, watermark or promotional lettering. Only include cover text when the subject is a textbook. This represents sample inventory, not a real student's item.",
+    "engine": "built-in imagegen",
+    "encoding": "JPEG quality 85, original dimensions"
+  },
+  {
+    "slug": "cricket-bat",
+    "title": "Cricket Bat & Tennis Ball",
+    "source": "/Users/amruth/.codex/generated_images/01a13a84-956e-7c60-8b77-568f83a49593/exec-36213970-6b0e-4a6b-b85a-e1e901d20263.png",
+    "asset": "frontend/public/images/catalog/cricket-bat.jpg",
+    "prompt": "Use case: product-mockup. Asset: a square rental catalog product photograph for a demo listing titled \"Cricket Bat & Tennis Ball\". Subject: one pale willow cricket bat with a blue rubber grip, alongside one bright yellow tennis cricket ball, no brand stickers. Clean neutral off-white seamless studio background, soft daylight, subtle contact shadow, accurate recognizable practical product construction, entire object fully visible with generous 12 percent margins, centered three-quarter view. Realistic materials. No people, hands, unrelated props, brand logos, watermark or promotional lettering. Only include cover text when the subject is a textbook. This represents sample inventory, not a real student's item.",
+    "engine": "built-in imagegen",
+    "encoding": "JPEG quality 85, original dimensions"
+  },
+  {
+    "slug": "desk-lamp",
+    "title": "Adjustable Study Lamp",
+    "source": "/Users/amruth/.codex/generated_images/01a13a84-956e-7c60-8b77-568f83a49593/exec-d6220fdb-9c6e-4cbd-8ed4-c4e0b29a6c49.png",
+    "asset": "frontend/public/images/catalog/desk-lamp.jpg",
+    "prompt": "Use case: product-mockup. Asset: a square rental catalog product photograph for a demo listing titled \"Adjustable Study Lamp\". Subject: one white adjustable LED desk lamp with a round base and a hinged arm, clean minimal design, no other furniture. Clean neutral off-white seamless studio background, soft daylight, subtle contact shadow, accurate recognizable practical product construction, entire object fully visible with generous 12 percent margins, centered three-quarter view. Realistic materials. No people, hands, unrelated props, brand logos, watermark or promotional lettering. Only include cover text when the subject is a textbook. This represents sample inventory, not a real student's item.",
+    "engine": "built-in imagegen",
+    "encoding": "JPEG quality 85, original dimensions"
+  },
+  {
+    "slug": "electric-kettle",
+    "title": "Electric Kettle",
+    "source": "/Users/amruth/.codex/generated_images/01a13a84-956e-7c60-8b77-568f83a49593/exec-656b5442-dccc-4c2a-a466-59fa887f52d7.png",
+    "asset": "frontend/public/images/catalog/electric-kettle.jpg",
+    "prompt": "Use case: product-mockup. Asset: a square rental catalog product photograph for a demo listing titled \"Electric Kettle\". Subject: one stainless steel electric kettle with black handle and black base, spout and closed lid clearly visible. Clean neutral off-white seamless studio background, soft daylight, subtle contact shadow, accurate recognizable practical product construction, entire object fully visible with generous 12 percent margins, centered three-quarter view. Realistic materials. No people, hands, unrelated props, brand logos, watermark or promotional lettering. Only include cover text when the subject is a textbook. This represents sample inventory, not a real student's item.",
+    "engine": "built-in imagegen",
+    "encoding": "JPEG quality 85, original dimensions"
+  },
+  {
+    "slug": "steam-iron",
+    "title": "Steam Iron",
+    "source": "/Users/amruth/.codex/generated_images/01a13a84-956e-7c60-8b77-568f83a49593/exec-b0a3f479-44af-466f-aecd-a622ba20d4c4.png",
+    "asset": "frontend/public/images/catalog/steam-iron.jpg",
+    "prompt": "Use case: product-mockup. Asset: a square rental catalog product photograph for a demo listing titled \"Steam Iron\". Subject: one blue and white household steam iron, standing at a three-quarter angle to show handle, water reservoir and pointed metal soleplate. Clean neutral off-white seamless studio background, soft daylight, subtle contact shadow, accurate recognizable practical product construction, entire object fully visible with generous 12 percent margins, centered three-quarter view. Realistic materials. No people, hands, unrelated props, brand logos, watermark or promotional lettering. Only include cover text when the subject is a textbook. This represents sample inventory, not a real student's item.",
+    "engine": "built-in imagegen",
+    "encoding": "JPEG quality 85, original dimensions"
+  },
+  {
+    "slug": "folding-table",
+    "title": "Foldable Bed Study Table",
+    "source": "/Users/amruth/.codex/generated_images/01a13a84-956e-7c60-8b77-568f83a49593/exec-dddea513-6468-4e49-ad29-b48fe46b9daf.png",
+    "asset": "frontend/public/images/catalog/folding-table.jpg",
+    "prompt": "Use case: product-mockup. Asset: a square rental catalog product photograph for a demo listing titled \"Foldable Bed Study Table\". Subject: one small light wood rectangular bed study table with rounded corners and short black folding legs, no laptop, no books. Clean neutral off-white seamless studio background, soft daylight, subtle contact shadow, accurate recognizable practical product construction, entire object fully visible with generous 12 percent margins, centered three-quarter view. Realistic materials. No people, hands, unrelated props, brand logos, watermark or promotional lettering. Only include cover text when the subject is a textbook. This represents sample inventory, not a real student's item.",
+    "engine": "built-in imagegen",
+    "encoding": "JPEG quality 85, original dimensions"
+  },
+  {
+    "slug": "drying-rack",
+    "title": "Foldable Clothes Drying Rack",
+    "source": "/Users/amruth/.codex/generated_images/01a13a84-956e-7c60-8b77-568f83a49593/exec-227858a7-f937-44a2-adec-b78f9880d529.png",
+    "asset": "frontend/public/images/catalog/drying-rack.jpg",
+    "prompt": "Use case: product-mockup. Asset: a square rental catalog product photograph for a demo listing titled \"Foldable Clothes Drying Rack\". Subject: one compact white metal foldable clothes drying rack with horizontal bars and two raised side wings, empty without clothes. Clean neutral off-white seamless studio background, soft daylight, subtle contact shadow, accurate recognizable practical product construction, entire object fully visible with generous 12 percent margins, centered three-quarter view. Realistic materials. No people, hands, unrelated props, brand logos, watermark or promotional lettering. Only include cover text when the subject is a textbook. This represents sample inventory, not a real student's item.",
+    "engine": "built-in imagegen",
+    "encoding": "JPEG quality 85, original dimensions"
+  }
+]

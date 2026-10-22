@@ -1,0 +1,64 @@
+# Dependencies and generated output (at every level)
+node_modules/
+dist/
+dist-ssr/
+build/
+coverage/
+.nyc_output/
+.cache/
+.vite/
+*.tsbuildinfo
+
+# Local configuration and credentials; share only sanitized examples
+.env
+.env.*
+!.env.example
+.envrc
+*.local
+.npmrc
+.aws/
+.openai/
+deployment-private/
+credentials*.json
+*service-account*.json
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Logs, runtime uploads, database dumps and temporary files
+logs/
+*.log
+uploads/
+tmp/
+temp/
+backups/
+*.dump
+*.sql.gz
+*.sqlite
+*.sqlite3
+*.db
+*.bak
+*.tmp
+
+# Local source/deployment archives
+exports/
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+
+# OS and editor state
+.DS_Store
+._*
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+*.swo
+*~
+
+# Local reports and release artifacts
+output/

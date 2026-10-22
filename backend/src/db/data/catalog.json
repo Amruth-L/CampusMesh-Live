@@ -1,0 +1,243 @@
+[
+  {
+    "slug": "scientific-calculator",
+    "title": "Scientific Calculator",
+    "legacyTitle": "Casio FX-991ES Plus",
+    "category": "Electronics",
+    "rent": 25,
+    "deposit": 300,
+    "subject": "one black scientific calculator with a small monochrome LCD, many scientific function keys and a sliding protective cover beside it"
+  },
+  {
+    "slug": "laptop-stand",
+    "title": "Laptop Stand",
+    "category": "Electronics",
+    "rent": 20,
+    "deposit": 250,
+    "subject": "one silver aluminium folding laptop stand, empty, raised with two angled support arms, no laptop"
+  },
+  {
+    "slug": "headphones",
+    "title": "Over-ear Headphones",
+    "category": "Electronics",
+    "rent": 40,
+    "deposit": 500,
+    "subject": "one pair of matte black over-ear wireless headphones with padded earcups and an adjustable headband"
+  },
+  {
+    "slug": "power-bank",
+    "title": "20000 mAh Power Bank",
+    "category": "Electronics",
+    "rent": 25,
+    "deposit": 400,
+    "subject": "one compact dark grey rectangular USB power bank with visible USB ports and a short USB-C charging cable beside it"
+  },
+  {
+    "slug": "mini-projector",
+    "title": "Portable Mini Projector",
+    "category": "Electronics",
+    "rent": 120,
+    "deposit": 1200,
+    "subject": "one compact white portable projector with a prominent round front lens, ventilation slots and a small remote control beside it"
+  },
+  {
+    "slug": "engineering-mathematics",
+    "title": "Engineering Mathematics Textbook",
+    "category": "Books",
+    "rent": 18,
+    "deposit": 150,
+    "subject": "one substantial blue paperback engineering mathematics textbook, front cover clearly titled ENGINEERING MATHEMATICS, simple geometric cover design, no author or publisher"
+  },
+  {
+    "slug": "engineering-physics",
+    "title": "Engineering Physics Textbook",
+    "category": "Books",
+    "rent": 18,
+    "deposit": 150,
+    "subject": "one substantial teal paperback textbook, front cover clearly titled ENGINEERING PHYSICS, subtle wave diagram on cover, no author or publisher"
+  },
+  {
+    "slug": "programming-c",
+    "title": "C Programming Textbook",
+    "category": "Books",
+    "rent": 20,
+    "deposit": 200,
+    "subject": "one substantial orange paperback textbook, front cover clearly titled C PROGRAMMING, minimal code bracket pattern, no author or publisher"
+  },
+  {
+    "slug": "engineering-drawing",
+    "title": "Engineering Drawing Handbook",
+    "category": "Books",
+    "rent": 22,
+    "deposit": 200,
+    "subject": "one large landscape dark green paperback handbook, front cover clearly titled ENGINEERING DRAWING, a white mechanical orthographic drawing on cover, no author or publisher"
+  },
+  {
+    "slug": "data-structures",
+    "title": "Data Structures Textbook",
+    "category": "Books",
+    "rent": 20,
+    "deposit": 200,
+    "subject": "one substantial purple paperback textbook, front cover clearly titled DATA STRUCTURES, small connected tree diagram on cover, no author or publisher"
+  },
+  {
+    "slug": "drafting-set",
+    "title": "Geometry & Drafting Set",
+    "category": "Stationery",
+    "rent": 15,
+    "deposit": 100,
+    "subject": "one open slim geometry box containing a metal drawing compass, divider, transparent protractor, a small ruler and two set squares, neatly arranged"
+  },
+  {
+    "slug": "drawing-board",
+    "title": "A3 Drawing Board",
+    "category": "Stationery",
+    "rent": 25,
+    "deposit": 300,
+    "subject": "one A3 pale wooden technical drawing board with a white blank sheet clipped on it and a parallel straightedge ruler across the board"
+  },
+  {
+    "slug": "stapler-punch",
+    "title": "Stapler & Hole Punch Set",
+    "category": "Stationery",
+    "rent": 10,
+    "deposit": 100,
+    "subject": "a matching black metal desktop stapler and two-hole paper punch side by side, with a small box of staples"
+  },
+  {
+    "slug": "whiteboard",
+    "title": "Portable Whiteboard",
+    "category": "Stationery",
+    "rent": 20,
+    "deposit": 200,
+    "subject": "one small rectangular blank white dry-erase board with a thin silver frame, black marker and compact eraser below it"
+  },
+  {
+    "slug": "brush-pen-set",
+    "title": "Reusable Brush Pen Set",
+    "category": "Stationery",
+    "rent": 15,
+    "deposit": 150,
+    "subject": "a neatly opened black zip case holding twelve colorful reusable brush pens in a rainbow row, no sheets of paper or artwork"
+  },
+  {
+    "slug": "multimeter",
+    "title": "Digital Multimeter Lab Kit",
+    "category": "Lab Equipment",
+    "rent": 35,
+    "deposit": 400,
+    "subject": "one yellow digital multimeter with a black central rotary dial and small LCD, a red and a black test probe with their cables neatly coiled beside it"
+  },
+  {
+    "slug": "breadboard-kit",
+    "title": "Breadboard & Jumper Wire Kit",
+    "category": "Lab Equipment",
+    "rent": 25,
+    "deposit": 250,
+    "subject": "one white solderless electronics breadboard with red and blue rails, a bundle of colorful jumper wires and a small assortment of resistors and LEDs beside it"
+  },
+  {
+    "slug": "arduino-kit",
+    "title": "Microcontroller Starter Kit",
+    "category": "Lab Equipment",
+    "rent": 50,
+    "deposit": 600,
+    "subject": "one blue microcontroller development board with a silver USB port and black pin headers, a USB cable, small breadboard and neatly grouped sensors and LEDs"
+  },
+  {
+    "slug": "vernier-caliper",
+    "title": "Digital Vernier Caliper",
+    "category": "Lab Equipment",
+    "rent": 25,
+    "deposit": 350,
+    "subject": "one stainless steel digital vernier caliper with two measurement jaws, a small rectangular black digital display housing and a fitted open protective case behind it"
+  },
+  {
+    "slug": "soldering-kit",
+    "title": "Soldering Iron Kit",
+    "category": "Lab Equipment",
+    "rent": 40,
+    "deposit": 450,
+    "subject": "one blue-handled electric soldering iron resting safely in a coiled metal stand, with a spool of solder and a yellow cleaning sponge, unplugged and no smoke"
+  },
+  {
+    "slug": "badminton-pair",
+    "title": "Badminton Racquet Pair",
+    "category": "Sports",
+    "rent": 30,
+    "deposit": 300,
+    "subject": "exactly two badminton rackets with slender shafts and oval strung heads, crossed neatly beside two white feather shuttlecocks"
+  },
+  {
+    "slug": "football",
+    "title": "Football",
+    "category": "Sports",
+    "rent": 20,
+    "deposit": 250,
+    "subject": "one inflated regulation football with classic black pentagonal and white hexagonal panels, no brand marks"
+  },
+  {
+    "slug": "basketball",
+    "title": "Basketball",
+    "category": "Sports",
+    "rent": 25,
+    "deposit": 300,
+    "subject": "one orange regulation basketball with pebbled rubber texture and black curved seams, no brand marks"
+  },
+  {
+    "slug": "table-tennis",
+    "title": "Table Tennis Set",
+    "category": "Sports",
+    "rent": 20,
+    "deposit": 200,
+    "subject": "two table tennis paddles, one red rubber face and one black rubber face visible, with three white table tennis balls, no other sports equipment"
+  },
+  {
+    "slug": "cricket-bat",
+    "title": "Cricket Bat & Tennis Ball",
+    "category": "Sports",
+    "rent": 30,
+    "deposit": 400,
+    "subject": "one pale willow cricket bat with a blue rubber grip, alongside one bright yellow tennis cricket ball, no brand stickers"
+  },
+  {
+    "slug": "desk-lamp",
+    "title": "Adjustable Study Lamp",
+    "category": "Hostel Essentials",
+    "rent": 15,
+    "deposit": 200,
+    "subject": "one white adjustable LED desk lamp with a round base and a hinged arm, clean minimal design, no other furniture"
+  },
+  {
+    "slug": "electric-kettle",
+    "title": "Electric Kettle",
+    "category": "Hostel Essentials",
+    "rent": 25,
+    "deposit": 350,
+    "subject": "one stainless steel electric kettle with black handle and black base, spout and closed lid clearly visible"
+  },
+  {
+    "slug": "steam-iron",
+    "title": "Steam Iron",
+    "category": "Hostel Essentials",
+    "rent": 25,
+    "deposit": 350,
+    "subject": "one blue and white household steam iron, standing at a three-quarter angle to show handle, water reservoir and pointed metal soleplate"
+  },
+  {
+    "slug": "folding-table",
+    "title": "Foldable Bed Study Table",
+    "category": "Hostel Essentials",
+    "rent": 25,
+    "deposit": 300,
+    "subject": "one small light wood rectangular bed study table with rounded corners and short black folding legs, no laptop, no books"
+  },
+  {
+    "slug": "drying-rack",
+    "title": "Foldable Clothes Drying Rack",
+    "category": "Hostel Essentials",
+    "rent": 20,
+    "deposit": 300,
+    "subject": "one compact white metal foldable clothes drying rack with horizontal bars and two raised side wings, empty without clothes"
+  }
+]

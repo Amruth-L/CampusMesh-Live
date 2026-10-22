@@ -1,0 +1,48 @@
+{
+  "name": "student-marketplace-backend",
+  "version": "1.0.0",
+  "description": "Backend for CampusMesh",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "migrate": "npm run db:migrate",
+    "seed": "npm run db:seed",
+    "db:migrate": "node src/db/migrate.js",
+    "db:reset": "node src/db/reset.js",
+    "db:seed": "npm run db:migrate && node src/db/seed.js",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "xerox:cleanup": "node src/db/cleanup-xerox.js",
+    "email:check": "node src/shared/check-email.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@aws-sdk/client-lambda": "^3.1152.0",
+    "@aws-sdk/client-s3": "^3.1152.0",
+    "@aws-sdk/client-sesv2": "^3.1152.0",
+    "@aws-sdk/s3-request-presigner": "^3.1152.0",
+    "@supabase/supabase-js": "^2.110.8",
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^10.1.1",
+    "pg": "^8.12.0",
+    "razorpay": "^2.9.8",
+    "sharp": "^0.35.5",
+    "socket.io": "^4.8.3",
+    "twilio": "^6.2.0"
+  },
+  "devDependencies": {
+    "eslint": "^10.9.1",
+    "prettier": "^3.9.6"
+  },
+  "overrides": {
+    "tar": ">=7.5.21",
+    "qs": ">=6.13.0",
+    "brace-expansion": ">=2.0.0"
+  }
+}

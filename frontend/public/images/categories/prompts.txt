@@ -1,0 +1,14 @@
+CampusMesh category illustrations
+Generated with the built-in image generation tool.
+
+Shared prompt:
+Use case: illustration-story. Asset type: square rental category artwork for CampusMesh, a youthful student rental app. [SUBJECT]. Premium playful tactile 3D clay illustration with rounded geometry, soft shadows, punchy cobalt blue, sunny yellow, lilac and tangerine colors, on a clean warm cream background. Centered still life with plenty of margin, clear instantly recognizable objects, studio lighting. No text, no lettering, no logos, no watermark, no people.
+
+books.png subject:
+a playful stack of colorful textbooks, a spiral notebook and chunky pencils
+
+electronics.png subject:
+a compact digital camera, lavender over-ear headphones and a closed silver laptop
+
+sports.png subject:
+a badminton racket, two shuttlecocks and a bright orange basketball

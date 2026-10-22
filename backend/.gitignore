@@ -1,0 +1,11 @@
+# Root .gitignore applies here too. Keep these rules for standalone copies.
+node_modules/
+.env
+.env.*
+!.env.example
+dist/
+build/
+coverage/
+logs/
+*.log
+.DS_Store

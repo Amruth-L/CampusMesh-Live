@@ -1,0 +1,15 @@
+{
+  "name": "campusmesh-otp-mailer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Private IAM-invoked Gmail SMTP relay for CampusMesh college-email OTPs",
+  "main": "index.js",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "test": "node --test index.test.js",
+    "build": "node build.js"
+  },
+  "dependencies": {
+    "nodemailer": "10.1.1"
+  }
+}
