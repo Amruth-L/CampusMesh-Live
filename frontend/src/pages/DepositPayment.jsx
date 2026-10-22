@@ -27,6 +27,7 @@ export default function DepositPayment() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed to fetch booking details.');
 
+        if(data.rental?.payment_method==='DIRECT_UPI'){navigate(`/rent-details/${id}`,{replace:true});return;}
         setBooking(data.rental);
       } catch (err) {
         setError(err.message);

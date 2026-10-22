@@ -70,6 +70,7 @@ export default function RentalPayment() {
         const snapshot = await request(`/api/rentals/${id}/status`);
         if (cancelled) return;
         if (!snapshot.rental) throw new Error('Could not load this booking.');
+        if (snapshot.rental.payment_method==='DIRECT_UPI') { showDetails(); return; }
         setBooking(snapshot.rental);
         if (!canPayRental(snapshot) || snapshot.rental.borrower_id !== user?.id) {
           showDetails();

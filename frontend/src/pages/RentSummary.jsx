@@ -99,6 +99,7 @@ export default function RentSummary() {
           rentalFee: data.rentalFee,
           deliveryFee: data.deliveryFee,
           platformFee: data.platformFee,
+          paymentMethod: data.paymentMethod,
           bookingAmount: data.totalAmount,
           depositAmount: data.securityDeposit,
           distance: data.distance,
@@ -139,7 +140,7 @@ export default function RentSummary() {
       if (!data.rental?.id) throw new Error('Could not load your booking. Check My rentals before trying again.');
 
       // Keep every checkout retry on this booking, including dismissals and reloads.
-      navigate(`/rental-payment/${data.rental.id}`, {
+      navigate(data.rental.payment_method==='DIRECT_UPI'?`/rent-details/${data.rental.id}`:`/rental-payment/${data.rental.id}`, {
         replace: true,
         state: { startCheckout: true },
       });
@@ -178,7 +179,7 @@ export default function RentSummary() {
         <div className="[margin-bottom:32px]">
           <button className="[background-color:var(--surface-color,_#ffffff)] [border:1px_solid_var(--border-color,_#e5e7eb)] [color:var(--text-dark,_#1f2937)] [padding:8px_20px] [border-radius:99px] cursor-pointer [font-size:0.9rem] font-medium [transition:background-color_0.2s_ease,border-color_0.2s_ease,transform_0.2s_ease] [margin-bottom:16px] [box-shadow:var(--shadow-sm)] inline-flex items-center [gap:6px] hover:[background-color:#f3f4f6] hover:[border-color:#d1d5db] hover:[transform:translateX(-2px)]" onClick={() => navigate(-1)}>← Back</button>
           <h1 className="font-display text-5xl font-semibold tracking-tight text-ink">Booking Summary</h1>
-          <p className="[color:var(--text-muted,_#6b7280)] [font-size:0.95rem] m-0">Review your rental before confirming payment</p>
+          <p className="[color:var(--text-muted,_#6b7280)] [font-size:0.95rem] m-0">Review your rental request and payment stages</p>
         </div>
 
         {listing.demo_slug && (
@@ -259,7 +260,7 @@ export default function RentSummary() {
                   className="mt-2 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-mesh-600 px-5 text-sm font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-mesh-700 hover:shadow-lg disabled:pointer-events-none disabled:bg-ink/15 disabled:text-ink/35 disabled:shadow-none"
                   disabled={isBtnDisabled}
                 >
-                  {submitting ? 'Processing…' : `Pay rental fee · ${breakdown ? formatCurrency(breakdown.bookingAmount) : '₹0.00'}`}
+                  {submitting ? 'Processing…' : breakdown?.paymentMethod==='DIRECT_UPI' ? 'Send request — pay after acceptance' : `Pay rental fee · ${breakdown ? formatCurrency(breakdown.bookingAmount) : '₹0.00'}`}
                 </button>
               </form>
             </div>
@@ -288,7 +289,7 @@ export default function RentSummary() {
                     <span>{formatCurrency(breakdown.rentalFee)}</span>
                   </div>
                   <div className="flex justify-between items-center [font-size:0.95rem] [color:var(--text-muted,_#6b7280)]">
-                    <span>Delivery Fee</span>
+                    <span>{breakdown.paymentMethod==='DIRECT_UPI'?'Delivery — paid after handover':'Delivery Fee'}</span>
                     <span>{(listing.delivery_available || listing.deliveryAvailable) ? formatCurrency(breakdown.deliveryFee) : 'Free (Pickup)'}</span>
                   </div>
                   <div className="flex justify-between items-center [font-size:0.95rem] [color:var(--text-muted,_#6b7280)]">
@@ -297,7 +298,7 @@ export default function RentSummary() {
                   </div>
                   <div className="border-0 [border-top:1px_solid_var(--border-color,_#e5e7eb)] [margin:6px_0]" />
                   <div className="flex justify-between items-center [font-size:0.95rem] [color:var(--text-muted,_#6b7280)] [color:var(--text-dark,_#1f2937)] [font-size:1.15rem] font-extrabold [padding-top:8px]">
-                    <span>Booking Total</span>
+                    <span>{breakdown.paymentMethod==='DIRECT_UPI'?'Rental fee after acceptance':'Booking Total'}</span>
                     <span>{formatCurrency(breakdown.bookingAmount)}</span>
                   </div>
                 </div>

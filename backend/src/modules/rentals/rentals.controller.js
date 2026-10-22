@@ -53,6 +53,26 @@ exports.bookRental = async (req, res) => {
       return res.status(400).json({ error: 'Choose an available campus drop location for delivery.' });
     }
 
+    const direct = require('../direct-upi/service').enabled();
+    if (direct) {
+      const priorCart = await client.query(`SELECT id FROM pending_orders WHERE user_id=$1
+        AND COALESCE((booking_data->>'completed')::boolean,false)=false
+        AND EXISTS(SELECT 1 FROM jsonb_array_elements(COALESCE(booking_data->'items','[]'::jsonb)) item WHERE item->>'listing_id'=$2) LIMIT 1`, [borrower_id,listing_id]);
+      if (priorCart.rowCount) throw Object.assign(new Error('An earlier Razorpay checkout for this item needs reconciliation. Check its payment confirmation or contact support before making a direct UPI payment.'), {status:409});
+      const priorPayment = await client.query(`SELECT r.id FROM rentals r JOIN payments p ON p.rental_id=r.id
+        WHERE r.borrower_id=$1 AND r.listing_id=$2 AND r.payment_method='RAZORPAY'
+        AND r.status NOT IN ('CANCELLED','COMPLETED','DEPOSIT_REFUNDED')
+        AND NOT(r.end_date<$3 OR r.start_date>$4) AND p.status IN ('PENDING','PAID') LIMIT 1`, [borrower_id,listing_id,start_date,end_date]);
+      if (priorPayment.rowCount) throw Object.assign(new Error('Open your existing Razorpay rental and check payment confirmation before starting another payment for these dates.'), {status:409});
+    }
+    if (direct && !listing.is_active) throw Object.assign(new Error('This listing is no longer available.'), {status:409});
+    if (direct && delivery_requested) {
+      const locations = await client.query('SELECT id FROM campus_locations WHERE id=ANY($1::text[])', [[listing.pickup_location_id, destination]]);
+      const known = new Set(locations.rows.map(row=>row.id));
+      if (!known.has(listing.pickup_location_id) || !known.has(destination)) throw Object.assign(new Error('The lender must set a valid pickup point and you must choose a valid drop-off before requesting delivery.'), {status:409});
+    }
+    if (direct && Number(listing.rent_price || listing.price || 0)<=0) throw Object.assign(new Error('This item needs a positive rental price before requesting it.'),{status:409});
+    if (direct && listing.demo_slug) throw Object.assign(new Error('Choose a student-listed item. Sample items cannot request real payments.'), {status:409});
     // Preserve the quote and any payment order already attached to a draft.
     // Never recycle a paid record, or another borrower's/destination's checkout.
     const existing = await client.query(
@@ -60,11 +80,12 @@ exports.bookRental = async (req, res) => {
        WHERE r.listing_id=$1 AND r.borrower_id=$2
          AND r.start_date=$3 AND r.end_date=$4
          AND r.delivery_requested=$5 AND r.drop_location_id IS NOT DISTINCT FROM $6::text
-         AND r.status IN ('BOOKING_PAYMENT_PENDING','BOOKING_REQUESTED')
+         AND r.status IN ('BOOKING_PAYMENT_PENDING','BOOKING_REQUESTED','OWNER_PENDING')
+         AND r.payment_method=$7
          AND r.payment_status='PENDING' AND r.owner_response='PENDING'
          AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.rental_id=r.id AND p.status='PAID')
        ORDER BY r.created_at DESC, r.id DESC LIMIT 1 FOR UPDATE OF r`,
-      [listing_id, borrower_id, start_date, end_date, delivery_requested, destination],
+      [listing_id, borrower_id, start_date, end_date, delivery_requested, destination, direct ? 'DIRECT_UPI' : 'RAZORPAY'],
     );
     // Check after acquiring the draft lock: payment recovery may have made it
     // paid while this checkout was waiting. Do not create a replacement draft.
@@ -73,8 +94,9 @@ exports.bookRental = async (req, res) => {
        WHERE r.listing_id = $1
          AND r.status NOT IN ('CANCELLED', 'COMPLETED', 'DEPOSIT_REFUNDED')
          AND ${submittedRentalSql('r')}
+         AND r.id IS DISTINCT FROM $4::uuid
          AND NOT (r.end_date < $2 OR r.start_date > $3)`,
-      [listing_id, start_date, end_date],
+      [listing_id, start_date, end_date, existing.rows[0]?.id || null],
     );
     if (conflictRes.rows.length > 0) {
       await client.query('ROLLBACK');
@@ -113,7 +135,11 @@ exports.bookRental = async (req, res) => {
         [rental.id, borrower_id, { deliveryRequested: delivery_requested }],
       );
     }
+    if (direct && !reused) {
+      rental = (await client.query("UPDATE rentals SET payment_method='DIRECT_UPI',status='OWNER_PENDING',platform_fee=0,booking_amount=rental_fee WHERE id=$1 RETURNING *", [rental.id])).rows[0];
+    }
     await client.query('COMMIT');
+    if (direct) emitUser(listing.owner_id, 'rental:status', { rental_id:rental.id });
     res.status(reused ? 200 : 201).json({
       rental,
       reused,
@@ -132,7 +158,7 @@ exports.bookRental = async (req, res) => {
   } catch (error) {
     if (client) try { await client.query('ROLLBACK'); } catch {}
     console.error('[RentalController] bookRental error:', error.message);
-    res.status(500).json({ error: 'Failed to create rental booking.' });
+    res.status(error.status || 500).json({ error: error.status ? error.message : 'Failed to create rental booking.' });
   } finally {
     client?.release();
   }
@@ -147,6 +173,11 @@ exports.respondToBooking = async (req, res) => {
     return res.status(400).json({ error: 'rental_id and response (ACCEPTED or REJECTED) are required.' });
   }
 
+  const method = (await pool.query('SELECT payment_method FROM rentals WHERE id=$1', [rental_id])).rows[0]?.payment_method;
+  if (method === 'DIRECT_UPI') {
+    try { return res.json(await require('../direct-upi/service').createService().respond(rental_id,owner_id,response)); }
+    catch(e) { return res.status(e.status || 503).json({error:e.status?e.message:'Could not respond to request.'}); }
+  }
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -301,6 +332,7 @@ exports.requestExtension = async (req, res) => {
     if (rental.borrower_id !== borrower_id) {
       return res.status(403).json({ error: 'Only the borrower can request a rental extension.' });
     }
+    if(rental.payment_method==='DIRECT_UPI') return res.status(409).json({error:'Paid extensions are not available for direct UPI rentals. Agree a return date with the lender and contact support.'});
 
     if (!['RENTAL_ACTIVE', 'MATCHING_COURIER', 'COURIER_ASSIGNED', 'GOING_TO_PICKUP', 'ARRIVED_AT_PICKUP', 'IN_TRANSIT', 'ARRIVED_AT_DESTINATION'].includes(rental.status)) {
       return res.status(409).json({ error: 'Extensions can only be requested on active rentals.' });
@@ -689,7 +721,7 @@ exports.getOwnerRequests = async (req, res) => {
 
     const locationLabel = (building, floor, room) => [building, floor, room].filter(Boolean).join(' · ');
     const requests = result.rows.map((row) => {
-      const actionable = row.rental_fee_paid && ['OWNER_PENDING', 'RENTAL_PAYMENT_COMPLETED'].includes(row.status);
+      const actionable = (row.rental_fee_paid || row.payment_method === 'DIRECT_UPI') && ['OWNER_PENDING', 'RENTAL_PAYMENT_COMPLETED'].includes(row.status);
       const activeRental = ['DEPOSIT_PENDING', 'MATCHING_COURIER', 'NO_COURIER_AVAILABLE', 'COURIER_ASSIGNED', 'RENTAL_ACTIVE', 'RETURN_MATCHING', 'RETURN_COURIER_ASSIGNED', 'RETURN_IN_TRANSIT'].includes(row.status);
       const completedRental = ['COMPLETED', 'DEPOSIT_REFUNDED'].includes(row.status);
       const delivery = row.delivery_id ? {
@@ -735,8 +767,10 @@ exports.getOwnerRequests = async (req, res) => {
         next_action = 'Rental completed';
       }
 
+      if (row.payment_method==='DIRECT_UPI' && !actionable && ['BOOKING_PAYMENT_PENDING','DEPOSIT_PENDING'].includes(row.status)) next_action='Open details to pay or confirm direct UPI receipt';
       return {
         id: row.id,
+        payment_method: row.payment_method,
         status: row.status,
         listing_id: row.listing_id,
         listing_title: row.listing_title,
@@ -797,6 +831,8 @@ exports.confirmReturn = async (req, res) => {
   const { damage_description, damage_amount } = req.body;
 
   try {
+    const method = (await pool.query('SELECT payment_method FROM rentals WHERE id=$1',[id])).rows[0]?.payment_method;
+    if (method==='DIRECT_UPI') return res.json(await require('../direct-upi/service').createService().complete(id,owner_id,req.body));
     const result = await paymentService.refundDeposit(id, damage_amount, damage_description, owner_id);
     res.json({ success: true, ...result });
   } catch (error) {

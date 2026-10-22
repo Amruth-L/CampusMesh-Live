@@ -1,3 +1,5 @@
+import DirectDashboard from '../direct-upi/DirectPayments';
+import useDirectMode from '../direct-upi/useDirectMode';
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -46,7 +48,7 @@ async function request(path = "", method = "GET", body, signal) {
     throw new Error(data.error || "Could not load payouts. Please retry.");
   return data;
 }
-export default function PayoutsPage() {
+function PayoutsPage() {
   const [data, setData] = useState(null),
     [error, setError] = useState(""),
     [loadError, setLoadError] = useState(false),
@@ -421,4 +423,19 @@ export default function PayoutsPage() {
       )}
     </main>
   );
+}
+
+export default function PaymentOptions() {
+  const { mode, error } = useDirectMode();
+  const [showPrevious, setShowPrevious] = useState(false);
+  if (error) return <p role="alert" className="p-6">{error}</p>;
+  if (mode === null) return <p className="p-6">Loading payment options…</p>;
+  if (!mode) return <PayoutsPage />;
+  return <>
+    <DirectDashboard />
+    <details className="mx-auto max-w-5xl px-5 pb-8" onToggle={e=>setShowPrevious(e.currentTarget.open)}>
+      <summary className="cursor-pointer font-semibold">Previous Razorpay payout records</summary>
+      {showPrevious && <PayoutsPage />}
+    </details>
+  </>;
 }

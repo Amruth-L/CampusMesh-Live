@@ -76,7 +76,7 @@ export default function AppNavbar() {
               ["/cart", "Cart"],
             ];
   links.push(
-    ["/payouts", "Payouts"],
+    ["/payouts", "Payments"],
     ["/insights", "Insights"],
     ["/reminders", "Reminders"],
     ["/support", "Support"],

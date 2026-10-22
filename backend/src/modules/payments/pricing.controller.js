@@ -55,6 +55,7 @@ exports.calculatePricingHandler = async (req, res) => {
       customDeposit: itemDeposit
     });
 
+    if (require('../direct-upi/service').enabled()) { breakdown.platformFee=0; breakdown.totalAmount=breakdown.rentalFee; breakdown.paymentMethod='DIRECT_UPI'; }
     return res.status(200).json(breakdown);
   } catch (error) {
     console.error('[PricingController] Calculation Error:', error.message);

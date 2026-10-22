@@ -1,5 +1,13 @@
 module.exports = [
   {
+    id: 'direct-upi',
+    title: 'Direct UPI payments',
+    keywords: ['upi', 'receipt', 'recipient', 'direct', 'reference', 'lender', 'courier payment'],
+    answer:
+      'For direct-UPI rentals, the lender accepts first. Pay the rental fee and deposit separately to the lender using the QR or UPI ID in rental details. Report the transaction reference, then the recipient checks their own bank history and confirms receipt. Reporting is not verification. Delivery fees are paid separately after verified handover. Deposit refunds are sent by the lender and confirmed by the renter. CampusMesh does not collect, split, hold or automatically refund these payments. Do not pay again while a receipt is pending or disputed. Direct-UPI extensions and damage deductions need support.',
+    url: '/payouts',
+  },
+  {
     id: 'rent',
     title: 'Rent an item',
     keywords: ['rent', 'borrow', 'book', 'booking', 'dates', 'buy', 'purchase'],

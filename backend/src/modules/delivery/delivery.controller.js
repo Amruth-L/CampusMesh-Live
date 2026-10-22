@@ -89,7 +89,7 @@ exports.getAvailableDeliveries = async (req, res) => {
     );
 
     const result = await pool.query(
-      "SELECT offer.id AS offer_id, offer.delivery_id, offer.match_score AS offer_match_score, offer.score_breakdown AS offer_score_breakdown, offer.expires_at AS offer_expires_at, offer.offered_at AS offer_created_at, dr.*, l.title AS listing_title, l.image_url AS listing_image, l.category AS listing_category, u_seller.name AS seller_name, u_seller.hostel AS seller_hostel, u_customer.name AS customer_name, u_customer.hostel AS customer_hostel FROM delivery_offers offer JOIN delivery_requests dr ON dr.id=offer.delivery_id JOIN users courier ON courier.id=offer.courier_id LEFT JOIN listings l ON l.id=dr.listing_id LEFT JOIN users u_seller ON u_seller.id=dr.seller_id LEFT JOIN users u_customer ON u_customer.id=dr.customer_id WHERE offer.courier_id=$1 AND courier.delivery_available AND EXISTS (SELECT 1 FROM courier_route_availability cra WHERE cra.courier_id=$1 AND cra.is_active AND cra.available_until > NOW() AND (offer.route_availability_id IS NULL OR offer.route_availability_id=cra.id)) AND NOT EXISTS (SELECT 1 FROM wish_requests w WHERE w.courier_id=$1 AND w.status IN ('CHECKING','QUOTED','PAYMENT_PENDING')) AND NOT EXISTS (SELECT 1 FROM delivery_requests active WHERE active.courier_id=$1 AND active.status NOT IN ('COMPLETED','DELIVERED','CANCELLED','FAILED')) AND offer.status='PENDING' AND offer.expires_at > NOW() AND dr.status IN ('MATCHING_COURIER','AVAILABLE','NO_COURIER_AVAILABLE','RETURN_MATCHING') AND dr.customer_id IS DISTINCT FROM $1 AND dr.seller_id IS DISTINCT FROM $1 AND NOT ($1 = ANY(COALESCE(dr.declined_by, ARRAY[]::uuid[]))) ORDER BY offer.match_score DESC, dr.created_at DESC",
+      "SELECT offer.id AS offer_id, offer.delivery_id, offer.match_score AS offer_match_score, offer.score_breakdown AS offer_score_breakdown, offer.expires_at AS offer_expires_at, offer.offered_at AS offer_created_at, dr.*, (SELECT payment_method FROM rentals WHERE id=dr.rental_id) AS payment_method, l.title AS listing_title, l.image_url AS listing_image, l.category AS listing_category, u_seller.name AS seller_name, u_seller.hostel AS seller_hostel, u_customer.name AS customer_name, u_customer.hostel AS customer_hostel FROM delivery_offers offer JOIN delivery_requests dr ON dr.id=offer.delivery_id JOIN users courier ON courier.id=offer.courier_id LEFT JOIN listings l ON l.id=dr.listing_id LEFT JOIN users u_seller ON u_seller.id=dr.seller_id LEFT JOIN users u_customer ON u_customer.id=dr.customer_id WHERE offer.courier_id=$1 AND courier.delivery_available AND EXISTS (SELECT 1 FROM courier_route_availability cra WHERE cra.courier_id=$1 AND cra.is_active AND cra.available_until > NOW() AND (offer.route_availability_id IS NULL OR offer.route_availability_id=cra.id)) AND NOT EXISTS (SELECT 1 FROM wish_requests w WHERE w.courier_id=$1 AND w.status IN ('CHECKING','QUOTED','PAYMENT_PENDING')) AND NOT EXISTS (SELECT 1 FROM delivery_requests active WHERE active.courier_id=$1 AND active.status NOT IN ('COMPLETED','DELIVERED','CANCELLED','FAILED')) AND offer.status='PENDING' AND offer.expires_at > NOW() AND dr.status IN ('MATCHING_COURIER','AVAILABLE','NO_COURIER_AVAILABLE','RETURN_MATCHING') AND dr.customer_id IS DISTINCT FROM $1 AND dr.seller_id IS DISTINCT FROM $1 AND NOT ($1 = ANY(COALESCE(dr.declined_by, ARRAY[]::uuid[]))) ORDER BY offer.match_score DESC, dr.created_at DESC",
       [userId],
     );
 
@@ -126,7 +126,7 @@ exports.getMyDeliveries = async (req, res) => {
   const userId = req.user.id;
   try {
     const result = await pool.query(
-      `SELECT dr.*,
+      `SELECT dr.*, (SELECT payment_method FROM rentals WHERE id=dr.rental_id) AS payment_method,
               COALESCE(l.title, dr.item_description, 'Campus Delivery') as listing_title,
               l.image_url as listing_image, l.category as listing_category,
               u_seller.name as seller_name, u_seller.hostel as seller_hostel,
@@ -201,7 +201,7 @@ exports.getDeliveryById = async (req, res) => {
   const userId = req.user.id;
   try {
     const result = await pool.query(
-      `SELECT dr.*,
+      `SELECT dr.*, (SELECT payment_method FROM rentals WHERE id=dr.rental_id) AS payment_method,
               l.title as listing_title, l.image_url as listing_image, l.category as listing_category,
               u_seller.name as seller_name, u_seller.hostel as seller_hostel, u_seller.phone_number as seller_phone,
               u_customer.name as customer_name, u_customer.hostel as customer_hostel,
@@ -459,7 +459,7 @@ exports.updateLocation = async (req, res) => {
 exports.getTracking = async (req, res) => {
   const { id } = req.params;
   const delivery = await pool.query(
-    `SELECT dr.*,
+    `SELECT dr.*, (SELECT payment_method FROM rentals WHERE id=dr.rental_id) AS payment_method,
             l.title AS listing_title, l.image_url AS listing_image, l.category AS listing_category,
             u_seller.name AS seller_name, u_seller.hostel AS seller_hostel,
             u_customer.name AS customer_name, u_customer.hostel AS customer_hostel,
@@ -523,7 +523,7 @@ exports.getRentalDeliveryStatus = async (req, res) => {
     if (!rental) return res.status(403).json({ error: 'You do not have access to this rental delivery.' });
 
     const result = await pool.query(
-      "SELECT dr.*, l.title AS listing_title, l.image_url AS listing_image, l.category AS listing_category, owner.name AS owner_name, owner.hostel AS owner_hostel, renter.name AS renter_name, renter.hostel AS renter_hostel, courier.name AS courier_name, courier.phone_number AS courier_phone, courier.hostel AS courier_hostel FROM delivery_requests dr JOIN rentals r ON r.id=dr.rental_id LEFT JOIN listings l ON l.id=dr.listing_id LEFT JOIN users owner ON owner.id=r.owner_id LEFT JOIN users renter ON renter.id=r.borrower_id LEFT JOIN users courier ON courier.id=dr.courier_id WHERE dr.rental_id=$1 ORDER BY CASE WHEN dr.status IN ('MATCHING_COURIER','COURIER_ASSIGNED','GOING_TO_PICKUP','ARRIVED_AT_PICKUP','IN_TRANSIT','ARRIVED_AT_DESTINATION','RETURN_LOCATION_PENDING','RETURN_MATCHING','RETURN_COURIER_ASSIGNED','RETURN_IN_TRANSIT') THEN 0 WHEN dr.id=r.outbound_delivery_id THEN 1 WHEN dr.id=r.return_delivery_id THEN 2 ELSE 3 END, dr.created_at DESC LIMIT 1",
+      "SELECT dr.*, (SELECT payment_method FROM rentals WHERE id=dr.rental_id) AS payment_method, l.title AS listing_title, l.image_url AS listing_image, l.category AS listing_category, owner.name AS owner_name, owner.hostel AS owner_hostel, renter.name AS renter_name, renter.hostel AS renter_hostel, courier.name AS courier_name, courier.phone_number AS courier_phone, courier.hostel AS courier_hostel FROM delivery_requests dr JOIN rentals r ON r.id=dr.rental_id LEFT JOIN listings l ON l.id=dr.listing_id LEFT JOIN users owner ON owner.id=r.owner_id LEFT JOIN users renter ON renter.id=r.borrower_id LEFT JOIN users courier ON courier.id=dr.courier_id WHERE dr.rental_id=$1 ORDER BY CASE WHEN dr.status IN ('MATCHING_COURIER','COURIER_ASSIGNED','GOING_TO_PICKUP','ARRIVED_AT_PICKUP','IN_TRANSIT','ARRIVED_AT_DESTINATION','RETURN_LOCATION_PENDING','RETURN_MATCHING','RETURN_COURIER_ASSIGNED','RETURN_IN_TRANSIT') THEN 0 WHEN dr.id=r.outbound_delivery_id THEN 1 WHEN dr.id=r.return_delivery_id THEN 2 ELSE 3 END, dr.created_at DESC LIMIT 1",
       [rentalId],
     );
 

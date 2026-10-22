@@ -74,7 +74,7 @@ async function requestReturn(rentalId, userId, requestedMode) {
               destination.id,
               `Return: ${rental.title}`,
               fee,
-              fee * 0.7,
+              fee * (rental.payment_method==='DIRECT_UPI'?1:0.7),
             ],
           )
         ).rows[0];

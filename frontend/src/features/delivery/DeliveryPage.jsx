@@ -192,7 +192,7 @@ export default function DeliveryPage() {
       {scanner && <QrScanner onClose={() => setScanner(false)} onResult={(value) => { setVerify((current) => ({ ...current, method: "QR", value })); setScanner(false); }} />}
       <div className="page-shell">
         <header className="flex flex-wrap items-start justify-between gap-4">
-          <div><h1 className="page-title">Delivery dashboard</h1><p className="page-copy">Manage your deliveries and track your earnings.</p><Link to="/delivery/wishes" className="mt-3 inline-flex text-sm font-semibold text-mesh-700">Wish Box errands →</Link></div>
+          <div><h1 className="page-title">Delivery dashboard</h1><p className="page-copy">Manage your deliveries and track your earnings.</p><Link to="/payouts" className="mt-3 mr-5 inline-flex text-sm font-semibold text-mesh-700">UPI details & payment receipts →</Link><Link to="/delivery/wishes" className="mt-3 inline-flex text-sm font-semibold text-mesh-700">Wish Box errands →</Link></div>
           <div className="flex items-center gap-3"><button onClick={load} className="text-xs font-medium text-ink/60 hover:text-mesh-700">Refresh</button><span className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-medium ${online ? 'border-mesh-200 bg-mesh-50 text-mesh-700' : 'border-ink/10 bg-white text-ink/60'}`}><span className={`size-2 rounded-full ${online ? 'bg-mesh-600' : 'bg-ink/30'}`}/>{online ? 'Online for requests' : 'Offline'}</span></div>
         </header>
         <div className="my-7 grid grid-cols-2 gap-3 md:grid-cols-4">

@@ -33,6 +33,7 @@ class PaymentService {
       const res = await client.query('SELECT * FROM rentals WHERE id = $1 FOR UPDATE', [bookingId]);
       if (!res.rows.length) throw Object.assign(new Error('Booking not found.'), { status: 404 });
       context.booking = res.rows[0];
+      if (context.booking.payment_method === 'DIRECT_UPI') throw Object.assign(new Error('This rental uses direct UPI. Open rental details to pay or confirm receipt.'), {status:409});
       if (context.booking.borrower_id !== userId) {
         throw Object.assign(new Error('Unauthorized to pay for this booking.'), { status: 403 });
       }

@@ -109,7 +109,7 @@ exports.getCart = async (req, res) => {
       [user_id],
     );
 
-    res.json(cartRes.rows);
+    res.json(cartRes.rows.map(row=>require('../direct-upi/service').enabled()?{...row,platform_fee:0}:row));
   } catch (error) {
     console.error('[CartController] getCart error:', error.message);
     res.status(500).json({ error: 'Failed to retrieve cart items.' });
@@ -154,7 +154,7 @@ exports.updateCartDates = async (req, res) => {
 
     res.json({
       message: 'Cart item updated successfully.',
-      cartItem: updateRes.rows[0],
+      cartItem: require('../direct-upi/service').enabled()?{...updateRes.rows[0],platform_fee:0}:updateRes.rows[0],
     });
   } catch (error) {
     console.error('[CartController] updateCartDates error:', error.message);

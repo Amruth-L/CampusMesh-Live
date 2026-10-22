@@ -42,6 +42,7 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/activity', activityRoutes);
 app.use('/api/rentals', rentalRoutes);
 app.use('/api/payment', paymentRoutes);
+app.use('/api/direct-upi', require('./modules/direct-upi/routes'));
 app.use('/api/payouts', require('./modules/payouts/payout-routes'));
 app.use('/api/payout-scheduler', require('./modules/calls/scheduler.routes').schedulerRouter({ run: require('./modules/payouts/payout-worker').tick, secret: () => process.env.PAYOUTS_SCHEDULER_SECRET }));
 app.use('/api/cart', cartRoutes);

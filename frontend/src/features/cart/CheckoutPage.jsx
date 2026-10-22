@@ -1,3 +1,5 @@
+import DirectCheckout from '../direct-upi/DirectCheckout';
+import useDirectMode from '../direct-upi/useDirectMode';
 import { useState, useRef } from 'react';
 import { CalendarDays, ChevronLeft, LockKeyhole, MapPin, ShieldCheck } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -9,7 +11,7 @@ import { openRazorpayCheckout } from '../../utils/RazorpayService';
 
 const money = value => `₹${Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-export default function Checkout() {
+function Checkout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, api } = useAuth();
@@ -193,3 +195,5 @@ export default function Checkout() {
     </main>
   );
 }
+
+export default function CheckoutMode(){const {mode,error}=useDirectMode();if(error)return <p role="alert" className="p-6">{error}</p>;if(mode===null)return <p className="p-6">Loading checkout…</p>;let legacy=false;try{legacy=Object.keys(sessionStorage).some(k=>k.startsWith('campusmesh:cart-checkout:')&&sessionStorage.getItem(k));}catch{} return mode&&!legacy?<DirectCheckout/>:<Checkout/>;}

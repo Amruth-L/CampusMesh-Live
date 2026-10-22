@@ -24,7 +24,7 @@ async function syncLedger(db, userId = null) {
     FROM delivery_requests d JOIN rentals r ON r.id=d.rental_id JOIN listings l ON l.id=r.listing_id
     LEFT JOIN payments p ON p.rental_id=r.id AND p.status='PAID' AND p.payment_type=CASE WHEN d.task_type='RENTAL_RETURN' THEN 'RETURN_DELIVERY' ELSE 'RENTAL' END
     WHERE ($1::uuid IS NULL OR d.courier_id=$1) AND d.courier_id IS NOT NULL AND l.demo_slug IS NULL
-      AND d.task_type IN ('RENTAL_OUTBOUND','RENTAL_RETURN') AND d.status IN ('COMPLETED','DELIVERED')
+      AND r.payment_method='RAZORPAY' AND d.task_type IN ('RENTAL_OUTBOUND','RENTAL_RETURN') AND d.status IN ('COMPLETED','DELIVERED')
       AND d.delivery_verified_at IS NOT NULL AND d.courier_earning>0 AND r.payment_status='FULLY_PAID'
       AND d.courier_id<>r.borrower_id AND d.courier_id<>r.owner_id
       AND EXISTS(SELECT 1 FROM handover_verifications h WHERE h.delivery_id=d.id

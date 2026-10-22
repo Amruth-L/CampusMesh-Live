@@ -1,3 +1,4 @@
+import {DirectPayments} from '../features/direct-upi/DirectPayments';
 import ReturnDestination from '../features/delivery/components/ReturnDestination';
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { io } from "socket.io-client";
@@ -114,7 +115,7 @@ function ConnectionPill({ state }) {
 
 function Stepper({ rental, delivery }) {
   const status = delivery?.status;
-  const ownerDone = ![
+  const ownerDone = rental?.owner_response==='ACCEPTED' || ![
     "BOOKING_PAYMENT_PENDING",
     "OWNER_PENDING",
     "RENTAL_PAYMENT_COMPLETED",
@@ -364,6 +365,7 @@ export default function RentDetails() {
   }, [delivery?.status, rental?.status, load]);
 
   const payDeposit = async () => {
+    if(rental?.payment_method==='DIRECT_UPI'){document.querySelector('[aria-label="Direct UPI payments"]')?.scrollIntoView({behavior:'smooth'});return;}
     setPayingDeposit(true);
     setError("");
     const token = localStorage.getItem("token");
@@ -666,6 +668,7 @@ export default function RentDetails() {
 
   const blockedCopy = useMemo(() => {
     if (!rental) return null;
+    if (rental.payment_method==='DIRECT_UPI' && ['OWNER_PENDING','BOOKING_PAYMENT_PENDING','DEPOSIT_PENDING'].includes(rental.status)) return null;
     if (rental.is_demo) {
       return {
         title: "Sample listing booking",
@@ -851,6 +854,7 @@ export default function RentDetails() {
           </div>
         </div>
 
+        {rental.payment_method==='DIRECT_UPI' && <DirectPayments rental={rental} onChange={load}/>}
         {/* Listing Header Card */}
         <section className="flex flex-col justify-between gap-5 rounded-[1.7rem] border border-mesh-900/10 bg-[radial-gradient(circle_at_100%_0%,rgba(76,145,82,.18),transparent_35%),white] p-6 shadow-[0_15px_50px_rgba(35,58,40,.07)] md:flex-row md:items-end">
           <div className="flex items-start gap-4">
@@ -979,7 +983,7 @@ export default function RentDetails() {
                 {isBorrower && (
                   <>
                     <button
-                      onClick={() => setShowExtendModal(true)}
+                      disabled={rental.payment_method==='DIRECT_UPI'} title={rental.payment_method==='DIRECT_UPI'?'Contact support for direct-UPI rental extensions':undefined} onClick={() => setShowExtendModal(true)}
                       className="inline-flex items-center gap-2 rounded-xl bg-ink px-4 py-2 text-xs font-extrabold text-white shadow-sm transition hover:bg-mesh-800"
                     >
                       <Calendar size={14} /> Request extension
@@ -1043,7 +1047,7 @@ export default function RentDetails() {
         )}
 
         {/* COMPLETED / DEPOSIT REFUND SUMMARY CARD */}
-        {(isCompleted || rental.status === "CANCELLED") && (
+        {rental.payment_method!=="DIRECT_UPI" && (isCompleted || rental.status === "CANCELLED") && (
           <section className="rounded-[1.5rem] border border-mesh-300 bg-mesh-50 p-6 shadow-sm">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-start gap-4">
@@ -1168,7 +1172,7 @@ export default function RentDetails() {
                       {isBorrower && !isCompleted && (
                         <>
                           <button
-                            onClick={() => setShowExtendModal(true)}
+                            disabled={rental.payment_method==='DIRECT_UPI'} title={rental.payment_method==='DIRECT_UPI'?'Contact support for direct-UPI rental extensions':undefined} onClick={() => setShowExtendModal(true)}
                             className="inline-flex items-center gap-2 rounded-xl border border-ink/15 bg-white px-4 py-2.5 text-xs font-extrabold text-ink transition hover:border-mesh-400 hover:bg-mesh-50"
                           >
                             <Calendar size={15} /> Extend rental
@@ -1797,7 +1801,7 @@ export default function RentDetails() {
               </button>
             </div>
             <p className="mt-1 text-xs text-ink/50">
-              Confirm item receipt from {rental.borrower_name} and process the refundable security deposit.
+              Confirm item receipt from {rental.borrower_name}. {rental.payment_method==='DIRECT_UPI'?'This records the return. You must send the deposit refund separately using UPI.':'Process the refundable security deposit.'}
             </p>
 
             <form onSubmit={handleConfirmReturn} className="mt-5 space-y-4">
@@ -1922,7 +1926,7 @@ export default function RentDetails() {
                 >
                   {inspectLoading
                     ? "Processing refund…"
-                    : "Confirm return & refund"}
+                    : rental.payment_method==='DIRECT_UPI'?'Confirm return — refund separately': 'Confirm return & refund'}
                 </button>
               </div>
             </form>

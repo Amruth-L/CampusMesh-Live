@@ -149,6 +149,7 @@ exports.getPaymentHistory = async (req, res) => {
 
 const checkoutService = require('./checkout.service');
 exports.createCheckoutOrder = async (req, res) => {
+  if (require('../direct-upi/service').enabled()) return res.status(409).json({error:'Submit separate rental requests from the cart. Each lender must accept before direct UPI payment.'});
   try { return res.json(await checkoutService.create(req.user.id, req.body.selected_item_ids)); }
   catch (error) { return res.status(error.status || 500).json({ error: error.message || 'Could not prepare checkout.' }); }
 };

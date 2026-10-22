@@ -162,3 +162,61 @@ cd frontend && npm run build
 cd frontend && npm run lint
 cd frontend && npm run preview
 ```
+
+
+## Direct UPI rental flow
+
+Direct UPI is the default for new deployments. `DIRECT_UPI_ENABLED=true` enables
+it explicitly; setting this flag to `false` retains gateway checkout for new rentals.
+Startup applies migration 017 before accepting requests. This
+selects direct UPI for **new rentals only**. Existing Razorpay rentals and Wish Box
+keep their existing payment method. Do not delete gateway keys or webhook settings
+while those transactions still need reconciliation or refunds.
+
+1. Lenders and delivery students save their own receiving UPI ID under **Payments**.
+   This is self-declared; CampusMesh does not validate bank ownership.
+2. A renter submits dates. The lender accepts or declines without charging anyone.
+3. Acceptance creates a rental-fee request with a snapshot of the recipient UPI ID,
+   exact amount and payment reference. The renter authorises payment in a UPI app.
+4. The renter reports the 12-digit transaction reference. Only the recipient can
+   confirm receipt after checking their bank history. A QR scan, app return,
+   screenshot or reported reference never marks a payment confirmed automatically.
+5. The deposit follows the same separate flow. Handover or delivery matching unlocks
+   only after rental and required deposit receipts are confirmed.
+6. After a courier completes a verified handover, a separate fee request becomes
+   available in Payments for renter → courier. Return delivery has its own request.
+   These direct fees have no platform deduction. Courier fees can remain unpaid:
+   this architecture cannot enforce or automatically collect them.
+7. The lender confirms physical return. The deposit becomes refund pending. Once
+   the renter saves a UPI ID, either party prepares the refund; the lender sends it
+   and the renter confirms actual receipt. No automatic refund takes place.
+
+### Payment records and guarantees
+
+`upi_profiles` contains receiving details. `direct_upi_payments` contains one
+obligation per rental/kind or delivery leg, participant IDs, integer paise, a
+recipient snapshot and receipt status. `direct_upi_events` records actions.
+
+Status flow: `PENDING → REPORTED → CONFIRMED`. A recipient can mark `DISPUTED`
+after checking their history, then confirm later if the credit is found. Disputes
+never generate another payable QR; resolve them through support without paying
+twice. Database locks, unique source keys and unique transaction references guard
+against concurrent confirmation and duplicate requests. Participant-only APIs
+protect payment details. Existing requests retain their recipient snapshot after
+profile edits.
+
+There is no combined cart debit, automated split, bank verification, escrow,
+automatic refund or platform fee in this mode. Damage deductions and extensions
+require support; the app refuses unsupported automated adjustments. Checkout
+requests each cart item independently and retains failed items. Calls still need
+an active provider and credits, independently of payment mode.
+
+### Validation
+
+`backend/test/direct-upi.contract.test.js` covers input validation and, with
+`EVIDENCE_E2E=1` in a disposable `qa_` database schema, request retries, acceptance,
+participant permissions, amount/recipient snapshots, duplicate references,
+manual confirmation, deposit gating, verified courier fees, refund confirmation,
+and exclusion from Razorpay payout records. Never use a production schema for
+these integration tests. A real UPI transfer must additionally be checked in both
+participants' bank histories; passing application tests does not prove bank credit.

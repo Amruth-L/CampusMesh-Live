@@ -68,7 +68,7 @@ async function ensureOutboundDelivery(client, rentalId, requestedStatus = 'WAITI
         dropLocation.id,
         rental.title,
         rental.delivery_fee,
-        Number(rental.delivery_fee) * 0.7,
+        Number(rental.delivery_fee) * (rental.payment_method==='DIRECT_UPI'?1:0.7),
         nextStatus,
         current.id,
       ],
@@ -93,7 +93,7 @@ async function ensureOutboundDelivery(client, rentalId, requestedStatus = 'WAITI
         dropLocation.id,
         rental.title,
         rental.delivery_fee,
-        Number(rental.delivery_fee) * 0.7,
+        Number(rental.delivery_fee) * (rental.payment_method==='DIRECT_UPI'?1:0.7),
         requestedStatus,
       ],
     );
