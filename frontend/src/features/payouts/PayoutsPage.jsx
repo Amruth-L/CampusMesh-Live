@@ -49,6 +49,7 @@ async function request(path = "", method = "GET", body, signal) {
 export default function PayoutsPage() {
   const [data, setData] = useState(null),
     [error, setError] = useState(""),
+    [loadError, setLoadError] = useState(false),
     [notice, setNotice] = useState(""),
     [busy, setBusy] = useState("");
   const [bank, setBank] = useState({
@@ -61,8 +62,9 @@ export default function PayoutsPage() {
     try {
       setData(await request("", "GET", undefined, signal));
       setError("");
+      setLoadError(false);
     } catch (err) {
-      if (err.name !== "AbortError") setError(err.message);
+      if (err.name !== "AbortError") { setError(err.message); setLoadError(true); }
     }
   }, []);
   useEffect(() => {
@@ -73,6 +75,7 @@ export default function PayoutsPage() {
   async function action(key, path, method = "POST", body) {
     setBusy(key);
     setError("");
+    setLoadError(false);
     setNotice("");
     try {
       const result = await request(path, method, body);
@@ -131,12 +134,12 @@ export default function PayoutsPage() {
           className="rounded-xl border border-red-200 bg-red-50 p-4 text-base text-red-800"
         >
           {error}
-          <button
+          {loadError && <button
             className="ml-3 font-semibold underline"
             onClick={() => load()}
           >
             Retry loading
-          </button>
+          </button>}
         </div>
       )}
       {notice && (
@@ -166,7 +169,7 @@ export default function PayoutsPage() {
               />
               <div>
                 <h2 className="text-lg font-semibold">
-                  {accountLabels[account.status]}
+                  {!service.configured ? 'Bank payouts unavailable' : accountLabels[account.status]}
                 </h2>
                 <p className="mt-2 text-base text-ink/70">
                   {!service.configured ? service.message
@@ -177,7 +180,7 @@ export default function PayoutsPage() {
                     : 'Your details have been submitted. Razorpay must verify the bank account before earnings can be transferred.'}
                 </p>
                 <p className={`mt-2 text-sm font-semibold ${service.mode === 'live' ? 'text-mesh-800' : 'text-amber-900'}`}>
-                  {service.mode === 'live' ? 'Live payment mode · real money' : service.mode === 'test' ? 'Test mode · no real money moves' : 'Payment service not configured'}
+                  {service.mode === 'live' ? 'Live collection keys configured · bank payouts require separate approval' : service.mode === 'test' ? 'Test mode · no real money moves' : 'Payment service not configured'}
                 </p>
                 {account.bankLast4 && (
                   <p className="mt-2 text-base font-medium">

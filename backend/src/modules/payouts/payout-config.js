@@ -16,7 +16,9 @@ function payoutConfig(env = process.env) {
       ? mode === 'live'
         ? 'Live payments selected. Complete your bank verification to receive eligible earnings.'
         : 'Test payouts only. No money moves.'
-      : 'Bank payouts are awaiting marketplace service activation. Earnings remain recorded until setup is complete.',
+      : !approved
+        ? 'Razorpay approval for CampusMesh marketplace payouts is pending. Bank verification and automatic payouts are unavailable until approval. Any recorded earnings remain visible here.'
+        : 'Bank payouts are awaiting service configuration. Any recorded earnings remain visible here.',
   };
 }
 const fail = (message, status = 409) => Object.assign(new Error(message), { status });

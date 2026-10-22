@@ -50,3 +50,26 @@ test('onboarding uses the authenticated email and validates consent, matching ba
   }
   assert.throws(() => onboardingPayload({ ...user, email_verified: false }, 'live', input), (error) => error.status === 403);
 });
+
+test('Route access denial is a platform activation error, not invalid bank details', async () => {
+  const options = { env: { RAZORPAY_KEY_ID: 'rzp_live_fixture', RAZORPAY_KEY_SECRET: 'fixture' },
+    fetchImpl: async () => ({ ok: false, status: 400, json: async () => ({ error: {
+      code: 'BAD_REQUEST_ERROR', description: 'Route feature not enabled for the merchant',
+    } }) }) };
+  await assert.rejects(createRecipient({}, 'attempt', options), error => {
+    assert.equal(error.status, 503);
+    assert.equal(error.code, 'ROUTE_NOT_ENABLED');
+    assert.equal(error.definitiveRejection, true);
+    assert.match(error.message, /Changing your bank details will not resolve this/);
+    return true;
+  });
+});
+
+test('live collection credentials do not establish marketplace payout approval', () => {
+  const { payoutConfig } = require('../src/modules/payouts/payout-config');
+  const config = payoutConfig({ RAZORPAY_KEY_ID: 'rzp_live_fixture', RAZORPAY_KEY_SECRET: 'fixture',
+    RAZORPAY_WEBHOOK_SECRET: 'fixture', PAYOUTS_ENABLED: 'true', RAZORPAY_ROUTE_APPROVED: 'false' });
+  assert.equal(config.mode, 'live');
+  assert.equal(config.configured, false);
+  assert.match(config.message, /approval.*pending/);
+});

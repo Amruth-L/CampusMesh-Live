@@ -19,14 +19,18 @@ async function createRecipient(payload, key, { env = process.env, fetchImpl = fe
   const body = await response.json();
   if (!response.ok) {
     // Never echo provider descriptions: they can contain PAN/bank values.
+    const routeDisabled = /^route feature not enabled for the merchant\.?$/i.test(String(body?.error?.description || '').trim());
     const messages = {
-      400: 'Razorpay could not accept these details. Check the legal name, individual PAN, bank number and IFSC. If correct, support must check Route onboarding access.',
+      400: 'Razorpay rejected bank onboarding. Contact CampusMesh support to check the rejected field and merchant permissions before resubmitting.',
       401: 'Razorpay authentication failed. CampusMesh support must check the payment configuration.',
       403: 'Razorpay has not permitted recipient onboarding for this merchant. Contact CampusMesh support.',
       409: 'Razorpay reports an existing account or conflicting setup request. Support must reconcile it before you try different details.',
       429: 'Razorpay is busy. Wait a minute and retry with the same details.',
     };
-    const error = fail(messages[response.status] || 'Razorpay could not confirm setup. Retry with the same details.', response.status === 400 ? 400 : 503);
+    const error = fail(routeDisabled
+      ? 'Razorpay Route is not enabled for CampusMesh. Bank onboarding is unavailable until Razorpay approves marketplace payouts. Changing your bank details will not resolve this.'
+      : messages[response.status] || 'Razorpay could not confirm setup. Retry with the same details.', !routeDisabled && response.status === 400 ? 400 : 503);
+    if (routeDisabled) error.code = 'ROUTE_NOT_ENABLED';
     error.definitiveRejection = [400, 422].includes(response.status);
     throw error;
   }
