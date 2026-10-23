@@ -137,7 +137,7 @@ function createService({
       if (r.payment_method !== 'DIRECT_UPI') throw fail('This rental uses the original payment method.');
       if (r.status === 'DEPOSIT_PENDING' && r.payment_status === 'RENTAL_PAID')
         await intent(c, r, 'DEPOSIT', r.borrower_id, r.owner_id, paise(r.deposit_amount));
-      if (r.status === 'COMPLETED' && r.deposit_status === 'REFUND_PENDING')
+      if (['RETURN_PENDING', 'COMPLETED'].includes(r.status) && r.deposit_status === 'REFUND_PENDING')
         await intent(c, r, 'DEPOSIT_REFUND', r.owner_id, r.borrower_id, paise(r.deposit_amount));
       return { ready: true };
     });
@@ -260,7 +260,7 @@ function createService({
       if (action === 'confirm') {
         if (['RENTAL', 'DEPOSIT'].includes(p.kind)) deliveryId = await advance(c, r);
         if (p.kind === 'DEPOSIT_REFUND')
-          await c.query("UPDATE rentals SET deposit_status='REFUNDED',updated_at=NOW() WHERE id=$1", [r.id]);
+          await c.query("UPDATE rentals SET status='COMPLETED',deposit_status='REFUNDED',completed_at=COALESCE(completed_at,NOW()),updated_at=NOW() WHERE id=$1", [r.id]);
         if (['DELIVERY', 'RETURN_DELIVERY'].includes(p.kind)) {
           const d = (await c.query('SELECT * FROM delivery_requests WHERE id=$1 FOR UPDATE', [p.delivery_id])).rows[0];
           const stage = p.kind === 'RETURN_DELIVERY' ? 'RETURN_RECEIVED' : 'DELIVERY';
@@ -299,7 +299,7 @@ function createService({
       const r = (await c.query('SELECT * FROM rentals WHERE id=$1 FOR UPDATE', [rentalId])).rows[0];
       if (!r || r.owner_id !== user) throw fail('Only the lender can confirm return.', 403);
       if (r.payment_method !== 'DIRECT_UPI') throw fail('This rental uses the original payment method.');
-      if (r.status === 'COMPLETED') return r;
+      if (r.status === 'COMPLETED' || r.deposit_status === 'REFUND_PENDING') return r;
       if (r.status !== 'RETURN_PENDING') throw fail('Request and complete physical return first.');
       if (
         r.return_delivery_id &&
@@ -315,13 +315,18 @@ function createService({
           'Damage deductions need agreement with the renter. Contact support; this flow returns the full deposit.',
         );
       await c.query(
-        "UPDATE rentals SET status='COMPLETED',deposit_status=$2,completed_at=NOW(),updated_at=NOW() WHERE id=$1",
-        [r.id, paise(r.deposit_amount) > 0 ? 'REFUND_PENDING' : 'NOT_REQUIRED'],
+        `UPDATE rentals SET status=$2::text,deposit_status=$3,
+          completed_at=CASE WHEN $2::text='COMPLETED' THEN NOW() ELSE NULL END,updated_at=NOW() WHERE id=$1`,
+        [r.id, paise(r.deposit_amount) > 0 ? 'RETURN_PENDING' : 'COMPLETED', paise(r.deposit_amount) > 0 ? 'REFUND_PENDING' : 'NOT_REQUIRED'],
       );
       await c.query(
         "INSERT INTO transaction_events(rental_id,event_type,actor_user_id) VALUES($1,'RETURN_CONFIRMED',$2)",
         [r.id, user],
       );
+      // Prepare immediately when the renter already supplied a receiving account.
+      // Missing UPI details must not erase the owner's physical-return approval.
+      if (paise(r.deposit_amount) > 0 && (await c.query('SELECT 1 FROM upi_profiles WHERE user_id=$1', [r.borrower_id])).rowCount)
+        await intent(c, r, 'DEPOSIT_REFUND', r.owner_id, r.borrower_id, paise(r.deposit_amount));
       return r;
     });
     await announce(r);

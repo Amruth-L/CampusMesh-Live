@@ -1,3 +1,4 @@
+import ReturnSettlementProgress from './ReturnSettlementProgress';
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
@@ -251,7 +252,7 @@ function PaymentCard({ payment: p, reload }) {
               onClick={() => act("report")}
               className="brand-button disabled:opacity-50"
             >
-              Report payment sent
+              {p.kind === "DEPOSIT_REFUND" ? "Report deposit refund sent" : "Report payment sent"}
             </button>
           </div>
         </div>
@@ -278,7 +279,7 @@ function PaymentCard({ payment: p, reload }) {
               onClick={() => act("confirm")}
               className="brand-button disabled:opacity-50"
             >
-              I received {money(p.amount)}
+              {p.kind === "DEPOSIT_REFUND" ? "Confirm refund received: " : "I received "}{money(p.amount)}
             </button>
             {p.status === "REPORTED" && (
               <button
@@ -322,6 +323,7 @@ function PaymentCard({ payment: p, reload }) {
 }
 export function DirectPayments({ rental = null, deliveryId = null, onChange }) {
   const { api, user } = useAuth();
+  const rentalId = rental?.id;
   const [items, setItems] = useState([]),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
@@ -329,7 +331,7 @@ export function DirectPayments({ rental = null, deliveryId = null, onChange }) {
   const load = useCallback(async () => {
     try {
       const { data } = await api.get("/api/direct-upi/payments", {
-        params: rental ? { rental_id: rental.id } : {},
+        params: rentalId ? { rental_id: rentalId } : {},
       });
       setItems(deliveryId ? data.filter(p => p.delivery_id === deliveryId) : data);
       setError("");
@@ -337,7 +339,7 @@ export function DirectPayments({ rental = null, deliveryId = null, onChange }) {
     } catch (e) {
       setError(e.response?.data?.error || "Could not load direct payments.");
     }
-  }, [api, rental?.id, deliveryId]);
+  }, [api, rentalId, deliveryId]);
   useEffect(() => {
     load();
     const timer = setInterval(load, 15000);
@@ -398,6 +400,9 @@ export function DirectPayments({ rental = null, deliveryId = null, onChange }) {
           )}
         </div>
       )}
+      {rental && !deliveryId && (rental.status?.startsWith('RETURN_') || ['REFUND_PENDING', 'REFUNDED'].includes(rental.deposit_status) || rental.status === 'COMPLETED') && (
+        <ReturnSettlementProgress rental={rental} refund={items.find(p => p.kind === 'DEPOSIT_REFUND')} />
+      )}
       {rental?.deposit_status === "REFUNDED" && (
         <p className="rounded-xl bg-mesh-50 p-4 font-semibold text-mesh-900">
           Deposit refund receipt confirmed by the renter.
@@ -409,7 +414,7 @@ export function DirectPayments({ rental = null, deliveryId = null, onChange }) {
           verified handover. A courier return has its own fee.
         </p>
       )}
-      {rental?.deposit_status === "REFUND_PENDING" && (
+      {rental?.deposit_status === "REFUND_PENDING" && !items.some(p => p.kind === "DEPOSIT_REFUND") && (
         <div className="rounded-xl bg-amber-50 p-4 text-amber-950">
           <p>
             Deposit refund: {money(rental.deposit_amount)}. The renter must save
@@ -444,7 +449,7 @@ export function DirectPayments({ rental = null, deliveryId = null, onChange }) {
           }}
         />
       ))}
-      {loaded && !items.length && (
+      {loaded && !items.length && rental?.deposit_status !== "REFUND_PENDING" && (
         <div className="border-y border-ink/15 py-5">
           <h3 className="font-bold">{deliveryId ? "Set up your receiving UPI account" : "No payment is due yet"}</h3>
           <p className="mt-2 text-sm leading-6 text-ink/75">{deliveryId ? "Save your receiving UPI ID in Payments, then refresh payments here so the borrower can pay your delivery fee." : "A rental payment QR appears after the lender accepts your request. Saving a UPI ID does not create an order or move money."}</p>

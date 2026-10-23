@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { matchesRentalFilter, rentalProgress } from '../src/lib/rental-status.js';
+import { matchesRentalFilter, rentalProgress, returnSettlementProgress } from '../src/lib/rental-status.js';
 test('active rentals and pending handovers stay visible in Active', () => {
   for (const status of ['RENTAL_ACTIVE', 'ACTIVE', 'MATCHING_COURIER', 'RETURN_IN_TRANSIT']) assert.equal(matchesRentalFilter(status, 'Active'), true);
   assert.equal(matchesRentalFilter('COMPLETED', 'Active'), false);
@@ -50,4 +50,19 @@ test('unpaid, stopped, unknown or refunded bookings never invent physical handov
     assert.equal(result.steps.find(step => step.id === 'return').state, 'pending', status);
     assert.equal(result.steps.some(step => step.state === 'current'), false, status);
   }
+});
+
+test('refund receipt gates rental closure after owner inspection and refund report', () => {
+  const rental={status:'RETURN_PENDING',deposit_status:'HELD',deposit_amount:200,payment_method:'DIRECT_UPI'};
+  const step = (r,p) => returnSettlementProgress(r,p).find(s=>s.current)?.key;
+  assert.equal(step(rental),'inspection');
+  const approved={...rental,deposit_status:'REFUND_PENDING'};
+  assert.equal(step(approved),'sent');
+  assert.equal(step(approved,{status:'REPORTED'}),'receipt');
+  assert.equal(step(approved,{status:'DISPUTED'}),'receipt');
+  assert.equal(step({...approved,status:'COMPLETED'},{status:'REPORTED'}),'receipt');
+  assert(returnSettlementProgress({...approved,status:'COMPLETED',deposit_status:'REFUNDED'},{status:'CONFIRMED'}).every(s=>s.done));
+  assert.match(rentalProgress(approved).message,/renter must confirm receipt/);
+  assert.equal(matchesRentalFilter(approved.status,'Completed'),false);
+  assert(returnSettlementProgress({status:'COMPLETED',deposit_status:'NOT_REQUIRED',deposit_amount:0}).every(s=>s.done));
 });

@@ -627,7 +627,7 @@ exports.getRentalStatus = async (req, res) => {
 
     const now = new Date();
     const rentalEndDate = new Date(rental.end_date);
-    const isOverdue = rentalEndDate < now && !['COMPLETED', 'CANCELLED', 'DEPOSIT_REFUNDED'].includes(rental.status);
+    const isOverdue = rental.deposit_status !== 'REFUND_PENDING' && rentalEndDate < now && !['COMPLETED', 'CANCELLED', 'DEPOSIT_REFUNDED'].includes(rental.status);
     const overdueDays = isOverdue
       ? Math.max(1, Math.ceil((now.getTime() - rentalEndDate.getTime()) / (1000 * 60 * 60 * 24)))
       : 0;
@@ -763,8 +763,14 @@ exports.getOwnerRequests = async (req, res) => {
         next_action = 'Show the secure pickup QR or OTP to the courier';
       } else if (row.delivery_status === 'ARRIVED_AT_DESTINATION') {
         next_action = 'Waiting for delivery confirmation';
-      } else if (row.delivery_status === 'COMPLETED' || completedRental) {
+      } else if (row.deposit_status === 'REFUND_PENDING') {
+        next_action = 'Send the deposit refund; wait for renter receipt confirmation';
+      } else if (row.status === 'RETURN_PENDING') {
+        next_action = 'Inspect the returned item and approve the deposit refund';
+      } else if (completedRental) {
         next_action = 'Rental completed';
+      } else if (row.delivery_status === 'COMPLETED') {
+        next_action = row.delivery_task_type === 'RENTAL_RETURN' ? 'Inspect the returned item' : 'Item delivered; rental is active';
       }
 
       if (row.payment_method==='DIRECT_UPI' && !actionable && ['BOOKING_PAYMENT_PENDING','DEPOSIT_PENDING'].includes(row.status)) next_action='Open details to pay or confirm direct UPI receipt';

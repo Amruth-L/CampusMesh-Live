@@ -523,7 +523,7 @@ exports.getRentalDeliveryStatus = async (req, res) => {
     if (!rental) return res.status(403).json({ error: 'You do not have access to this rental delivery.' });
 
     const result = await pool.query(
-      "SELECT dr.*, (SELECT payment_method FROM rentals WHERE id=dr.rental_id) AS payment_method, l.title AS listing_title, l.image_url AS listing_image, l.category AS listing_category, owner.name AS owner_name, owner.hostel AS owner_hostel, renter.name AS renter_name, renter.hostel AS renter_hostel, courier.name AS courier_name, courier.phone_number AS courier_phone, courier.hostel AS courier_hostel FROM delivery_requests dr JOIN rentals r ON r.id=dr.rental_id LEFT JOIN listings l ON l.id=dr.listing_id LEFT JOIN users owner ON owner.id=r.owner_id LEFT JOIN users renter ON renter.id=r.borrower_id LEFT JOIN users courier ON courier.id=dr.courier_id WHERE dr.rental_id=$1 ORDER BY CASE WHEN dr.status IN ('MATCHING_COURIER','COURIER_ASSIGNED','GOING_TO_PICKUP','ARRIVED_AT_PICKUP','IN_TRANSIT','ARRIVED_AT_DESTINATION','RETURN_LOCATION_PENDING','RETURN_MATCHING','RETURN_COURIER_ASSIGNED','RETURN_IN_TRANSIT','DELIVERY_PAYMENT_PENDING') THEN 0 WHEN dr.id=r.outbound_delivery_id THEN 1 WHEN dr.id=r.return_delivery_id THEN 2 ELSE 3 END, dr.created_at DESC LIMIT 1",
+      "SELECT dr.*, (SELECT payment_method FROM rentals WHERE id=dr.rental_id) AS payment_method, l.title AS listing_title, l.image_url AS listing_image, l.category AS listing_category, owner.name AS owner_name, owner.hostel AS owner_hostel, renter.name AS renter_name, renter.hostel AS renter_hostel, courier.name AS courier_name, courier.phone_number AS courier_phone, courier.hostel AS courier_hostel FROM delivery_requests dr JOIN rentals r ON r.id=dr.rental_id LEFT JOIN listings l ON l.id=dr.listing_id LEFT JOIN users owner ON owner.id=r.owner_id LEFT JOIN users renter ON renter.id=r.borrower_id LEFT JOIN users courier ON courier.id=dr.courier_id WHERE dr.rental_id=$1 ORDER BY CASE WHEN dr.status IN ('MATCHING_COURIER','COURIER_ASSIGNED','GOING_TO_PICKUP','ARRIVED_AT_PICKUP','IN_TRANSIT','ARRIVED_AT_DESTINATION','RETURN_LOCATION_PENDING','RETURN_MATCHING','RETURN_COURIER_ASSIGNED','RETURN_IN_TRANSIT','DELIVERY_PAYMENT_PENDING') THEN 0 WHEN dr.id=r.return_delivery_id THEN 1 WHEN dr.id=r.outbound_delivery_id THEN 2 ELSE 3 END, dr.created_at DESC LIMIT 1",
       [rentalId],
     );
 
@@ -561,6 +561,10 @@ exports.getRentalDeliveryStatus = async (req, res) => {
       'SELECT x, y, route_node_id, speed, created_at FROM delivery_location_updates WHERE delivery_id=$1 ORDER BY created_at DESC LIMIT 1',
       [delivery.id],
     );
+    const feeReceipt = (await pool.query(
+      "SELECT status,confirmed_at FROM direct_upi_payments WHERE delivery_id=$1 AND kind=$2 AND recipient_id=$3",
+      [delivery.id, delivery.task_type === 'RENTAL_RETURN' ? 'RETURN_DELIVERY' : 'DELIVERY', delivery.courier_id],
+    )).rows[0];
     const pickupHandover = handovers.rows.find((item) => item.stage === pickupStage);
     const deliveryHandover = handovers.rows.find((item) => item.stage === deliveryStage);
     const nextHandshake = delivery.status === 'COMPLETED'
@@ -619,6 +623,11 @@ exports.getRentalDeliveryStatus = async (req, res) => {
       pickup_location_id: delivery.pickup_location_id,
       destination_location_id: delivery.destination_location_id,
       delivery_fee: delivery.delivery_fee,
+      courier_earning: delivery.courier_earning,
+      payment_method: delivery.payment_method,
+      fee_status: feeReceipt?.status || null,
+      fee_confirmed_at: feeReceipt?.confirmed_at || null,
+      completed_at: delivery.completed_at,
       estimated_time: delivery.estimated_time,
       accepted_at: delivery.accepted_at,
       picked_up_at: delivery.picked_up_at,

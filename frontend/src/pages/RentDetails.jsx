@@ -1,3 +1,4 @@
+import DeliveryProgress from "../features/delivery/components/DeliveryProgress";
 import {DirectPayments} from '../features/direct-upi/DirectPayments';
 import ReturnDestination from '../features/delivery/components/ReturnDestination';
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -77,15 +78,6 @@ const DELIVERY_STATUS = {
   COMPLETED: { label: "Delivered", tone: "green" },
 };
 
-const DELIVERY_STEPS = [
-  { key: "owner", label: "Owner approval" },
-  { key: "deposit", label: "Deposit" },
-  { key: "matching", label: "Find courier" },
-  { key: "pickup", label: "Pickup QR" },
-  { key: "transit", label: "In transit" },
-  { key: "delivered", label: "Delivered" },
-];
-
 const toneClasses = {
   green: "border-mesh-200 bg-mesh-50 text-mesh-800",
   blue: "border-sky-200 bg-sky-50 text-sky-800",
@@ -111,103 +103,6 @@ function ConnectionPill({ state }) {
       <i className={"size-2 rounded-full " + color} />
       {copy}
     </span>
-  );
-}
-
-function Stepper({ rental, delivery }) {
-  const status = delivery?.status;
-  const ownerDone = rental?.owner_response==='ACCEPTED' || ![
-    "BOOKING_PAYMENT_PENDING",
-    "OWNER_PENDING",
-    "RENTAL_PAYMENT_COMPLETED",
-  ].includes(rental?.status);
-  const depositDone =
-    ["MATCHING_COURIER", "COURIER_ASSIGNED", "RENTAL_ACTIVE", "RETURN_MATCHING", "RETURN_PENDING", "COMPLETED", "DEPOSIT_REFUNDED"].includes(rental?.status) ||
-    [
-      "MATCHING_COURIER",
-      "NO_COURIER_AVAILABLE",
-      "COURIER_ASSIGNED",
-      "GOING_TO_PICKUP",
-      "ARRIVED_AT_PICKUP",
-      "IN_TRANSIT",
-      "ARRIVED_AT_DESTINATION",
-      "DELIVERY_PAYMENT_PENDING",
-      "COMPLETED",
-    ].includes(status);
-  const matchingDone = [
-    "COURIER_ASSIGNED",
-    "GOING_TO_PICKUP",
-    "ARRIVED_AT_PICKUP",
-    "IN_TRANSIT",
-    "ARRIVED_AT_DESTINATION",
-    "DELIVERY_PAYMENT_PENDING",
-    "COMPLETED",
-  ].includes(status);
-  const pickupDone = [
-    "IN_TRANSIT",
-    "ARRIVED_AT_DESTINATION",
-    "DELIVERY_PAYMENT_PENDING",
-    "COMPLETED",
-  ].includes(status);
-  const transitDone = [
-    "ARRIVED_AT_DESTINATION",
-    "DELIVERY_PAYMENT_PENDING",
-    "COMPLETED",
-  ].includes(status);
-  const deliveredDone =
-    status === "COMPLETED" ||
-    (!delivery && ["RENTAL_ACTIVE", "RETURN_MATCHING", "RETURN_PENDING", "COMPLETED", "DEPOSIT_REFUNDED"].includes(rental?.status));
-  const done = [
-    ownerDone,
-    depositDone,
-    matchingDone,
-    pickupDone,
-    transitDone,
-    deliveredDone,
-  ];
-  const current = done.findIndex((item) => !item);
-  const activeIndex = current === -1 ? done.length - 1 : current;
-
-  return (
-    <div className="overflow-x-auto rounded-[1.4rem] border border-ink/10 bg-white p-4 shadow-[0_10px_35px_rgba(35,58,40,.06)]">
-      <div className="grid min-w-[610px] grid-cols-6">
-        {DELIVERY_STEPS.map((step, index) => (
-          <div
-            key={step.key}
-            className="relative flex flex-col items-center gap-2 text-center"
-          >
-            {index < DELIVERY_STEPS.length - 1 && (
-              <span
-                className={
-                  "absolute left-1/2 right-[-50%] top-4 h-px " +
-                  (index < activeIndex ? "bg-mesh-500" : "bg-ink/10")
-                }
-              />
-            )}
-            <span
-              className={
-                "relative z-10 grid size-8 place-items-center rounded-full border-2 text-xs font-black " +
-                (done[index]
-                  ? "border-mesh-500 bg-mesh-500 text-white"
-                  : index === activeIndex
-                    ? "border-mesh-500 bg-white text-mesh-700"
-                    : "border-ink/15 bg-paper text-ink/35")
-              }
-            >
-              {done[index] ? <Check size={14} /> : index + 1}
-            </span>
-            <span
-              className={
-                "text-[10px] font-extrabold uppercase tracking-[.08em] " +
-                (index === activeIndex ? "text-mesh-700" : "text-ink/45")
-              }
-            >
-              {step.label}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
   );
 }
 
@@ -649,15 +544,18 @@ export default function RentDetails() {
   const isBorrower = rental?.borrower_id === user?.id;
   const isOwner = rental?.owner_id === user?.id;
   const isDelivery = Boolean(
-    rental?.delivery_requested || Number(rental?.delivery_fee) > 0,
+    rental?.delivery_requested || Number(rental?.delivery_fee) > 0 || delivery?.task_type === 'RENTAL_RETURN',
   );
   const rentalConfig = RENTAL_STATUS[rental?.status] || {
     label: statusLabel(rental?.status),
     tone: "blue",
   };
   const deliveryConfig = DELIVERY_STATUS[delivery?.status];
-  const displayConfig =
-    isDelivery && deliveryConfig && delivery?.status !== "WAITING_FOR_DEPOSIT"
+  const displayConfig = rental?.payment_method === 'DIRECT_UPI' && rental?.deposit_status === 'REFUND_PENDING'
+    ? { label: 'Awaiting deposit refund receipt', tone: 'amber' }
+    : rental?.status?.startsWith('RETURN_') && delivery?.status === 'COMPLETED'
+      ? rentalConfig
+      : isDelivery && deliveryConfig && delivery?.status !== "WAITING_FOR_DEPOSIT"
       ? deliveryConfig
       : rentalConfig;
 
@@ -775,10 +673,20 @@ export default function RentDetails() {
         tone: "amber",
       };
     }
+    if (rental.payment_method === 'DIRECT_UPI' && rental.deposit_status === 'REFUND_PENDING') {
+      return {
+        title: 'Item received · Deposit refund pending',
+        body: isOwner
+          ? 'You approved the return. Send the full deposit refund using the payment request above, then report its transaction reference. The renter must confirm receipt to close this rental.'
+          : 'The owner approved your return. Check the refund below and confirm receipt only after the money reaches your bank. Your rental stays open until then.',
+        action: null,
+        tone: 'amber',
+      };
+    }
     if (rental?.status === "RETURN_PENDING") {
       return {
-        title: "Direct return awaiting owner inspection",
-        body: "The borrower has indicated the item is returned in person. The owner can now inspect the item and release the refundable security deposit.",
+        title: "Returned item awaiting owner inspection",
+        body: "The owner must receive and inspect the item before approving the security deposit refund. The rental closes after the renter confirms refund receipt.",
         action: isOwner ? "Inspect & Confirm Return" : null,
         actionFn: () => setShowInspectionModal(true),
         tone: "amber",
@@ -903,7 +811,7 @@ export default function RentDetails() {
           </button>
         </section>
 
-        {isDelivery && <Stepper rental={rental} delivery={delivery} />}
+        {isDelivery && <DeliveryProgress rental={rental} delivery={delivery} error={deliveryError} />}
 
         {isBorrower && (
           <section className="rounded-2xl border border-ink/15 bg-white p-5">
@@ -1940,7 +1848,7 @@ export default function RentDetails() {
                 >
                   {inspectLoading
                     ? "Processing refund…"
-                    : rental.payment_method==='DIRECT_UPI'?'Confirm return — refund separately': 'Confirm return & refund'}
+                    : rental.payment_method==='DIRECT_UPI'?'Approve return & prepare refund': 'Confirm return & refund'}
                 </button>
               </div>
             </form>

@@ -215,7 +215,13 @@ test(
         await assert.rejects(service.complete(r.id, owner, {}), /physical return/);
         await db.query("UPDATE rentals SET status='RETURN_PENDING' WHERE id=$1", [r.id]);
         await assert.rejects(service.complete(r.id, owner, { damage_amount: 1 }), /Damage deductions/);
+        await assert.rejects(service.complete(r.id, renter, {}), e => e.status === 403);
         await service.complete(r.id, owner, {});
+        await service.complete(r.id, owner, {});
+        let state = (await db.query('SELECT * FROM rentals WHERE id=$1', [r.id])).rows[0];
+        assert.equal(state.status, 'RETURN_PENDING');
+        assert.equal(state.completed_at, null);
+        assert.equal((await db.query("SELECT 1 FROM transaction_events WHERE rental_id=$1 AND event_type='RETURN_CONFIRMED'", [r.id])).rowCount, 1);
         await assert.rejects(service.prepare(r.id, owner), /save their UPI/);
         await service.profile(renter, { upi_id: 'renter@bank', payee_name: 'Renter Fixture', confirm: true });
         await service.prepare(r.id, owner);
@@ -226,12 +232,44 @@ test(
           (await db.query('SELECT deposit_status FROM rentals WHERE id=$1', [r.id])).rows[0].deposit_status,
           'REFUND_PENDING',
         );
+        await assert.rejects(service.act(p.id, renter, 'confirm', { confirm: true }), /Wait for the payer/);
+        await assert.rejects(service.act(p.id, owner, 'confirm', { confirm: true }), e => e.status === 403);
         await service.act(p.id, owner, 'report', { reference: '123456789015', confirm: true });
-        await service.act(p.id, renter, 'confirm', { confirm: true });
+        await service.act(p.id, renter, 'dispute', { confirm: true });
+        state = (await db.query('SELECT * FROM rentals WHERE id=$1', [r.id])).rows[0];
+        assert.equal(state.status, 'RETURN_PENDING');
+        assert.equal(state.deposit_status, 'REFUND_PENDING');
+        assert.equal(state.completed_at, null);
+        await assert.rejects(service.act(p.id, outsider, 'confirm', { confirm: true }), e => e.status === 404);
+        await Promise.all([service.act(p.id, renter, 'confirm', { confirm: true }), service.act(p.id, renter, 'confirm', { confirm: true })]);
+        state = (await db.query('SELECT * FROM rentals WHERE id=$1', [r.id])).rows[0];
+        assert.equal(state.status, 'COMPLETED');
+        assert(state.completed_at);
+        assert.equal((await db.query("SELECT 1 FROM direct_upi_events WHERE payment_id=$1 AND action='CONFIRM'", [p.id])).rowCount, 1);
         assert.equal(
           (await db.query('SELECT deposit_status FROM rentals WHERE id=$1', [r.id])).rows[0].deposit_status,
           'REFUNDED',
         );
+      });
+      await t.test('return approval prepares the refund when UPI exists; zero deposits close without payment', async () => {
+        for (const amount of [200, 0]) {
+          const row = (await db.query(`INSERT INTO rentals(listing_id,owner_id,borrower_id,start_date,end_date,rental_days,rental_fee,booking_amount,deposit_amount,payment_method,status)
+            VALUES($1,$2,$3,CURRENT_DATE,CURRENT_DATE+1,2,100,100,$4,'DIRECT_UPI','RETURN_PENDING') RETURNING *`, [listing,owner,renter,amount])).rows[0];
+          await service.complete(row.id,owner,{});
+          const state = (await db.query('SELECT * FROM rentals WHERE id=$1',[row.id])).rows[0];
+          assert.equal(state.status, amount ? 'RETURN_PENDING' : 'COMPLETED');
+          const refunds=(await service.list(owner,row.id)).filter(p=>p.kind==='DEPOSIT_REFUND');
+          assert.equal(refunds.length,amount ? 1 : 0);
+          if (amount) assert.equal(refunds[0].recipient_id,renter);
+        }
+      });
+      await t.test('migration reopens only unsettled direct refunds and is repeatable', async () => {
+        const row=(await db.query(`INSERT INTO rentals(listing_id,owner_id,borrower_id,start_date,end_date,rental_days,rental_fee,booking_amount,deposit_amount,payment_method,status,deposit_status,completed_at)
+          VALUES($1,$2,$3,CURRENT_DATE,CURRENT_DATE+1,2,100,100,200,'DIRECT_UPI','COMPLETED','REFUND_PENDING',NOW()) RETURNING *`,[listing,owner,renter])).rows[0];
+        const sql=await require('node:fs/promises').readFile(require('node:path').join(__dirname,'../src/db/migrations/019_return_refund_completion.sql'),'utf8');
+        await db.query(sql); await db.query(sql);
+        assert.equal((await db.query('SELECT status FROM rentals WHERE id=$1',[row.id])).rows[0].status,'RETURN_PENDING');
+        assert.equal((await db.query('SELECT status FROM rentals WHERE id=$1',[r.id])).rows[0].status,'COMPLETED');
       });
     } finally {
       await db.end();

@@ -35,7 +35,8 @@ export function rentalProgress(rental) {
     ['handover', 'Handover', handedOver],
     ['return', 'Return', returned],
   ].map(([id, label, complete]) => ({ id, label, state: complete ? 'complete' : current === id ? 'current' : 'pending' }));
-  const message = direct && awaitingOwner && !approved ? 'Request sent. Wait for lender acceptance before paying.'
+  const message = direct && rental.deposit_status === 'REFUND_PENDING' ? 'Item return approved. The lender must refund the deposit and the renter must confirm receipt before this rental closes.'
+    : direct && awaitingOwner && !approved ? 'Request sent. Wait for lender acceptance before paying.'
     : direct && awaitingPayment && !paid ? 'Lender accepted. Pay directly and wait for their receipt confirmation.'
     : stopped ? 'This request has ended. No further handover is scheduled.'
     : returned ? 'Return confirmed. This rental is complete.'
@@ -47,4 +48,27 @@ export function rentalProgress(rental) {
                 : awaitingPayment ? 'Complete the rental payment to submit your request to the owner.'
                   : 'Open Details to check the latest status. Payment alone does not confirm item handover.';
   return { steps, message, awaitingOwner: awaitingOwner && (paid || direct) && !approved };
+}
+
+// Physical return and bank receipt are distinct checkpoints in direct UPI rentals.
+export function returnSettlementProgress(rental, refund) {
+  const ownerApproved = ['REFUND_PENDING', 'REFUNDED'].includes(rental.deposit_status) || rental.status === 'COMPLETED';
+  const required = Number(rental.deposit_amount) > 0;
+  const receipt = rental.deposit_status === 'REFUNDED' && refund?.status === 'CONFIRMED';
+  const steps = [
+    ['requested', 'Return requested', true],
+    ['inspection', 'Owner received & inspected', ownerApproved],
+    ...(required ? [
+      ['sent', 'Owner sent refund', ['REPORTED', 'DISPUTED', 'CONFIRMED'].includes(refund?.status)],
+      ['receipt', 'Renter confirmed receipt', receipt],
+    ] : []),
+    ['closed', 'Rental closed', rental.status === 'COMPLETED' && (!required || receipt)],
+  ];
+  let pending = false;
+  return steps.map(([key, label, evidence]) => {
+    const done = !pending && evidence;
+    const current = !pending && !done;
+    if (!done) pending = true;
+    return { key, label, done, current };
+  });
 }

@@ -54,6 +54,12 @@ test('direct delivery completes only after courier receipt, for both rental legs
       await assert.rejects(service.act(payment.id,courier,'confirm',{confirm:true}),/Wait for the payer/);
       await service.act(payment.id,renter,'report',{reference:String(++reference),confirm:true});
       assert.equal((await state()).status,'DELIVERY_PAYMENT_PENDING');
+      const tracking=await invoke(controller.getRentalDeliveryStatus,{params:{rentalId:f.rental.id},user:{id:renter}});
+      assert.equal(tracking.code,200,JSON.stringify(tracking.data));
+      assert.equal(tracking.data.fee_status,'REPORTED');
+      assert.equal(tracking.data.payment_method,'DIRECT_UPI');
+      assert.equal(Number(tracking.data.courier_earning),10);
+      assert(tracking.data.delivery_verified_at);
       await assert.rejects(service.act(payment.id,renter,'confirm',{confirm:true}),e=>e.status===403);
       await assert.rejects(service.act(payment.id,stranger,'confirm',{confirm:true}),e=>e.status===404);
       await service.act(payment.id,courier,'dispute',{confirm:true});
@@ -63,6 +69,16 @@ test('direct delivery completes only after courier receipt, for both rental legs
       await Promise.all([service.act(payment.id,courier,'confirm',{confirm:true}),service.act(payment.id,courier,'confirm',{confirm:true})]);
       assert.equal((await state()).status,'COMPLETED');
       assert((await state()).completed_at);
+      const completed=await invoke(controller.getRentalDeliveryStatus,{params:{rentalId:f.rental.id},user:{id:renter}});
+      assert.equal(completed.data.fee_status,'CONFIRMED');
+      assert(completed.data.completed_at);
+      if(type==='RENTAL_RETURN') {
+        const outbound=(await db.query(`INSERT INTO delivery_requests(rental_id,courier_id,seller_id,customer_id,pickup_location,task_type,status)
+          VALUES($1,$2,$3,$4,'Library','RENTAL_OUTBOUND','COMPLETED') RETURNING id`,[f.rental.id,courier,owner,renter])).rows[0];
+        await db.query('UPDATE rentals SET outbound_delivery_id=$2 WHERE id=$1',[f.rental.id,outbound.id]);
+        const latest=await invoke(controller.getRentalDeliveryStatus,{params:{rentalId:f.rental.id},user:{id:renter}});
+        assert.equal(latest.data.delivery_id,f.task.id,'completed return must remain the selected journey');
+      }
       assert.equal((await db.query("SELECT 1 FROM transaction_events WHERE delivery_id=$1 AND event_type='DELIVERY_PAYMENT_CONFIRMED'",[f.task.id])).rowCount,1);
       if(type==='RENTAL_RETURN') {
         assert.equal((await db.query('SELECT status FROM rentals WHERE id=$1',[f.rental.id])).rows[0].status,'RETURN_PENDING');
