@@ -29,7 +29,7 @@ export default function DeliveryNotifications() {
         api.get("/api/rentals/my-listings-requests"),
       ]);
       const data = delivery.data;
-      setReturns((ownerInbox.data.requests || []).filter(request => request.return_actionable));
+      setReturns((ownerInbox.data.requests || []).filter(request => request.return_actionable || request.actionable));
       const wishList = [
         ...mine.data.requests
           .filter((w) =>
@@ -91,6 +91,7 @@ export default function DeliveryNotifications() {
       "delivery:assigned",
       "delivery:completed",
       "rental:status",
+      "rental:request",
       "wish:new",
       "wish:status",
     ].forEach((event) => socket.on(event, load));
@@ -153,7 +154,7 @@ export default function DeliveryNotifications() {
   return (
     <div ref={panel}>
       <button
-        aria-label={`Delivery notifications, ${pending.length + wishes.length + returns.length} pending`}
+        aria-label={`Notifications, ${pending.length + wishes.length + returns.length} pending`}
         aria-expanded={open}
         aria-controls="delivery-notifications"
         onClick={() => {
@@ -204,8 +205,10 @@ export default function DeliveryNotifications() {
               </p>
             )}
             {returns.map(request => <Link key={request.id} to={`/rent-details/${request.id}`} onClick={() => setOpen(false)} className="block rounded-lg border border-amber-200 bg-amber-50 p-4">
-              <b className="text-sm">Return destination needed</b>
-              <p className="mt-1 text-xs">{request.borrower_name} is returning {request.listing_title}. Choose where to receive it before couriers are notified.</p>
+              <b className="text-sm">{request.return_actionable ? "Return destination needed" : "Rental request needs your response"}</b>
+              <p className="mt-1 text-xs">{request.return_actionable
+                ? `${request.borrower_name} is returning ${request.listing_title}. Choose where to receive it before couriers are notified.`
+                : `${request.borrower_name} requested ${request.listing_title}. Open the request to accept or decline.`}</p>
             </Link>)}
             {wishes.map((w) => (
               <Link

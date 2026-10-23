@@ -25,7 +25,11 @@ export function UpiProfile() {
     [name, setName] = useState(""),
     [confirm, setConfirm] = useState(false),
     [message, setMessage] = useState(""),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [saved, setSaved] = useState(null),
+    [editing, setEditing] = useState(false),
+    [loading, setLoading] = useState(true),
+    [loadError, setLoadError] = useState(false);
   useEffect(() => {
     let active = true;
     api
@@ -34,12 +38,15 @@ export function UpiProfile() {
         if (active && data) {
           setUpi(data.upi_id);
           setName(data.payee_name);
+          setSaved(data);
         }
       })
       .catch(() => {
-        if (active)
+        if (active) {
+          setLoadError(true);
           setMessage("Could not load your UPI details. Reload before editing.");
-      });
+        }
+      }).finally(() => { if (active) setLoading(false); });
     return () => {
       active = false;
     };
@@ -49,7 +56,7 @@ export function UpiProfile() {
     setBusy(true);
     setMessage("");
     try {
-      await api.put("/api/direct-upi/profile", {
+      const { data } = await api.put("/api/direct-upi/profile", {
         upi_id: upi,
         payee_name: name,
         confirm,
@@ -57,6 +64,8 @@ export function UpiProfile() {
       setMessage(
         "UPI details saved. Existing payment requests keep their original recipient details.",
       );
+      setSaved(data);
+      setEditing(false);
       setConfirm(false);
     } catch (e) {
       setMessage(e.response?.data?.error || "Could not save UPI details.");
@@ -64,6 +73,32 @@ export function UpiProfile() {
       setBusy(false);
     }
   }
+  if (loading) return <p role="status">Loading your receiving UPI details…</p>;
+  if (loadError) return <p role="alert" className="text-red-700">{message} <button className="underline" onClick={() => window.location.reload()}>Reload</button></p>;
+  if (saved && !editing) return (
+    <section className="rounded-xl border border-mesh-200 bg-white p-5 sm:p-6" aria-label="Saved receiving UPI account">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-bold text-mesh-800" role="status">Receiving UPI details saved</h2>
+          <p className="mt-3 font-semibold">{saved.payee_name}</p>
+          <p className="mt-1 break-all">{saved.upi_id}</p>
+        </div>
+        <button className="secondary-button" onClick={() => { setEditing(true); setConfirm(false); setMessage(""); }}>Edit UPI details</button>
+      </div>
+      <p className="mt-4 text-sm leading-6 text-ink/75">Setup is complete. No payment has been made by saving these details. The payer must authorise a transfer in their UPI app, and you confirm receipt after checking your bank.</p>
+      <p className="mt-2 text-sm text-ink/75">CampusMesh has not verified this UPI account with your bank.</p>
+      <div className="mt-5 border-t border-ink/15 pt-5">
+        <h3 className="font-bold">Next: open a rental or delivery</h3>
+        <p className="mt-2 text-sm leading-6">To receive rent, publish your own item and accept another student's request in the lending dashboard. The renter will then see your payment QR in Rental details. Delivery fees appear after verified handover.</p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <Link to="/add-listing" className="brand-button">List an item</Link>
+          <Link to="/lend" className="secondary-button">Lending requests</Link>
+          <Link to="/account/rentals" className="secondary-button">My rentals</Link>
+          <Link to="/delivery" className="secondary-button">Delivery dashboard</Link>
+        </div>
+      </div>
+    </section>
+  );
   return (
     <section className="rounded-xl border border-ink/15 bg-white p-5 sm:p-6">
       <h2 className="text-xl font-bold">Your receiving UPI account</h2>
@@ -79,7 +114,7 @@ export function UpiProfile() {
             required
             maxLength={100}
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => { setName(e.target.value); setConfirm(false); setMessage(""); }}
             className="rounded-lg border border-ink/25 p-3"
             autoComplete="name"
           />
@@ -90,7 +125,7 @@ export function UpiProfile() {
             required
             value={upi}
             maxLength={193}
-            onChange={(e) => setUpi(e.target.value)}
+            onChange={(e) => { setUpi(e.target.value); setConfirm(false); setMessage(""); }}
             className="rounded-lg border border-ink/25 p-3"
             placeholder="name@bank"
             autoCapitalize="none"
@@ -108,9 +143,10 @@ export function UpiProfile() {
           This is my UPI account. I checked the ID and receiving name in my UPI
           app.
         </label>
-        <button disabled={busy} className="brand-button disabled:opacity-50">
-          {busy ? "Saving…" : "Save UPI details"}
+        <button disabled={busy || !confirm} className="brand-button disabled:opacity-50">
+          {busy ? "Saving…" : saved ? "Save changes" : "Save UPI details"}
         </button>
+        {saved && <button type="button" className="secondary-button" disabled={busy} onClick={() => { setName(saved.payee_name); setUpi(saved.upi_id); setEditing(false); setMessage(""); }}>Cancel editing</button>}
       </form>
       {message && (
         <p role="status" className="mt-3 text-sm">
@@ -409,10 +445,14 @@ export function DirectPayments({ rental = null, onChange }) {
         />
       ))}
       {loaded && !items.length && (
-        <p className="py-4 text-sm text-ink/70">
-          No direct payments are due yet. Accepted rentals and completed
-          delivery jobs appear here.
-        </p>
+        <div className="border-y border-ink/15 py-5">
+          <h3 className="font-bold">No payment is due yet</h3>
+          <p className="mt-2 text-sm leading-6 text-ink/75">A rental payment QR appears after the lender accepts your request. Saving a UPI ID does not create an order or move money.</p>
+          <div className="mt-3 flex flex-wrap gap-3">
+            <Link to="/marketplace" className="secondary-button">Browse items to rent</Link>
+            <Link to="/account/rentals" className="secondary-button">Open my rental requests</Link>
+          </div>
+        </div>
       )}
       <Link
         to="/payouts"
