@@ -64,7 +64,7 @@ export default function VoiceWelcomePrompt() {
       fetchAudio: async (item, signal) => {
         const { data } = await api.post(
           "/api/voice/announcements/audio",
-          { kind: item.kind, rentalId: item.rentalId },
+          { kind: item.kind, rentalId: item.rentalId, eventId: item.eventId },
           {
             responseType: "arraybuffer",
             signal,
@@ -74,6 +74,7 @@ export default function VoiceWelcomePrompt() {
         return data;
       },
     });
+    let cursor = null;
     let polling = false;
     let configured = false;
     const poll = async () => {
@@ -83,6 +84,7 @@ export default function VoiceWelcomePrompt() {
         document.hidden ||
         conversation ||
         p.muted ||
+        p.queue.length > 70 ||
         !navigator.onLine
       )
         return;
@@ -109,12 +111,13 @@ export default function VoiceWelcomePrompt() {
             },
           ]);
         const { data } = await api.get("/api/voice/announcements", {
-          params: { since: session.since },
+          params: { since: session.since, cursor },
           signal: abort.signal,
         });
         if (!abort.signal.aborted) {
           setAvailability("ready");
           p.enqueue(data.updates);
+          cursor = data.nextCursor || cursor;
         }
       } catch {
         if (!abort.signal.aborted) setAvailability("offline");

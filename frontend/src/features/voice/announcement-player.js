@@ -115,6 +115,14 @@ export class AnnouncementPlayer {
     } catch (e) {
       if (generation !== this.generation) return;
       this.active = false;
+      // An offer can expire, a due date can change, or payment can be confirmed
+      // while audio waits in the queue. Skip stale events without blocking later ones.
+      if ([404, 410].includes(e.response?.status)) {
+        this.remember(item.id);
+        this.queue.shift();
+        this.update("idle");
+        return this.pump();
+      }
       this.update(
         e.name === "NotAllowedError" ? "blocked" : "error",
         "Voice could not play. Your account and booking are unaffected.",

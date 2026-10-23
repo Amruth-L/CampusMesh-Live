@@ -35,9 +35,14 @@ function createVoiceRouter({ authenticate = auth, db, service, announcements } =
   };
   router.get(
     '/announcements',
-    handle(async (req, res) =>
-      res.json({ updates: await announcements.updates(req.user.id, req.query.since) }),
-    ),
+    handle(async (req, res) => {
+      const updates = await announcements.updates(req.user.id, req.query.since, req.query.cursor);
+      const last = updates.at(-1);
+      const nextCursor = last
+        ? Buffer.from(JSON.stringify([last.occurredAt, last.id])).toString('base64url')
+        : req.query.cursor || null;
+      res.json({ updates, nextCursor });
+    }),
   );
   router.post(
     '/announcements/audio',

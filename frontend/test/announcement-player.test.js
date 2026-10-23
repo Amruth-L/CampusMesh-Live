@@ -117,3 +117,19 @@ test("network failure waits for explicit retry, never marks an unheard update de
   assert.equal(f.state().phase, "speaking");
   f.player.dispose();
 });
+
+test("expired offers and superseded payment updates cannot block later announcements", async () => {
+  const f = fixture(async (event) => {
+    if (event.id === "expired") throw { response: { status: 404 } };
+    return new ArrayBuffer(8);
+  });
+  await f.player.prime();
+  f.player.enqueue([{ id: "expired", kind: "event" }, item]);
+  await tick();
+  assert.equal(f.sources.length, 1);
+  assert.equal(f.state().phase, "speaking");
+  assert.equal(f.state().item.id, item.id);
+  f.player.enqueue([{ id: "expired", kind: "event" }]);
+  assert.equal(f.player.queue.length, 1);
+  f.player.dispose();
+});

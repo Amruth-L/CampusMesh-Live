@@ -405,7 +405,7 @@ exports.updateStatus = async (req, res) => {
             ? ', completed_at = NOW()'
             : '';
     await client.query(`UPDATE delivery_requests SET status = $1, updated_at = NOW()${timestamp} WHERE id = $2`, [next, id]);
-    if (delivery.rental_id) {
+    if (delivery.rental_id || delivery.wish_request_id || delivery.xerox_request_id) {
       await client.query(
         `INSERT INTO transaction_events (rental_id, delivery_id, xerox_request_id, event_type, actor_user_id, metadata)
          VALUES ($1, $2, $3, $4, $5, $6)`,

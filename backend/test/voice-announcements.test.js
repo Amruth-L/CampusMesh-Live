@@ -44,8 +44,8 @@ test('bounded catch-up, provider failures, concurrency cache and replay limits',
     calls = 0;
   const now = Date.now();
   const db = {
-    query: async (_, args) => {
-      since = args[2];
+    query: async (sql, args) => {
+      if (sql.includes('booking_confirmed_at')) since = args[2];
       return { rows: [] };
     },
   };
@@ -66,7 +66,7 @@ test('bounded catch-up, provider failures, concurrency cache and replay limits',
     service.audio('other', { kind: 'welcome' }),
   ]);
   assert.equal(calls, 1);
-  for (let i = 0; i < 19; i++) await service.audio('user', { kind: 'welcome' });
+  for (let i = 0; i < 59; i++) await service.audio('user', { kind: 'welcome' });
   await assert.rejects(service.audio('user', { kind: 'welcome' }), { status: 429 });
   const broken = createAnnouncements({
     db,

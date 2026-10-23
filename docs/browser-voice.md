@@ -8,16 +8,19 @@ allows the microphone and hears the Deepgram greeting. Speech is continuous;
 users can interrupt, mute their microphone, mute playback, type a question while
 the assistant is listening, or end the session. Login/signup and OTP stay unchanged.
 
-## Automatic welcome and booking updates
+## Automatic workflow announcements
 
 - After email verification and successful sign-in, a welcome message plays automatically when audio is allowed. Signing up alone does not bypass email verification or request microphone access.
 - The sign-in click/key gesture primes Web Audio. Browsers can still block audio; **Tap to hear** is the honest fallback. Audio is never forced through a browser restriction.
-- A visible tab checks for newly confirmed bookings every 15 seconds. The backend requires the signed-in borrower, `FULLY_PAID`, a confirmation timestamp, an eligible active status and a real (non-demo) listing. Direct UPI reports remain pending until the recipient confirms rent and any required deposit. Razorpay callbacks must already have passed the existing server verification.
+- A visible tab checks for updates every 15 seconds. The feed includes lender decisions, payment reports and receipt confirmations, eligible courier offers, assignment, condition photos, pickup, handover, return destination/inspection, deposit refunds, extensions, Wish Box status and return reminders. Only the involved renter/lender/courier receives private events. Wish Box open requests are also announced to students who enabled Wish Box availability. Expired offers and superseded payment/progress states are skipped.
+- Confirmed booking speech stays separate from payment reports. The backend requires the signed-in borrower, `FULLY_PAID`, a confirmation timestamp, an eligible active status and a real (non-demo) listing. Direct UPI reports remain pending until the recipient confirms rent and any required deposit. Razorpay callbacks must already have passed the existing server verification.
 - This reads confirmed state and does not alter payment, lender approval, delivery or refund transitions. No success message is based on navigating to a success URL.
+- The event feed reuses committed `transaction_events`, `direct_upi_events` and current offer/Wish Box/refund records. It changes no business state and needs no database migration. Immutable event IDs prevent repeated polls from speaking again. Pagination preserves PostgreSQL microsecond timestamps so simultaneous events cannot loop or be lost through millisecond rounding. Pages contain up to 20 updates, and playback queues up to 100. Current-state notifications can be superseded before playback; the audio endpoint rechecks them and the player skips stale entries.
+- Active, fully paid rentals also get one browser reminder per item/date at four days, one day, the due date and each overdue day, using Asia/Kolkata calendar dates. Changing the due date or starting a return invalidates queued reminders. These reminders can appear when opening the site; ordinary event catch-up starts with the current sign-in session.
 - Refreshes and polls do not replay heard updates. History is per account on this browser (last 300 events); clearing site storage or using another device resets this history. Catch-up is bounded to 24 hours and the current sign-in session.
 - **Mute updates** stops playback and saves the preference for this account/browser. **Dismiss** skips the current message. Hidden tabs, logout, offline mode, and entering the conversation page stop announcements; the conversation never competes with a background announcement.
-- `/api/voice/announcements` and `/api/voice/announcements/audio` require authenticated, email-verified accounts. The audio endpoint accepts only a welcome or an owned confirmed booking, never arbitrary text. It uses Aura-2 Thalia via Deepgram TTS, with no microphone or separate OpenAI key.
-- Generic welcome/booking MP3s are cached for one hour in memory (two entries, at most 1 MB each), with coalesced requests and 20 requests/user/10 minutes. No names or booking data go to TTS. Responses are private/no-store. Provider failure does not affect login or booking.
+- `/api/voice/announcements` and `/api/voice/announcements/audio` require authenticated, email-verified accounts. The audio endpoint accepts only a welcome, an owned confirmed booking, or an authenticated event ID, never arbitrary text. It rechecks event access before serving cached audio. It uses Aura-2 Thalia via Deepgram TTS, with no microphone or separate OpenAI key.
+- Fixed-script MP3s are cached by script for one hour in memory (at most 32 entries, 1 MB each), with coalesced requests and 60 requests/user/10 minutes. Different milestones never reuse the wrong script. These limits protect provider credit; a rate-limited user can retry after the window expires. No names or booking data go to TTS. Responses are private/no-store. Provider failure does not affect login or booking.
 - This does not speak with the website closed, dial a phone, or create unattended due-date calls.
 
 ## Configure locally and on Render
@@ -123,7 +126,7 @@ PCM/text forwarding, credential redaction, error shutdown, microphone denial,
 late permission results, mute, playback and interruption. The gated
 `backend/test/browser-voice.contract.test.js` also verifies account isolation with
 real database queries; run only in a disposable `qa_evidence_*` schema with
-`VOICE_E2E=1` and no provider keys. No schema migration is needed for voice.
+`VOICE_E2E=1` and no provider keys. The gated `backend/test/voice-events.contract.test.js` checks event ownership, payment-report versus receipt semantics, pickup supersession, pagination, due dates, rollback, expired offers and Wish Box visibility. Run it with `VOICE_E2E=1` in a disposable `qa_evidence_*` schema and no provider keys. No schema migration is needed for voice.
 
 Before declaring live voice verified, test with an actual configured account:
 
@@ -137,7 +140,7 @@ Before declaring live voice verified, test with an actual configured account:
    do not leave an open provider connection.
 8. Repeat on current desktop Chrome/Edge and mobile Safari/Chrome over HTTPS.
 
-For announcement verification, complete a non-demo rental through the existing payment flow. A pending/failed payment must stay silent. After rent and any required deposit are confirmed, the borrower hears one update within 15 seconds in a visible tab. Refresh and confirm it does not repeat. Try muted, offline, blocked autoplay, logout during loading, and switching accounts. Test backend transitions in an isolated schema; never mark real payments paid for testing.
+For announcement verification, complete a non-demo rental through the existing payment flow. A pending/reported payment must never speak a payment-success message; reports instead explain that recipient confirmation is pending. After rent and any required deposit are confirmed, the borrower hears one update within 15 seconds in a visible tab. Refresh and confirm it does not repeat. Try muted, offline, blocked autoplay, logout during loading, and switching accounts. Test backend transitions in an isolated schema; never mark real payments paid for testing.
 
 ## Official references and costs
 
@@ -152,3 +155,9 @@ At implementation, the published Standard managed Voice Agent rate is $0.075/min
 with advertised $200 signup credit for eligible new accounts. Verify current
 pricing and actual credit in the console before relying on either. The integration
 does not enable auto-recharge, buy credits, or place telephone calls.
+
+### Workflow announcement checks
+
+Use separate renter, lender and courier sessions with voice enabled. Request a real student listing, accept it, report/confirm each direct payment, accept the courier offer, upload condition photos, verify pickup and handover, confirm the delivery fee, request return, confirm the destination, verify return handover, inspect the item, and report/confirm the deposit refund. Each participant should hear their relevant update within the polling/playback delay. Refund reporting must say pending until the renter confirms receipt; physical handover must not say the delivery fee is paid. Unrelated accounts must receive neither the event nor its audio. For a due-date test use an isolated fixture rather than altering real rentals.
+
+Voice is informational: it cannot verify a bank transfer, approve a rental, or complete a delivery. Browser announcements require an open, visible tab, enabled audio, working network and available Deepgram credit. They do not run with the site closed. Existing microphone consent and phone-call configuration remain separate.
