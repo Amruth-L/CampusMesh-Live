@@ -3,7 +3,7 @@ const { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } = re
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { optimizePhoto, storageConfig } = require('../listings/photo-storage');
 
-function createEvidenceStorage({ env = process.env, clientFactory = options => new S3Client(options), sign = getSignedUrl } = {}) {
+function createEvidenceStorage({ env = process.env, clientFactory = options => new S3Client(options), sign = getSignedUrl, logger = console } = {}) {
   let client;
   const setup = () => {
     const config = storageConfig(env);
@@ -17,11 +17,19 @@ function createEvidenceStorage({ env = process.env, clientFactory = options => n
   };
   const put = async (deliveryId, stage, body) => {
     const config = setup();
-    const key = `handovers/${deliveryId}/${stage}/${randomUUID()}.webp`;
+    // Reuse the app's permitted photo namespace. This nested path cannot match
+    // the public listing-photo route (which accepts only two UUID segments).
+    // Evidence URLs are issued only after the delivery participant check.
+    const key = `listings/handovers/${deliveryId}/${stage}/${randomUUID()}.webp`;
     try {
       await send(new PutObjectCommand({ Bucket: config.bucket, Key: key, Body: body,
         ContentType: 'image/webp', CacheControl: 'private, no-store', ServerSideEncryption: 'AES256' }));
-    } catch {
+    } catch (error) {
+      logger.error('[handover-photos] upload failed', {
+        name: error.name,
+        status: error.$metadata?.httpStatusCode,
+        requestId: error.$metadata?.requestId,
+      });
       await remove(key).catch(() => {});
       throw Object.assign(new Error('Photo upload failed. Retry before confirming handover.'), { status: 503 });
     }
