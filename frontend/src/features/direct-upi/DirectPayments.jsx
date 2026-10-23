@@ -20,7 +20,7 @@ const states = {
   CONFIRMED: "Receipt confirmed by recipient",
   DISPUTED: "Receipt disputed — do not pay again",
 };
-export function UpiProfile() {
+export function UpiProfile({ compact = false, onSaved } = {}) {
   const { api } = useAuth();
   const [upi, setUpi] = useState(""),
     [name, setName] = useState(""),
@@ -68,6 +68,7 @@ export function UpiProfile() {
       setSaved(data);
       setEditing(false);
       setConfirm(false);
+      await onSaved?.();
     } catch (e) {
       setMessage(e.response?.data?.error || "Could not save UPI details.");
     } finally {
@@ -88,7 +89,7 @@ export function UpiProfile() {
       </div>
       <p className="mt-4 text-sm leading-6 text-ink/75">Setup is complete. No payment has been made by saving these details. The payer must authorise a transfer in their UPI app, and you confirm receipt after checking your bank.</p>
       <p className="mt-2 text-sm text-ink/75">CampusMesh has not verified this UPI account with your bank.</p>
-      <div className="mt-5 border-t border-ink/15 pt-5">
+      {!compact && <div className="mt-5 border-t border-ink/15 pt-5">
         <h3 className="font-bold">Next: open a rental or delivery</h3>
         <p className="mt-2 text-sm leading-6">To receive rent, publish your own item and accept another student's request in the lending dashboard. The renter will then see your payment QR in Rental details. Delivery fees appear after verified handover.</p>
         <div className="mt-4 flex flex-wrap gap-3">
@@ -97,7 +98,7 @@ export function UpiProfile() {
           <Link to="/account/rentals" className="secondary-button">My rentals</Link>
           <Link to="/delivery" className="secondary-button">Delivery dashboard</Link>
         </div>
-      </div>
+      </div>}
     </section>
   );
   return (
@@ -414,24 +415,20 @@ export function DirectPayments({ rental = null, deliveryId = null, onChange }) {
           verified handover. A courier return has its own fee.
         </p>
       )}
+      {rental?.return_workflow?.requested && Number(rental.deposit_amount)>0 && !rental.return_workflow.refund_account_ready && user.id===rental.borrower_id && (
+        <div className="space-y-3">
+          <p className="text-sm font-semibold">Add your receiving UPI account here for the {money(rental.deposit_amount)} deposit refund. This does not pay anyone or approve the item condition.</p>
+          <UpiProfile compact onSaved={async () => { await load(); await onChange?.(); }} />
+        </div>
+      )}
       {rental?.deposit_status === "REFUND_PENDING" && !items.some(p => p.kind === "DEPOSIT_REFUND") && (
         <div className="rounded-xl bg-amber-50 p-4 text-amber-950">
-          <p>
-            Deposit refund: {money(rental.deposit_amount)}. The renter must save
-            their receiving UPI ID in{" "}
-            <Link to="/payouts" className="underline">
-              Payments
-            </Link>
-            , then either party can prepare the refund request below. The lender
-            sends it manually.
-          </p>
-          <button
-            disabled={busy}
-            onClick={() => run("prepare")}
-            className="secondary-button mt-3"
-          >
-            Prepare deposit refund
-          </button>
+          <p>Deposit refund: {money(rental.deposit_amount)}.</p>
+          <p className="mt-2 text-sm leading-6">{rental.return_workflow?.refund_account_ready
+            ? 'The receiving account is ready. Refresh payments to load the refund request. The lender sends the refund and the renter confirms bank receipt.'
+            : user.id===rental.borrower_id
+              ? 'Save your own receiving UPI details in the form above. Your refund request will appear automatically after the owner approves the item condition.'
+              : 'Waiting for the renter to add their receiving UPI details on this rental page. Their refund request will appear automatically; you cannot enter bank details on their behalf.'}</p>
         </div>
       )}
       {error && (
@@ -449,7 +446,7 @@ export function DirectPayments({ rental = null, deliveryId = null, onChange }) {
           }}
         />
       ))}
-      {loaded && !items.length && rental?.deposit_status !== "REFUND_PENDING" && (
+      {loaded && !items.length && !rental?.return_workflow?.requested && rental?.deposit_status !== "REFUND_PENDING" && (
         <div className="border-y border-ink/15 py-5">
           <h3 className="font-bold">{deliveryId ? "Set up your receiving UPI account" : "No payment is due yet"}</h3>
           <p className="mt-2 text-sm leading-6 text-ink/75">{deliveryId ? "Save your receiving UPI ID in Payments, then refresh payments here so the borrower can pay your delivery fee." : "A rental payment QR appears after the lender accepts your request. Saving a UPI ID does not create an order or move money."}</p>

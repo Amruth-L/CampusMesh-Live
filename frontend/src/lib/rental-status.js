@@ -52,16 +52,21 @@ export function rentalProgress(rental) {
 
 // Physical return and bank receipt are distinct checkpoints in direct UPI rentals.
 export function returnSettlementProgress(rental, refund) {
-  const ownerApproved = ['REFUND_PENDING', 'REFUNDED'].includes(rental.deposit_status) || rental.status === 'COMPLETED';
+  const ownerApproved = rental.return_workflow?.inspected || ['REFUND_PENDING', 'REFUNDED'].includes(rental.deposit_status) || rental.status === 'COMPLETED';
   const required = Number(rental.deposit_amount) > 0;
   const receipt = rental.deposit_status === 'REFUNDED' && refund?.status === 'CONFIRMED';
   const steps = [
     ['requested', 'Return requested', true],
+    ...(rental.return_workflow?.courier_return ? [
+      ['accepted', 'Owner accepted return', rental.return_workflow.accepted],
+      ['received', 'Item returned to owner', rental.return_workflow.received],
+    ] : []),
     ['inspection', 'Owner received & inspected', ownerApproved],
     ...(required ? [
       ['sent', 'Owner sent refund', ['REPORTED', 'DISPUTED', 'CONFIRMED'].includes(refund?.status)],
       ['receipt', 'Renter confirmed receipt', receipt],
     ] : []),
+    ...(rental.return_workflow?.courier_return ? [['courier-fee', 'Return courier fee settled', rental.return_workflow.delivery_settled]] : []),
     ['closed', 'Rental closed', rental.status === 'COMPLETED' && (!required || receipt)],
   ];
   let pending = false;

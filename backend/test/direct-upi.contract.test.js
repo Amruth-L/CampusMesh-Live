@@ -216,16 +216,19 @@ test(
         await db.query("UPDATE rentals SET status='RETURN_PENDING' WHERE id=$1", [r.id]);
         await assert.rejects(service.complete(r.id, owner, { damage_amount: 1 }), /Damage deductions/);
         await assert.rejects(service.complete(r.id, renter, {}), e => e.status === 403);
-        await service.complete(r.id, owner, {});
-        await service.complete(r.id, owner, {});
+        await assert.rejects(service.complete(r.id,owner,{}),/checked its condition/);
+        await service.complete(r.id, owner, {condition_confirmed:true});
+        await service.complete(r.id, owner, {condition_confirmed:true});
         let state = (await db.query('SELECT * FROM rentals WHERE id=$1', [r.id])).rows[0];
         assert.equal(state.status, 'RETURN_PENDING');
         assert.equal(state.completed_at, null);
         assert.equal((await db.query("SELECT 1 FROM transaction_events WHERE rental_id=$1 AND event_type='RETURN_CONFIRMED'", [r.id])).rowCount, 1);
         await assert.rejects(service.prepare(r.id, owner), /save their UPI/);
         await service.profile(renter, { upi_id: 'renter@bank', payee_name: 'Renter Fixture', confirm: true });
+        const [ownerPayments,renterPayments]=await Promise.all([service.list(owner,r.id),service.list(renter,r.id)]);
+        assert.equal(ownerPayments.filter(p=>p.kind==='DEPOSIT_REFUND').length,1);
+        assert.equal(renterPayments.filter(p=>p.kind==='DEPOSIT_REFUND').length,1);
         await service.prepare(r.id, owner);
-        await service.prepare(r.id, renter);
         const p = (await service.list(owner, r.id)).find((p) => p.kind === 'DEPOSIT_REFUND');
         assert.equal(p.amount, 200);
         assert.equal(
@@ -255,7 +258,7 @@ test(
         for (const amount of [200, 0]) {
           const row = (await db.query(`INSERT INTO rentals(listing_id,owner_id,borrower_id,start_date,end_date,rental_days,rental_fee,booking_amount,deposit_amount,payment_method,status)
             VALUES($1,$2,$3,CURRENT_DATE,CURRENT_DATE+1,2,100,100,$4,'DIRECT_UPI','RETURN_PENDING') RETURNING *`, [listing,owner,renter,amount])).rows[0];
-          await service.complete(row.id,owner,{});
+          await service.complete(row.id,owner,{condition_confirmed:true});
           const state = (await db.query('SELECT * FROM rentals WHERE id=$1',[row.id])).rows[0];
           assert.equal(state.status, amount ? 'RETURN_PENDING' : 'COMPLETED');
           const refunds=(await service.list(owner,row.id)).filter(p=>p.kind==='DEPOSIT_REFUND');

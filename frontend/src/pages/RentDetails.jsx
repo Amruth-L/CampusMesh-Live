@@ -1,3 +1,4 @@
+import ConditionPhotos from '../features/delivery/components/ConditionPhotos';
 import DeliveryProgress from "../features/delivery/components/DeliveryProgress";
 import {DirectPayments} from '../features/direct-upi/DirectPayments';
 import ReturnDestination from '../features/delivery/components/ReturnDestination';
@@ -162,6 +163,7 @@ export default function RentDetails() {
   const [damageAmount, setDamageAmount] = useState("");
   const [damageDesc, setDamageDesc] = useState("");
   const [inspectLoading, setInspectLoading] = useState(false);
+  const [conditionConfirmed, setConditionConfirmed] = useState(false);
 
   const [reminderSending, setReminderSending] = useState(false);
 
@@ -504,6 +506,7 @@ export default function RentDetails() {
             Authorization: "Bearer " + token,
           },
           body: JSON.stringify({
+            condition_confirmed: conditionConfirmed,
             damage_amount: dmg,
             damage_description: hasDamage ? damageDesc : null,
           }),
@@ -512,6 +515,7 @@ export default function RentDetails() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to confirm return.");
       setShowInspectionModal(false);
+      setConditionConfirmed(false);
       setFeedbackMsg({
         type: "success",
         text: data.message || "Return confirmed. Check refund status below.",
@@ -551,7 +555,11 @@ export default function RentDetails() {
     tone: "blue",
   };
   const deliveryConfig = DELIVERY_STATUS[delivery?.status];
-  const displayConfig = rental?.payment_method === 'DIRECT_UPI' && rental?.deposit_status === 'REFUND_PENDING'
+  const displayConfig = rental?.return_workflow?.can_inspect
+    ? { label: 'Owner inspection required', tone: 'amber' }
+    : rental?.return_workflow?.inspected && rental?.deposit_status === 'REFUNDED' && !rental.return_workflow.delivery_settled
+      ? { label: 'Return courier fee pending', tone: 'amber' }
+      : rental?.payment_method === 'DIRECT_UPI' && rental?.deposit_status === 'REFUND_PENDING'
     ? { label: 'Awaiting deposit refund receipt', tone: 'amber' }
     : rental?.status?.startsWith('RETURN_') && delivery?.status === 'COMPLETED'
       ? rentalConfig
@@ -573,6 +581,22 @@ export default function RentDetails() {
   const blockedCopy = useMemo(() => {
     if (!rental) return null;
     if (rental.payment_method==='DIRECT_UPI' && ['OWNER_PENDING','BOOKING_PAYMENT_PENDING','DEPOSIT_PENDING'].includes(rental.status)) return null;
+    if (rental.payment_method === 'DIRECT_UPI' && rental.return_workflow?.can_inspect) {
+      return {
+        title: 'Item returned · Owner inspection required',
+        body: isOwner ? 'Check the returned item against the pickup and return photos below. Approve its condition to release the deposit refund. Courier fee confirmation is a separate step.' : 'Your return handover is recorded. The owner must check the item condition before sending your deposit refund.',
+        action: isOwner ? 'Inspect item & approve refund' : null,
+        actionFn: () => { setConditionConfirmed(false); setShowInspectionModal(true); },
+        tone: 'amber',
+      };
+    }
+    if (rental.payment_method === 'DIRECT_UPI' && rental.return_workflow?.inspected && rental.status !== 'COMPLETED') {
+      return {
+        title: rental.deposit_status === 'REFUNDED' ? 'Refund received · Return courier fee pending' : 'Item condition approved · Deposit refund pending',
+        body: rental.deposit_status === 'REFUNDED' ? 'The renter confirmed the refund. Settle the return courier fee and have the courier confirm receipt to close this rental.' : rental.return_workflow.refund_account_ready ? 'The owner sends the refund using the request in Direct UPI payments. The renter must check their bank and confirm receipt.' : 'The renter needs to save their receiving UPI details in the form on this page. The refund request will appear automatically.',
+        action: null, tone: 'amber',
+      };
+    }
     if (rental.is_demo) {
       return {
         title: "Sample listing booking",
@@ -776,6 +800,11 @@ export default function RentDetails() {
           </div>
         </div>
 
+        {rental.return_workflow?.requested && blockedCopy && <section className="rounded-xl border border-ink/15 bg-white p-5" aria-label="Next return action">
+          <h2 className="text-lg font-bold">{blockedCopy.title}</h2>
+          <p className="mt-2 text-sm leading-6 text-ink/75">{blockedCopy.body}</p>
+          {blockedCopy.action && <button className="brand-button mt-4" onClick={blockedCopy.actionFn}>{blockedCopy.action}</button>}
+        </section>}
         {rental.payment_method==='DIRECT_UPI' && <DirectPayments rental={rental} onChange={load}/>}
         {/* Listing Header Card */}
         <section className="flex flex-col justify-between gap-5 rounded-[1.7rem] border border-mesh-900/10 bg-[radial-gradient(circle_at_100%_0%,rgba(76,145,82,.18),transparent_35%),white] p-6 shadow-[0_15px_50px_rgba(35,58,40,.07)] md:flex-row md:items-end">
@@ -1027,7 +1056,11 @@ export default function RentDetails() {
         <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
           <div className="space-y-5">
             {delivery?.task_type === 'RENTAL_RETURN' && <ReturnDestination rentalId={rentalId} delivery={delivery} isOwner={isOwner} onSaved={load}/>}
-            {blockedCopy && (
+            {rental.return_workflow?.can_inspect && isOwner && rental.return_delivery_id && <div className="space-y-4">
+              {rental.outbound_delivery_id && <ConditionPhotos deliveryId={rental.outbound_delivery_id} title="Original item condition" />}
+              <ConditionPhotos deliveryId={rental.return_delivery_id} title="Returned item condition" />
+            </div>}
+            {blockedCopy && !rental.return_workflow?.requested && (
               <section
                 className={
                   "rounded-[1.5rem] border p-5 shadow-sm " +
@@ -1833,6 +1866,10 @@ export default function RentDetails() {
                 </div>
               </div>
 
+              {rental.payment_method==='DIRECT_UPI' && <label className="flex items-start gap-3 text-sm leading-6">
+                <input type="checkbox" required checked={conditionConfirmed} onChange={e=>setConditionConfirmed(e.target.checked)} className="mt-1.5" />
+                I received this item and inspected its condition before approving the deposit refund.
+              </label>}
               <div className="flex gap-2 pt-2">
                 <button
                   type="button"
@@ -1843,11 +1880,11 @@ export default function RentDetails() {
                 </button>
                 <button
                   type="submit"
-                  disabled={inspectLoading}
+                  disabled={inspectLoading || (rental.payment_method==='DIRECT_UPI' && !conditionConfirmed)}
                   className="flex-1 rounded-xl bg-mesh-600 py-2.5 text-xs font-extrabold text-white shadow-sm transition hover:bg-mesh-700 disabled:opacity-50"
                 >
                   {inspectLoading
-                    ? "Processing refund…"
+                    ? "Recording inspection…"
                     : rental.payment_method==='DIRECT_UPI'?'Approve return & prepare refund': 'Confirm return & refund'}
                 </button>
               </div>

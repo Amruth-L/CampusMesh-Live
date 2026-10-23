@@ -48,13 +48,15 @@ export default function ReturnDestination({
   };
   return (
     <section className="panel p-5 space-y-3">
-      <h2 className="font-semibold">Return destination</h2>
+      <h2 className="font-semibold">Return acceptance & destination</h2>
       <p className="text-sm text-ink/65">
         {delivery.status === "RETURN_LOCATION_PENDING"
           ? "Waiting for the owner to confirm where to receive the item. Couriers will be notified after confirmation."
           : editable
             ? "The owner can update the destination until a courier accepts. Changes replace the previous offers."
-            : "A courier has accepted this destination. Contact them before making different arrangements."}
+            : ["COMPLETED","DELIVERY_PAYMENT_PENDING"].includes(delivery.status)
+              ? "Return handover is verified. The owner now checks the item condition; the refund and courier fee are tracked separately."
+              : "A courier has accepted this destination. Contact them before making different arrangements."}
       </p>
       {isOwner && editable ? (
         <form onSubmit={save} className="space-y-3">
@@ -86,7 +88,7 @@ export default function ReturnDestination({
             {busy
               ? "Saving…"
               : delivery.status === "RETURN_LOCATION_PENDING"
-                ? "Confirm destination & notify couriers"
+                ? "Accept return & notify couriers"
                 : "Update destination & notify couriers"}
           </button>
         </form>

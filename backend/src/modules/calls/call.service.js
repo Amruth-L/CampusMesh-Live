@@ -239,7 +239,7 @@ function createCallService({
     }
     if (preview || prefs.reminders_enabled) {
       const { rows } = await db.query(
-        `SELECT r.id,l.title,r.end_date::text end_date FROM rentals r JOIN listings l ON l.id=r.listing_id WHERE r.borrower_id=$1 AND r.status=ANY($2) AND r.deposit_status IS DISTINCT FROM 'REFUND_PENDING' AND r.payment_status='FULLY_PAID' AND l.demo_slug IS NULL AND r.end_date BETWEEN $3::date-1 AND $3::date+4`,
+        `SELECT r.id,l.title,r.end_date::text end_date FROM rentals r JOIN listings l ON l.id=r.listing_id WHERE r.borrower_id=$1 AND r.status=ANY($2) AND r.deposit_status IS DISTINCT FROM 'REFUND_PENDING' AND NOT EXISTS(SELECT 1 FROM transaction_events e WHERE e.rental_id=r.id AND e.event_type='RETURN_CONFIRMED') AND r.payment_status='FULLY_PAID' AND l.demo_slug IS NULL AND r.end_date BETWEEN $3::date-1 AND $3::date+4`,
         [userId, activeRentalStatuses, today],
       );
       for (const row of rows) {
@@ -417,7 +417,7 @@ function createCallService({
     }
     if (job.kind === 'DUE_REMINDER') {
       const r = await client.query(
-        `SELECT r.end_date::text end_date,r.status FROM rentals r JOIN listings l ON l.id=r.listing_id WHERE r.id=$1 AND r.borrower_id=$2 AND r.deposit_status IS DISTINCT FROM 'REFUND_PENDING' AND r.payment_status='FULLY_PAID' AND l.demo_slug IS NULL`,
+        `SELECT r.end_date::text end_date,r.status FROM rentals r JOIN listings l ON l.id=r.listing_id WHERE r.id=$1 AND r.borrower_id=$2 AND r.deposit_status IS DISTINCT FROM 'REFUND_PENDING' AND NOT EXISTS(SELECT 1 FROM transaction_events e WHERE e.rental_id=r.id AND e.event_type='RETURN_CONFIRMED') AND r.payment_status='FULLY_PAID' AND l.demo_slug IS NULL`,
         [job.rental_id, job.user_id],
       );
       return Boolean(

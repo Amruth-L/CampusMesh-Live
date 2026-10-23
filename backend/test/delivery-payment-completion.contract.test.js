@@ -64,7 +64,11 @@ test('direct delivery completes only after courier receipt, for both rental legs
       await assert.rejects(service.act(payment.id,stranger,'confirm',{confirm:true}),e=>e.status===404);
       await service.act(payment.id,courier,'dispute',{confirm:true});
       assert.equal((await state()).status,'DELIVERY_PAYMENT_PENDING');
-      if(type==='RENTAL_RETURN') await assert.rejects(service.complete(f.rental.id,owner,{}),/courier must complete/);
+      if(type==='RENTAL_RETURN') {
+        await assert.rejects(service.complete(f.rental.id,owner,{}),/checked its condition/);
+        await service.complete(f.rental.id,owner,{condition_confirmed:true});
+        assert.equal((await db.query('SELECT deposit_status FROM rentals WHERE id=$1',[f.rental.id])).rows[0].deposit_status,'REFUND_PENDING');
+      }
       else await assert.rejects(requestReturn(f.rental.id,renter,'DIRECT'),/delivery fee/);
       await Promise.all([service.act(payment.id,courier,'confirm',{confirm:true}),service.act(payment.id,courier,'confirm',{confirm:true})]);
       assert.equal((await state()).status,'COMPLETED');
@@ -82,7 +86,7 @@ test('direct delivery completes only after courier receipt, for both rental legs
       assert.equal((await db.query("SELECT 1 FROM transaction_events WHERE delivery_id=$1 AND event_type='DELIVERY_PAYMENT_CONFIRMED'",[f.task.id])).rowCount,1);
       if(type==='RENTAL_RETURN') {
         assert.equal((await db.query('SELECT status FROM rentals WHERE id=$1',[f.rental.id])).rows[0].status,'RETURN_PENDING');
-        await service.complete(f.rental.id,owner,{});
+        await service.complete(f.rental.id,owner,{condition_confirmed:true});
         assert.equal((await db.query('SELECT deposit_status FROM rentals WHERE id=$1',[f.rental.id])).rows[0].deposit_status,'REFUND_PENDING');
       }
     });
@@ -100,6 +104,32 @@ test('direct delivery completes only after courier receipt, for both rental legs
       assert.equal((await db.query('SELECT status FROM delivery_requests WHERE id=$1',[f.task.id])).rows[0].status,'DELIVERY_PAYMENT_PENDING');
       const paid=await db.query("SELECT d.status FROM delivery_requests d JOIN direct_upi_payments p ON p.delivery_id=d.id WHERE p.status='CONFIRMED'");
       assert.equal(paid.rowCount,2); assert(paid.rows.every(d=>d.status==='COMPLETED'));
+    });
+    await t.test('owner inspects after verified return; refund and courier fee settle independently', async () => {
+      await service.profile(renter,{upi_id:'renter@bank',payee_name:'Renter fixture',confirm:true});
+      const f=await fixture('RENTAL_RETURN');
+      await assert.rejects(service.complete(f.rental.id,owner,{condition_confirmed:true}),/physical return/);
+      await f.finishHandover();
+      const {returnWorkflow}=require('../src/modules/rentals/return-workflow');
+      const state=async()=>(await db.query('SELECT * FROM rentals WHERE id=$1',[f.rental.id])).rows[0];
+      assert.equal((await returnWorkflow(db,await state())).can_inspect,true);
+      await service.complete(f.rental.id,owner,{condition_confirmed:true});
+      const refund=(await service.list(owner,f.rental.id)).find(p=>p.kind==='DEPOSIT_REFUND');
+      assert(refund?.uri);
+      await service.act(refund.id,owner,'report',{reference:String(++reference),confirm:true});
+      await service.act(refund.id,renter,'confirm',{confirm:true});
+      assert.equal((await state()).deposit_status,'REFUNDED');
+      await service.complete(f.rental.id,owner,{condition_confirmed:true});
+      assert.equal((await state()).deposit_status,'REFUNDED','repeated inspection must never reopen an already received refund');
+      assert.equal((await state()).status,'RETURN_PENDING','unpaid return courier must keep rental open');
+      const workflow=await returnWorkflow(db,await state());
+      assert.equal(workflow.inspected,true);
+      assert.equal(workflow.can_inspect,false);
+      assert.equal(workflow.next_action,'SETTLE_RETURN_DELIVERY_FEE');
+      const fee=(await service.list(renter,f.rental.id)).find(p=>p.kind==='RETURN_DELIVERY');
+      await service.act(fee.id,renter,'report',{reference:String(++reference),confirm:true});
+      await service.act(fee.id,courier,'confirm',{confirm:true});
+      assert.equal((await state()).status,'COMPLETED');
     });
   } finally { await db.end(); }
 });

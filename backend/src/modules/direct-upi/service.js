@@ -160,8 +160,30 @@ function createService({
       [user],
     );
   }
+  async function syncRefunds(user, rentalId = null) {
+    const rows = (await db.query(`SELECT r.id FROM rentals r
+      JOIN upi_profiles up ON up.user_id=r.borrower_id
+      WHERE r.payment_method='DIRECT_UPI' AND r.deposit_status='REFUND_PENDING'
+        AND (r.owner_id=$1 OR r.borrower_id=$1) AND ($2::uuid IS NULL OR r.id=$2)
+        AND NOT EXISTS(SELECT 1 FROM direct_upi_payments p WHERE p.rental_id=r.id AND p.kind='DEPOSIT_REFUND')`, [user,rentalId])).rows;
+    for (const row of rows) await tx(async c => {
+      const r=(await c.query('SELECT * FROM rentals WHERE id=$1 FOR UPDATE',[row.id])).rows[0];
+      if (r.deposit_status==='REFUND_PENDING') await intent(c,r,'DEPOSIT_REFUND',r.owner_id,r.borrower_id,paise(r.deposit_amount));
+    });
+  }
+  // Caller holds the rental lock. Bank receipt, owner inspection and courier
+  // settlement may arrive in either order; none can bypass the other gates.
+  async function closeReturnIfSettled(c, rentalId) {
+    return (await c.query(`UPDATE rentals r SET status='COMPLETED',completed_at=COALESCE(completed_at,NOW()),updated_at=NOW()
+      WHERE r.id=$1 AND r.status='RETURN_PENDING'
+        AND r.deposit_status IN ('REFUNDED','NOT_REQUIRED')
+        AND EXISTS(SELECT 1 FROM transaction_events e WHERE e.rental_id=r.id AND e.event_type='RETURN_CONFIRMED')
+        AND (r.return_delivery_id IS NULL OR EXISTS(SELECT 1 FROM delivery_requests d WHERE d.id=r.return_delivery_id AND d.status='COMPLETED'))
+      RETURNING id`,[rentalId])).rowCount > 0;
+  }
   async function list(user, rentalId = null) {
     await syncDelivery(user);
+    await syncRefunds(user, rentalId);
     const rows = (
       await db.query(
         `SELECT p.*,l.title,payer.name AS payer_name,recipient.name AS recipient_name
@@ -260,7 +282,7 @@ function createService({
       if (action === 'confirm') {
         if (['RENTAL', 'DEPOSIT'].includes(p.kind)) deliveryId = await advance(c, r);
         if (p.kind === 'DEPOSIT_REFUND')
-          await c.query("UPDATE rentals SET status='COMPLETED',deposit_status='REFUNDED',completed_at=COALESCE(completed_at,NOW()),updated_at=NOW() WHERE id=$1", [r.id]);
+          await c.query("UPDATE rentals SET deposit_status='REFUNDED',updated_at=NOW() WHERE id=$1", [r.id]);
         if (['DELIVERY', 'RETURN_DELIVERY'].includes(p.kind)) {
           const d = (await c.query('SELECT * FROM delivery_requests WHERE id=$1 FOR UPDATE', [p.delivery_id])).rows[0];
           const stage = p.kind === 'RETURN_DELIVERY' ? 'RETURN_RECEIVED' : 'DELIVERY';
@@ -273,6 +295,7 @@ function createService({
           completedDelivery = d;
         }
       }
+      if (action === 'confirm' && ['DEPOSIT_REFUND','RETURN_DELIVERY'].includes(p.kind)) await closeReturnIfSettled(c,r.id);
       return { r, deliveryId, completedDelivery, recipient: p.recipient_id };
     });
     await announce(result.r, result.deliveryId);
@@ -300,25 +323,25 @@ function createService({
       if (!r || r.owner_id !== user) throw fail('Only the lender can confirm return.', 403);
       if (r.payment_method !== 'DIRECT_UPI') throw fail('This rental uses the original payment method.');
       if (r.status === 'COMPLETED' || r.deposit_status === 'REFUND_PENDING') return r;
+      if ((await c.query("SELECT 1 FROM transaction_events WHERE rental_id=$1 AND event_type='RETURN_CONFIRMED'",[r.id])).rowCount) {
+        await closeReturnIfSettled(c,r.id);
+        return r;
+      }
       if (r.status !== 'RETURN_PENDING') throw fail('Request and complete physical return first.');
-      if (
-        r.return_delivery_id &&
-        !(
-          await c.query("SELECT 1 FROM delivery_requests WHERE id=$1 AND status='COMPLETED'", [
-            r.return_delivery_id,
-          ])
-        ).rowCount
-      )
-        throw fail('The return courier must complete handover first.');
+      if (r.return_delivery_id) {
+        const verified=(await c.query(`SELECT 1 FROM delivery_requests d
+          WHERE d.id=$1 AND d.rental_id=$2 AND d.task_type='RENTAL_RETURN'
+            AND d.delivery_verified_at IS NOT NULL AND d.status IN ('DELIVERY_PAYMENT_PENDING','COMPLETED')
+            AND EXISTS(SELECT 1 FROM handover_verifications h WHERE h.delivery_id=d.id AND h.stage='RETURN_RECEIVED' AND h.status='USED')`,[r.return_delivery_id,r.id])).rowCount;
+        if (!verified) throw fail('The return courier must complete verified owner handover first.');
+      }
       if (Number(body.damage_amount || 0) !== 0)
         throw fail(
           'Damage deductions need agreement with the renter. Contact support; this flow returns the full deposit.',
         );
-      await c.query(
-        `UPDATE rentals SET status=$2::text,deposit_status=$3,
-          completed_at=CASE WHEN $2::text='COMPLETED' THEN NOW() ELSE NULL END,updated_at=NOW() WHERE id=$1`,
-        [r.id, paise(r.deposit_amount) > 0 ? 'RETURN_PENDING' : 'COMPLETED', paise(r.deposit_amount) > 0 ? 'REFUND_PENDING' : 'NOT_REQUIRED'],
-      );
+      if (body.condition_confirmed !== true) throw fail('Confirm that you received the item and checked its condition before approving the return.',400);
+      await c.query("UPDATE rentals SET status='RETURN_PENDING',deposit_status=$2,completed_at=NULL,updated_at=NOW() WHERE id=$1",
+        [r.id, paise(r.deposit_amount) > 0 ? 'REFUND_PENDING' : 'NOT_REQUIRED']);
       await c.query(
         "INSERT INTO transaction_events(rental_id,event_type,actor_user_id) VALUES($1,'RETURN_CONFIRMED',$2)",
         [r.id, user],
@@ -327,6 +350,7 @@ function createService({
       // Missing UPI details must not erase the owner's physical-return approval.
       if (paise(r.deposit_amount) > 0 && (await c.query('SELECT 1 FROM upi_profiles WHERE user_id=$1', [r.borrower_id])).rowCount)
         await intent(c, r, 'DEPOSIT_REFUND', r.owner_id, r.borrower_id, paise(r.deposit_amount));
+      await closeReturnIfSettled(c,r.id);
       return r;
     });
     await announce(r);

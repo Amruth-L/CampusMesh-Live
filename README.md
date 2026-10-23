@@ -189,13 +189,18 @@ while those transactions still need reconciliation or refunds.
    counts its earnings. Reporting or disputing a payment does not complete delivery.
    Return delivery follows the same rule. These fees have no platform deduction;
    the app records confirmation but cannot automatically debit or collect them.
-7. The lender receives and inspects the returned item, then approves its return.
+7. The owner accepts a courier return and chooses the receiving location before
+   it is offered to delivery students. The courier records pickup/arrival photos
+   and verifies the handover to the owner. The lender can then inspect the returned
+   item and explicitly approve its condition, even while the courier fee is pending.
    A deposit-bearing rental stays open with **Deposit refund pending**. If the renter
    already saved a receiving UPI ID, the refund request is prepared immediately;
-   otherwise they save it in Payments and either party selects Prepare deposit refund.
+   otherwise the renter saves their receiving UPI details directly on the rental
+   page. The refund request appears automatically for both participants.
    The lender sends the full deposit to that UPI ID and reports the transaction
-   reference. Only the renter can confirm actual bank receipt, which closes the
-   rental and marks the deposit refunded. A dispute keeps the rental open; no second
+   reference. Only the renter can confirm actual bank receipt. Rental closure
+   requires that receipt, owner inspection, and return courier fee settlement.
+   These confirmations may arrive in either order; none bypasses the others. A dispute keeps the rental open; no second
    refund is requested. Zero-deposit rentals close after owner inspection.
    Direct UPI refunds require a manual transfer; CampusMesh does not debit a bank.
 8. Delivery and return progress use recorded acceptance, pickup and destination

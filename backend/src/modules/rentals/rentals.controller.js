@@ -625,9 +625,10 @@ exports.getRentalStatus = async (req, res) => {
       [id],
     );
 
+    const returnState = rental.payment_method === 'DIRECT_UPI' ? await require('./return-workflow').returnWorkflow(pool,rental) : null;
     const now = new Date();
     const rentalEndDate = new Date(rental.end_date);
-    const isOverdue = rental.deposit_status !== 'REFUND_PENDING' && rentalEndDate < now && !['COMPLETED', 'CANCELLED', 'DEPOSIT_REFUNDED'].includes(rental.status);
+    const isOverdue = !returnState?.inspected && rental.deposit_status !== 'REFUND_PENDING' && rentalEndDate < now && !['COMPLETED', 'CANCELLED', 'DEPOSIT_REFUNDED'].includes(rental.status);
     const overdueDays = isOverdue
       ? Math.max(1, Math.ceil((now.getTime() - rentalEndDate.getTime()) / (1000 * 60 * 60 * 24)))
       : 0;
@@ -635,6 +636,7 @@ exports.getRentalStatus = async (req, res) => {
     res.json({
       rental: {
         ...rental,
+        return_workflow: returnState,
         is_overdue: isOverdue,
         overdue_days: overdueDays,
       },

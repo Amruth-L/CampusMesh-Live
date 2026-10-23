@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 
-export default function ConditionPhotos({ deliveryId, stage, onReady }) {
+export default function ConditionPhotos({ deliveryId, stage, onReady, title = "Item condition photos" }) {
   const { api } = useAuth();
   const [photos, setPhotos] = useState([]);
   const [error, setError] = useState('');
@@ -41,7 +41,7 @@ export default function ConditionPhotos({ deliveryId, stage, onReady }) {
   };
   const visible = stage ? photos.filter(photo => photo.stage === stage) : photos;
   return <section className="rounded-xl border border-ink/10 bg-white p-4">
-    <h3 className="font-semibold">Item condition photos</h3>
+    <h3 className="font-semibold">{title}</h3>
     <p className="mt-1 text-xs leading-5 text-ink/65">{stage ? 'Photograph the item and any visible damage now. Save at least one photo before confirming this handover. Up to 3 photos; 5 MB each.' : 'Pickup and drop-off evidence is visible only to this delivery’s participants.'}</p>
     {stage && visible.length < 3 && <label className={`mt-3 inline-flex cursor-pointer rounded-lg bg-mesh-700 px-4 py-2 text-sm font-semibold text-white ${busy ? 'opacity-50' : ''}`}>
       {busy ? 'Uploading…' : 'Take or upload condition photo'}

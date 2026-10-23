@@ -66,3 +66,21 @@ test('refund receipt gates rental closure after owner inspection and refund repo
   assert.equal(matchesRentalFilter(approved.status,'Completed'),false);
   assert(returnSettlementProgress({status:'COMPLETED',deposit_status:'NOT_REQUIRED',deposit_amount:0}).every(s=>s.done));
 });
+
+test('courier return acceptance, physical receipt, inspection and fee stay separate', () => {
+  const r={status:'RETURN_MATCHING',deposit_amount:130,deposit_status:'HELD',return_workflow:{courier_return:true,accepted:false,received:false,inspected:false,delivery_settled:false}};
+  const current=(r,p)=>returnSettlementProgress(r,p).find(s=>s.current)?.key;
+  assert.equal(current(r),'accepted');
+  r.return_workflow.accepted=true;
+  assert.equal(current(r),'received');
+  r.return_workflow.received=true;r.status='RETURN_PENDING';
+  assert.equal(current(r),'inspection');
+  r.return_workflow.inspected=true;r.deposit_status='REFUND_PENDING';
+  assert.equal(current(r),'sent');
+  r.deposit_status='REFUNDED';
+  assert.equal(current(r,{status:'CONFIRMED'}),'courier-fee');
+  r.return_workflow.delivery_settled=true;
+  assert.equal(current(r,{status:'CONFIRMED'}),'closed');
+  r.status='COMPLETED';
+  assert(returnSettlementProgress(r,{status:'CONFIRMED'}).every(s=>s.done));
+});

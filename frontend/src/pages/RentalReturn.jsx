@@ -40,6 +40,10 @@ export default function RentalReturn() {
     fetchRental();
   }, [rentalId]);
 
+  useEffect(() => {
+    if (rental?.payment_method === 'DIRECT_UPI') navigate(`/rent-details/${rentalId}`, {replace:true});
+  }, [rental?.payment_method,rentalId,navigate]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isDamaged && !damageDesc.trim()) {
