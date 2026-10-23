@@ -1,3 +1,5 @@
+import { io } from 'socket.io-client';
+import { API_BASE_URL } from '../../lib/api';
 import ReturnSettlementProgress from './ReturnSettlementProgress';
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
@@ -63,9 +65,10 @@ export function UpiProfile({ compact = false, onSaved } = {}) {
         confirm,
       });
       setMessage(
-        "UPI details saved. Existing payment requests keep their original recipient details.",
+        "UPI details saved. Unpaid payment requests and their QR codes now use your updated account. Reported and confirmed receipts keep the account actually paid.",
       );
       setSaved(data);
+      window.dispatchEvent(new Event("campusmesh:upi-saved"));
       setEditing(false);
       setConfirm(false);
       await onSaved?.();
@@ -165,6 +168,10 @@ function PaymentCard({ payment: p, reload }) {
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const payer = p.payer_id === user.id;
+  const [paidRevision,setPaidRevision] = useState("");
+  const versions=p.recipient_versions || [];
+  const changed=versions.length>1;
+  useEffect(()=>{setPaidRevision("");setConfirm(false);},[p.recipient_revision]);
   async function act(action) {
     setBusy(true);
     setError("");
@@ -172,6 +179,7 @@ function PaymentCard({ payment: p, reload }) {
       await api.post(`/api/direct-upi/payments/${p.id}/${action}`, {
         reference,
         confirm,
+        recipient_revision: changed ? Number(paidRevision) : p.recipient_revision || 1,
       });
       setConfirm(false);
       await reload();
@@ -203,6 +211,7 @@ function PaymentCard({ payment: p, reload }) {
         <span className="break-all font-semibold">{p.upi_id}</span>
       </p>
       <p className="mt-1 text-sm">Receiving account name: {p.payee_name}</p>
+      {p.status==='PENDING' && changed && <p role="status" className="mt-3 rounded-lg bg-amber-50 p-3 text-sm leading-6 text-amber-950">The recipient updated their UPI details. This QR uses their latest account. If you already paid, do not pay again; select the account you actually paid when reporting below.</p>}
       <Link
         className="mt-2 inline-block text-sm font-semibold underline"
         to={`/rent-details/${p.rental_id}`}
@@ -228,6 +237,13 @@ function PaymentCard({ payment: p, reload }) {
               authorising. If this link is unsupported, pay using the displayed
               UPI ID.
             </p>
+            {changed && <label className="grid gap-2 font-semibold">
+              Account you actually paid
+              <select value={paidRevision} onChange={e=>{setPaidRevision(e.target.value);setConfirm(false);}} className="w-full rounded-lg border border-ink/25 bg-white p-3">
+                <option value="">Select the UPI ID on your transaction</option>
+                {versions.map(v=><option key={v.revision} value={v.revision}>{v.revision===p.recipient_revision?'Current':'Previous'}: {v.upi_id} · {v.payee_name}</option>)}
+              </select>
+            </label>}
             <label className="grid gap-2 font-semibold">
               UPI transaction reference
               <input
@@ -246,10 +262,10 @@ function PaymentCard({ payment: p, reload }) {
                 onChange={(e) => setConfirm(e.target.checked)}
                 className="mt-1"
               />
-              I sent this exact amount to the displayed recipient.
+              I sent this exact amount to {changed ? "the account selected above" : "the displayed recipient"}.
             </label>
             <button
-              disabled={busy || !confirm || !/^\d{12}$/.test(reference)}
+              disabled={busy || !confirm || !/^\d{12}$/.test(reference) || (changed && !paidRevision)}
               onClick={() => act("report")}
               className="brand-button disabled:opacity-50"
             >
@@ -344,7 +360,16 @@ export function DirectPayments({ rental = null, deliveryId = null, onChange }) {
   useEffect(() => {
     load();
     const timer = setInterval(load, 15000);
-    return () => clearInterval(timer);
+    const socket=io(API_BASE_URL,{auth:{token:localStorage.getItem('token')},reconnectionAttempts:3});
+    socket.on('direct-payment:updated',load);
+    socket.on('connect',load);
+    window.addEventListener('focus',load);
+    window.addEventListener('campusmesh:upi-saved',load);
+    return () => {
+      clearInterval(timer);socket.close();
+      window.removeEventListener('focus',load);
+      window.removeEventListener('campusmesh:upi-saved',load);
+    };
   }, [load]);
   async function run(action) {
     setBusy(true);

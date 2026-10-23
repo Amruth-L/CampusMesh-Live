@@ -218,8 +218,10 @@ after checking their history, then confirm later if the credit is found. Dispute
 never generate another payable QR; resolve them through support without paying
 twice. Database locks, unique source keys and unique transaction references guard
 against concurrent confirmation and duplicate requests. Participant-only APIs
-protect payment details. Existing requests retain their recipient snapshot after
-profile edits.
+protect payment details. Unreported requests refresh their UPI ID, receiving name and QR after profile
+edits. Earlier recipient versions are retained so someone who already paid an old
+QR can report that actual destination. Reporting pins the selected destination;
+reported, disputed and confirmed receipts are never redirected by profile edits.
 
 There is no combined cart debit, automated split, bank verification, escrow,
 automatic refund or platform fee in this mode. Damage deductions and extensions

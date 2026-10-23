@@ -109,16 +109,26 @@ test(
         assert.equal((await service.list(outsider, r.id)).length, 0);
       });
       let rentalPayment;
-      await t.test('reporting is not payment confirmation; recipient snapshots survive edits', async () => {
+      await t.test('owner edits refresh the renter QR, while an already paid former account can still be reported', async () => {
         rentalPayment = (await service.list(renter, r.id))[0];
         assert(new URL(rentalPayment.uri).searchParams.get('am') === '100.00');
         await service.profile(owner, { upi_id: 'changed@bank', payee_name: 'Changed name', confirm: true });
-        assert.equal((await service.list(renter, r.id))[0].upi_id, 'owner@bank');
+        const refreshed=(await service.list(renter,r.id))[0];
+        assert.equal(refreshed.upi_id,'changed@bank');
+        assert.equal(new URL(refreshed.uri).searchParams.get('pa'),'changed@bank');
+        assert.equal(refreshed.recipient_revision,2);
+        assert.equal(refreshed.recipient_versions.length,2);
+        await assert.rejects(service.act(rentalPayment.id,renter,'report',{reference:'123456789012',confirm:true}),/select the account you actually paid/);
+        await assert.rejects(service.act(rentalPayment.id,renter,'report',{reference:'123456789012',confirm:true,recipient_revision:999}),/select the account you actually paid/);
         await assert.rejects(
           service.act(rentalPayment.id, owner, 'confirm', { confirm: true }),
           /Wait for the payer/,
         );
-        await service.act(rentalPayment.id, renter, 'report', { reference: '123456789012', confirm: true });
+        await service.act(rentalPayment.id, renter, 'report', { reference: '123456789012', confirm: true, recipient_revision:1 });
+        await service.profile(owner,{upi_id:'latest@bank',payee_name:'Latest owner',confirm:true});
+        const reported=(await service.list(renter,r.id))[0];
+        assert.equal(reported.upi_id,'owner@bank','reported destination remains immutable');
+        assert.equal(reported.status,'REPORTED');
         assert.equal(
           (await db.query('SELECT payment_status FROM rentals WHERE id=$1', [r.id])).rows[0].payment_status,
           'PENDING',
@@ -153,6 +163,9 @@ test(
         assert.equal(rental.status, 'QR_GENERATED');
         assert.equal(rental.payment_status, 'FULLY_PAID');
         assert(rental.qr_code_hash);
+        await service.profile(owner,{upi_id:'final@bank',payee_name:'Final owner',confirm:true});
+        const paid=(await service.list(renter,r.id)).find(p=>p.kind==='RENTAL');
+        assert.equal(paid.upi_id,'owner@bank','confirmed receipt remains immutable');
         assert.equal((await db.query('SELECT * FROM payments WHERE rental_id=$1', [r.id])).rowCount, 0);
         await assert.rejects(
           require('../src/modules/payments/payment.service').createRentalOrder(r.id, renter),
@@ -265,6 +278,21 @@ test(
           assert.equal(refunds.length,amount ? 1 : 0);
           if (amount) assert.equal(refunds[0].recipient_id,renter);
         }
+      });
+      await t.test('unreported rental and deposit requests refresh for current-account payment',async()=>{
+        const row=(await db.query(`INSERT INTO rentals(listing_id,owner_id,borrower_id,start_date,end_date,rental_days,rental_fee,booking_amount,deposit_amount,payment_method,status)
+          VALUES($1,$2,$3,CURRENT_DATE+80,CURRENT_DATE+81,2,100,100,200,'DIRECT_UPI','OWNER_PENDING') RETURNING id`,[listing,owner,renter])).rows[0];
+        await service.respond(row.id,owner,'ACCEPTED');
+        await service.profile(owner,{upi_id:'current@bank',payee_name:'Current owner',confirm:true});
+        const fee=(await service.list(renter,row.id)).find(p=>p.kind==='RENTAL');
+        assert.equal(fee.upi_id,'current@bank');
+        await service.act(fee.id,renter,'report',{reference:'123456789018',confirm:true,recipient_revision:fee.recipient_revision});
+        await service.act(fee.id,owner,'confirm',{confirm:true});
+        await service.profile(owner,{upi_id:'deposit@bank',payee_name:'Deposit owner',confirm:true});
+        const dep=(await service.list(renter,row.id)).find(p=>p.kind==='DEPOSIT');
+        assert.equal(dep.upi_id,'deposit@bank');
+        assert.equal(new URL(dep.uri).searchParams.get('pa'),'deposit@bank');
+        assert.equal((await service.list(outsider,row.id)).length,0);
       });
       await t.test('migration reopens only unsettled direct refunds and is repeatable', async () => {
         const row=(await db.query(`INSERT INTO rentals(listing_id,owner_id,borrower_id,start_date,end_date,rental_days,rental_fee,booking_amount,deposit_amount,payment_method,status,deposit_status,completed_at)

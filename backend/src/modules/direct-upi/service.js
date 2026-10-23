@@ -1,3 +1,4 @@
+const recipientRefreshSql = require('node:fs').readFileSync(require('node:path').join(__dirname,'recipient-refresh.sql'),'utf8');
 const crypto = require('node:crypto');
 const pool = require('../../config/database');
 const { ensureOutboundDelivery } = require('../delivery/delivery-request.service');
@@ -71,12 +72,17 @@ function createService({
           .rows[0] || null
       );
     const p = validateProfile(body);
-    await db.query(
-      `INSERT INTO upi_profiles(user_id,upi_id,payee_name) VALUES($1,$2,$3)
-      ON CONFLICT(user_id) DO UPDATE SET upi_id=$2,payee_name=$3,updated_at=NOW()`,
-      [user, p.upi_id, p.payee_name],
-    );
-    return p;
+    const updated = await tx(async c => {
+      await c.query(
+        `INSERT INTO upi_profiles(user_id,upi_id,payee_name) VALUES($1,$2,$3)
+        ON CONFLICT(user_id) DO UPDATE SET upi_id=$2,payee_name=$3,updated_at=NOW()`,
+        [user,p.upi_id,p.payee_name]);
+      return (await c.query(recipientRefreshSql,[user,null,null])).rows;
+    });
+    for (const row of updated) for (const id of [row.payer_id,row.recipient_id]) {
+      try { notify(id,'direct-payment:updated',{rental_id:row.rental_id}); } catch { /* Polling also refreshes this state. */ }
+    }
+    return { ...p, updated_requests: updated.length };
   }
   async function intent(c, r, kind, payer, recipient, amount, delivery = null) {
     if (!amount) return null;
@@ -184,6 +190,7 @@ function createService({
   async function list(user, rentalId = null) {
     await syncDelivery(user);
     await syncRefunds(user, rentalId);
+    await db.query(recipientRefreshSql,[null,user,rentalId]);
     const rows = (
       await db.query(
         `SELECT p.*,l.title,payer.name AS payer_name,recipient.name AS recipient_name
@@ -196,6 +203,7 @@ function createService({
     return rows.map((p) => ({
       ...p,
       amount: Number(p.amount_paise) / 100,
+      recipient_versions: p.status==='PENDING' ? [...p.recipient_history,{revision:p.recipient_revision,upi_id:p.upi_id,payee_name:p.payee_name}] : [],
       uri:
         p.status === 'PENDING' && p.payer_id === user
           ? 'upi://pay?' +
@@ -257,10 +265,17 @@ function createService({
           throw fail('Enter the 12-digit UPI transaction reference from your UPI app.', 400);
         if (body.confirm !== true)
           throw fail('Confirm that you sent the exact amount to the displayed recipient.', 400);
+        const revision = body.recipient_revision == null && p.recipient_revision===1 ? 1 : Number(body.recipient_revision);
+        const destination = revision===p.recipient_revision ? p : p.recipient_history.find(v=>v.revision===revision);
+        if (!Number.isInteger(revision) || !destination)
+          throw fail('The recipient updated their UPI details. Refresh this payment and select the account you actually paid. Do not send money again if already debited.',400);
+        // A QR opened before an account edit can still be paid. Pin that actual
+        // destination when reporting; never silently attribute it to the new UPI.
+        const history = revision===p.recipient_revision ? p.recipient_history : [...p.recipient_history,{revision:p.recipient_revision,upi_id:p.upi_id,payee_name:p.payee_name}];
         await c.query(
-          "UPDATE direct_upi_payments SET status='REPORTED',reference=$2,reported_at=NOW() WHERE id=$1",
-          [id, reference],
-        );
+          "UPDATE direct_upi_payments SET status='REPORTED',reference=$2,reported_at=NOW(),upi_id=$3,payee_name=$4,recipient_revision=$5,recipient_history=$6::jsonb WHERE id=$1",
+          [id,reference,destination.upi_id,destination.payee_name,revision,JSON.stringify(history)]);
+
       } else if (action === 'confirm' || action === 'dispute') {
         if (p.recipient_id !== user) throw fail('Only the recipient can confirm receipt.', 403);
         if (action === 'confirm' && p.status === 'CONFIRMED') return { r };
