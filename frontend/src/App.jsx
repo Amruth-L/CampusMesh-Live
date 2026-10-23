@@ -37,6 +37,8 @@ import InsightsPage from "./features/intelligence/InsightsPage";
 import SupportPage from "./features/support/SupportPage";
 import ReminderPage from "./features/support/ReminderPage";
 import PrintSoon from "./features/wishes/PrintSoon";
+import VoicePage from "./features/voice/VoicePage";
+import VoiceWelcomePrompt from "./features/voice/VoiceWelcomePrompt";
 
 const Protected = ({ children }) => <PrivateRoute>{children}</PrivateRoute>;
 const LegacyListingRedirect = () => {
@@ -50,7 +52,8 @@ export default function App() {
   return (
     <>
       <AppNavbar />
-      {user && pathname !== "/support" && (
+      <VoiceWelcomePrompt />
+      {user && !["/support", "/voice"].includes(pathname) && (
         <Link
           to="/support"
           aria-label="Customer support"
@@ -60,6 +63,7 @@ export default function App() {
         </Link>
       )}
       <Routes>
+        <Route path="/voice" element={<Protected><VoicePage /></Protected>} />
         <Route path="/payouts" element={<Protected><PayoutsPage /></Protected>} />
         <Route
           path="/insights"

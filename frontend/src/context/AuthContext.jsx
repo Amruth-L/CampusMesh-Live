@@ -13,6 +13,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [sessionError, setSessionError] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [voicePrompt, setVoicePrompt] = useState(false);
   const navigate = useNavigate();
 
   // Axios instance with default base URL
@@ -62,6 +63,7 @@ export const AuthProvider = ({ children }) => {
       });
       setUser(res.data.profile);
       setIsAuthenticated(true);
+      setVoicePrompt(true);
     } catch (err) {
       console.error("Login verification failed:", err);
       localStorage.removeItem('token');
@@ -73,6 +75,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    setVoicePrompt(false);
     setSessionError('');
     localStorage.removeItem('token');
     setToken(null);
@@ -106,7 +109,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, sessionError, retrySession, isAuthenticated, login, logout, updateProfile, setMode, setDeliveryAvailability, api }}>
+    <AuthContext.Provider value={{ user, token, loading, sessionError, retrySession, isAuthenticated, login, logout, updateProfile, setMode, setDeliveryAvailability, api, voicePrompt, dismissVoicePrompt: () => setVoicePrompt(false) }}>
       {children}
     </AuthContext.Provider>
   );

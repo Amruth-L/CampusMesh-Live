@@ -109,6 +109,11 @@ The generic welcome introduces CampusMesh and thanks the user for joining, witho
 
 ### Optional generative support
 
+The interactive [browser voice assistant](../docs/browser-voice.md) reuses this
+service and JWT authentication at `/api/voice`. It adds speech recognition,
+spoken replies and temporary conversation context without a telephone provider.
+See that guide for architecture, environment settings, privacy and acceptance tests.
+
 The English help assistant works immediately from curated CampusMesh answers and the signed-in user's own rental/Wish Box records. It can save support tickets, but does not contact an external support team or promise a response time.
 
 To enable model-generated answers, privately configure `OPENAI_API_KEY` and `OPENAI_MODEL` in `backend/.env` with a Responses API model that supports structured outputs. Restart the API. Requests use `store: false`, a strict response schema and a 12-second timeout. Missing credentials, provider failures or invalid outputs fall back to the help library. Obvious email/phone/OTP strings are redacted from questions; minimal authenticated account facts and relevant help text are sent to the configured model. No tools capable of issuing refunds, payments or account changes are exposed. The model can still make mistakes: the UI links the underlying help and offers a support request.

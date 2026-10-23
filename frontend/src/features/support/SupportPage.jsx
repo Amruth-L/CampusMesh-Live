@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { MessageCircle, Send, LifeBuoy } from "lucide-react";
+import { MessageCircle, Send, LifeBuoy, Headphones } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 const field =
   "w-full rounded-lg border border-ink/15 bg-white px-3 py-3 text-sm outline-none focus:border-mesh-600";
@@ -82,6 +82,7 @@ export default function SupportPage() {
         <p className="page-copy">
           Ask about your rentals, payments, deliveries or Wish Box.
         </p>
+        <Link to="/voice" className="secondary-button mt-5"><Headphones size={18} aria-hidden="true" />Talk to the voice assistant</Link>
       </header>
       <div className="mt-7 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_330px]">
         <section className="panel overflow-hidden">

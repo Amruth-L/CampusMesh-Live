@@ -80,6 +80,7 @@ export default function AppNavbar() {
     ["/insights", "Insights"],
     ["/reminders", "Reminders"],
     ["/support", "Support"],
+    ["/voice", "Voice assistant"],
   );
   const isActiveLink = (to) =>
     pathname === to ||

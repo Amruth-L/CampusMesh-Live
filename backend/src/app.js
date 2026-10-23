@@ -50,6 +50,7 @@ app.use('/api/pricing', pricingRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/intelligence', require('./modules/intelligence/intelligence.routes'));
 app.use('/api/support', require('./modules/support/support.routes'));
+app.use('/api/voice', require('./modules/voice/voice.routes').createVoiceRouter());
 app.use('/api/call-scheduler', require('./modules/calls/scheduler.routes').schedulerRouter());
 app.use('/api/calls', require('./modules/calls/call.routes'));
 app.use('/api/wishes', require('./modules/payouts/courier-readiness'), require('./modules/wishes/wish.routes'));
