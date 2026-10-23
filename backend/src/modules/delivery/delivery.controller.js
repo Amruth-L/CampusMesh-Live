@@ -40,7 +40,7 @@ exports.getDeliveryStats = async (req, res) => {
 
     const activeRes = await pool.query(
       `SELECT COUNT(*) as count FROM delivery_requests 
-       WHERE courier_id = $1 AND status IN ('COURIER_ASSIGNED','ACCEPTED','GOING_TO_PICKUP','ARRIVING_FOR_PICKUP','ARRIVED_AT_PICKUP','PICKUP_VERIFIED','ORDER_COLLECTED','PICKED_UP','GOING_TO_DESTINATION','IN_TRANSIT','ARRIVED_AT_DESTINATION','ARRIVED','RETURN_COURIER_ASSIGNED','RETURN_IN_TRANSIT')`,
+       WHERE courier_id = $1 AND status IN ('COURIER_ASSIGNED','ACCEPTED','GOING_TO_PICKUP','ARRIVING_FOR_PICKUP','ARRIVED_AT_PICKUP','PICKUP_VERIFIED','ORDER_COLLECTED','PICKED_UP','GOING_TO_DESTINATION','IN_TRANSIT','ARRIVED_AT_DESTINATION','ARRIVED','RETURN_COURIER_ASSIGNED','RETURN_IN_TRANSIT','DELIVERY_PAYMENT_PENDING')`,
       [userId],
     );
 
@@ -523,7 +523,7 @@ exports.getRentalDeliveryStatus = async (req, res) => {
     if (!rental) return res.status(403).json({ error: 'You do not have access to this rental delivery.' });
 
     const result = await pool.query(
-      "SELECT dr.*, (SELECT payment_method FROM rentals WHERE id=dr.rental_id) AS payment_method, l.title AS listing_title, l.image_url AS listing_image, l.category AS listing_category, owner.name AS owner_name, owner.hostel AS owner_hostel, renter.name AS renter_name, renter.hostel AS renter_hostel, courier.name AS courier_name, courier.phone_number AS courier_phone, courier.hostel AS courier_hostel FROM delivery_requests dr JOIN rentals r ON r.id=dr.rental_id LEFT JOIN listings l ON l.id=dr.listing_id LEFT JOIN users owner ON owner.id=r.owner_id LEFT JOIN users renter ON renter.id=r.borrower_id LEFT JOIN users courier ON courier.id=dr.courier_id WHERE dr.rental_id=$1 ORDER BY CASE WHEN dr.status IN ('MATCHING_COURIER','COURIER_ASSIGNED','GOING_TO_PICKUP','ARRIVED_AT_PICKUP','IN_TRANSIT','ARRIVED_AT_DESTINATION','RETURN_LOCATION_PENDING','RETURN_MATCHING','RETURN_COURIER_ASSIGNED','RETURN_IN_TRANSIT') THEN 0 WHEN dr.id=r.outbound_delivery_id THEN 1 WHEN dr.id=r.return_delivery_id THEN 2 ELSE 3 END, dr.created_at DESC LIMIT 1",
+      "SELECT dr.*, (SELECT payment_method FROM rentals WHERE id=dr.rental_id) AS payment_method, l.title AS listing_title, l.image_url AS listing_image, l.category AS listing_category, owner.name AS owner_name, owner.hostel AS owner_hostel, renter.name AS renter_name, renter.hostel AS renter_hostel, courier.name AS courier_name, courier.phone_number AS courier_phone, courier.hostel AS courier_hostel FROM delivery_requests dr JOIN rentals r ON r.id=dr.rental_id LEFT JOIN listings l ON l.id=dr.listing_id LEFT JOIN users owner ON owner.id=r.owner_id LEFT JOIN users renter ON renter.id=r.borrower_id LEFT JOIN users courier ON courier.id=dr.courier_id WHERE dr.rental_id=$1 ORDER BY CASE WHEN dr.status IN ('MATCHING_COURIER','COURIER_ASSIGNED','GOING_TO_PICKUP','ARRIVED_AT_PICKUP','IN_TRANSIT','ARRIVED_AT_DESTINATION','RETURN_LOCATION_PENDING','RETURN_MATCHING','RETURN_COURIER_ASSIGNED','RETURN_IN_TRANSIT','DELIVERY_PAYMENT_PENDING') THEN 0 WHEN dr.id=r.outbound_delivery_id THEN 1 WHEN dr.id=r.return_delivery_id THEN 2 ELSE 3 END, dr.created_at DESC LIMIT 1",
       [rentalId],
     );
 
@@ -573,12 +573,16 @@ exports.getRentalDeliveryStatus = async (req, res) => {
             ? deliveryStage
             : null;
 
-    const blockedBy = delivery.status === 'WAITING_FOR_DEPOSIT'
+    const blockedBy = delivery.status === 'DELIVERY_PAYMENT_PENDING'
+      ? 'DELIVERY_PAYMENT'
+      : delivery.status === 'WAITING_FOR_DEPOSIT'
       ? 'SECURITY_DEPOSIT'
       : delivery.status === 'NO_COURIER_AVAILABLE'
         ? 'ROUTE_MATCH'
         : null;
-    const nextAction = blockedBy === 'SECURITY_DEPOSIT'
+    const nextAction = blockedBy === 'DELIVERY_PAYMENT'
+      ? 'Handover verified. The borrower must pay the delivery fee, then the courier confirms receipt to complete delivery.'
+      : blockedBy === 'SECURITY_DEPOSIT'
       ? 'Pay the security deposit before a courier can accept.'
       : blockedBy === 'ROUTE_MATCH'
         ? 'Waiting for an available courier to accept.'

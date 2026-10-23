@@ -183,10 +183,12 @@ while those transactions still need reconciliation or refunds.
    screenshot or reported reference never marks a payment confirmed automatically.
 5. The deposit follows the same separate flow. Handover or delivery matching unlocks
    only after rental and required deposit receipts are confirmed.
-6. After a courier completes a verified handover, a separate fee request becomes
-   available in Payments for renter → courier. Return delivery has its own request.
-   These direct fees have no platform deduction. Courier fees can remain unpaid:
-   this architecture cannot enforce or automatically collect them.
+6. After verified handover, delivery stays **Awaiting delivery payment**. A separate
+   fee request appears in Payments for renter → courier, and in the courier's active
+   task. Only the courier's receipt confirmation marks the delivery completed and
+   counts its earnings. Reporting or disputing a payment does not complete delivery.
+   Return delivery follows the same rule. These fees have no platform deduction;
+   the app records confirmation but cannot automatically debit or collect them.
 7. The lender confirms physical return. The deposit becomes refund pending. Once
    the renter saves a UPI ID, either party prepares the refund; the lender sends it
    and the renter confirms actual receipt. No automatic refund takes place.

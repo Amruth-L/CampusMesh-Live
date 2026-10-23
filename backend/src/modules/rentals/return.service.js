@@ -26,6 +26,9 @@ async function requestReturn(rentalId, userId, requestedMode) {
     ).rows[0];
     if (!rental) throw fail(404, 'Rental not found.');
     if (rental.borrower_id !== userId) throw fail(403, 'Only the borrower can request a return.');
+    if (rental.payment_method === 'DIRECT_UPI' && (await client.query(
+      "SELECT 1 FROM delivery_requests WHERE rental_id=$1 AND task_type='RENTAL_OUTBOUND' AND status='DELIVERY_PAYMENT_PENDING'", [rentalId],
+    )).rowCount) throw fail(409, 'Pay the outbound delivery fee and wait for the courier to confirm receipt before requesting a return.');
     const mode = requestedMode || (rental.delivery_requested ? 'COURIER' : 'DIRECT');
     if (!['DIRECT', 'COURIER'].includes(mode)) throw fail(400, 'Choose direct or courier return.');
     if (

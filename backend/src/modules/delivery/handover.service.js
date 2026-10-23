@@ -74,6 +74,12 @@ async function verifyCredential(deliveryId, courierId, { stage, method, value })
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    // Payment confirmation locks rental -> payment -> delivery. Take the rental
+    // first here too so a concurrent receipt cannot deadlock with handover.
+    const ref = (await client.query('SELECT rental_id FROM delivery_requests WHERE id=$1', [deliveryId])).rows[0];
+    const rental = ref?.rental_id
+      ? (await client.query('SELECT * FROM rentals WHERE id=$1 FOR UPDATE', [ref.rental_id])).rows[0]
+      : null;
     const deliveryResult = await client.query('SELECT * FROM delivery_requests WHERE id=$1 FOR UPDATE', [deliveryId]);
     const delivery = deliveryResult.rows[0];
     if (!delivery || delivery.courier_id !== courierId) throw Object.assign(new Error('Only the assigned courier can verify this handover.'), { status: 403 });
@@ -113,16 +119,23 @@ async function verifyCredential(deliveryId, courierId, { stage, method, value })
     if (supplied.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(supplied), Buffer.from(expected))) throw Object.assign(new Error('The handover credential is not valid.'), { status: 400 });
     await client.query("UPDATE handover_verifications SET status='USED', verified_by_user_id=$1, verified_at=NOW() WHERE id=$2", [courierId, record.id]);
     const isFinal = stage === 'DELIVERY' || stage === 'RETURN_RECEIVED';
-    const nextStatus = stage === 'RETURN_PICKUP' ? 'RETURN_IN_TRANSIT' : stage === 'RETURN_RECEIVED' ? 'COMPLETED' : (stage === 'PICKUP' || stage === 'XEROX_PICKUP') ? 'IN_TRANSIT' : 'COMPLETED';
-    await client.query(`UPDATE delivery_requests SET status=$1,
+    const awaitsPayment = isFinal && rental?.payment_method === 'DIRECT_UPI'
+      && ['RENTAL_OUTBOUND', 'RENTAL_RETURN'].includes(delivery.task_type)
+      && Number(delivery.courier_earning) > 0;
+    const nextStatus = awaitsPayment ? 'DELIVERY_PAYMENT_PENDING' : stage === 'RETURN_PICKUP' ? 'RETURN_IN_TRANSIT' : stage === 'RETURN_RECEIVED' ? 'COMPLETED' : (stage === 'PICKUP' || stage === 'XEROX_PICKUP') ? 'IN_TRANSIT' : 'COMPLETED';
+    await client.query(`UPDATE delivery_requests SET status=$1::varchar,
       pickup_verified_at=CASE WHEN $2=FALSE THEN NOW() ELSE pickup_verified_at END,
       delivery_verified_at=CASE WHEN $2=TRUE THEN NOW() ELSE delivery_verified_at END,
       delivered_at=CASE WHEN $2=TRUE THEN NOW() ELSE delivered_at END,
-      completed_at=CASE WHEN $2=TRUE THEN NOW() ELSE completed_at END, updated_at=NOW() WHERE id=$3`, [nextStatus, isFinal, deliveryId]);
+      completed_at=CASE WHEN $1::varchar='COMPLETED' THEN NOW() ELSE completed_at END, updated_at=NOW() WHERE id=$3`, [nextStatus, isFinal, deliveryId]);
     if (delivery.rental_id) {
       if (stage === 'DELIVERY') await client.query("UPDATE rentals SET status='RENTAL_ACTIVE', updated_at=NOW() WHERE id=$1", [delivery.rental_id]);
       if (stage === 'RETURN_PICKUP') await client.query("UPDATE rentals SET status='RETURN_IN_TRANSIT', updated_at=NOW() WHERE id=$1", [delivery.rental_id]);
-      if (stage === 'RETURN_RECEIVED') await client.query("UPDATE rentals SET status='COMPLETED', completed_at=NOW(), updated_at=NOW() WHERE id=$1", [delivery.rental_id]);
+      if (stage === 'RETURN_RECEIVED') {
+        if (rental?.payment_method === 'DIRECT_UPI')
+          await client.query("UPDATE rentals SET status='RETURN_PENDING', updated_at=NOW() WHERE id=$1", [delivery.rental_id]);
+        else await client.query("UPDATE rentals SET status='COMPLETED', completed_at=NOW(), updated_at=NOW() WHERE id=$1", [delivery.rental_id]);
+      }
     }
     if (delivery.wish_request_id && stage === 'DELIVERY') await client.query("UPDATE wish_requests SET status='COMPLETED', updated_at=NOW() WHERE id=$1", [delivery.wish_request_id]);
     if (delivery.xerox_request_id && stage === 'DELIVERY') await client.query("UPDATE xerox_requests SET status='COMPLETED', completed_at=NOW() WHERE id=$1", [delivery.xerox_request_id]);
@@ -131,7 +144,7 @@ async function verifyCredential(deliveryId, courierId, { stage, method, value })
     await client.query('COMMIT');
     const payload = { id: deliveryId, delivery_id: deliveryId, status: nextStatus, stage, courier_id: courierId };
     emitDelivery(deliveryId, 'delivery:status', payload);
-    if (isFinal) emitDelivery(deliveryId, 'delivery:completed', payload);
+    if (nextStatus === 'COMPLETED') emitDelivery(deliveryId, 'delivery:completed', payload);
     emitUser(courierId, 'delivery:status', payload);
     emitUser(delivery.customer_id, 'delivery:status', payload); emitUser(delivery.seller_id, 'delivery:status', payload);
     return payload;

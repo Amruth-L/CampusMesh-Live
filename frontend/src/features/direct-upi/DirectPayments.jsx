@@ -320,7 +320,7 @@ function PaymentCard({ payment: p, reload }) {
     </article>
   );
 }
-export function DirectPayments({ rental = null, onChange }) {
+export function DirectPayments({ rental = null, deliveryId = null, onChange }) {
   const { api, user } = useAuth();
   const [items, setItems] = useState([]),
     [error, setError] = useState(""),
@@ -331,13 +331,13 @@ export function DirectPayments({ rental = null, onChange }) {
       const { data } = await api.get("/api/direct-upi/payments", {
         params: rental ? { rental_id: rental.id } : {},
       });
-      setItems(data);
+      setItems(deliveryId ? data.filter(p => p.delivery_id === deliveryId) : data);
       setError("");
       setLoaded(true);
     } catch (e) {
       setError(e.response?.data?.error || "Could not load direct payments.");
     }
-  }, [api, rental?.id]);
+  }, [api, rental?.id, deliveryId]);
   useEffect(() => {
     load();
     const timer = setInterval(load, 15000);
@@ -446,8 +446,8 @@ export function DirectPayments({ rental = null, onChange }) {
       ))}
       {loaded && !items.length && (
         <div className="border-y border-ink/15 py-5">
-          <h3 className="font-bold">No payment is due yet</h3>
-          <p className="mt-2 text-sm leading-6 text-ink/75">A rental payment QR appears after the lender accepts your request. Saving a UPI ID does not create an order or move money.</p>
+          <h3 className="font-bold">{deliveryId ? "Set up your receiving UPI account" : "No payment is due yet"}</h3>
+          <p className="mt-2 text-sm leading-6 text-ink/75">{deliveryId ? "Save your receiving UPI ID in Payments, then refresh payments here so the borrower can pay your delivery fee." : "A rental payment QR appears after the lender accepts your request. Saving a UPI ID does not create an order or move money."}</p>
           <div className="mt-3 flex flex-wrap gap-3">
             <Link to="/marketplace" className="secondary-button">Browse items to rent</Link>
             <Link to="/account/rentals" className="secondary-button">Open my rental requests</Link>

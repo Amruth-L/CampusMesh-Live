@@ -73,6 +73,7 @@ const DELIVERY_STATUS = {
   RETURN_MATCHING: { label: "Matching return courier", tone: "blue" },
   RETURN_COURIER_ASSIGNED: { label: "Return courier assigned", tone: "blue" },
   RETURN_IN_TRANSIT: { label: "Return item in transit", tone: "blue" },
+  DELIVERY_PAYMENT_PENDING: { label: "Awaiting delivery payment", tone: "amber" },
   COMPLETED: { label: "Delivered", tone: "green" },
 };
 
@@ -130,6 +131,7 @@ function Stepper({ rental, delivery }) {
       "ARRIVED_AT_PICKUP",
       "IN_TRANSIT",
       "ARRIVED_AT_DESTINATION",
+      "DELIVERY_PAYMENT_PENDING",
       "COMPLETED",
     ].includes(status);
   const matchingDone = [
@@ -138,20 +140,23 @@ function Stepper({ rental, delivery }) {
     "ARRIVED_AT_PICKUP",
     "IN_TRANSIT",
     "ARRIVED_AT_DESTINATION",
+    "DELIVERY_PAYMENT_PENDING",
     "COMPLETED",
   ].includes(status);
   const pickupDone = [
     "IN_TRANSIT",
     "ARRIVED_AT_DESTINATION",
+    "DELIVERY_PAYMENT_PENDING",
     "COMPLETED",
   ].includes(status);
   const transitDone = [
     "ARRIVED_AT_DESTINATION",
+    "DELIVERY_PAYMENT_PENDING",
     "COMPLETED",
   ].includes(status);
   const deliveredDone =
     status === "COMPLETED" ||
-    ["RENTAL_ACTIVE", "RETURN_MATCHING", "RETURN_PENDING", "COMPLETED", "DEPOSIT_REFUNDED"].includes(rental?.status);
+    (!delivery && ["RENTAL_ACTIVE", "RETURN_MATCHING", "RETURN_PENDING", "COMPLETED", "DEPOSIT_REFUNDED"].includes(rental?.status));
   const done = [
     ownerDone,
     depositDone,
@@ -349,6 +354,7 @@ export default function RentDetails() {
         "ARRIVED_AT_PICKUP",
         "IN_TRANSIT",
         "ARRIVED_AT_DESTINATION",
+      "DELIVERY_PAYMENT_PENDING",
         "RETURN_MATCHING",
         "RETURN_COURIER_ASSIGNED",
         "RETURN_IN_TRANSIT",
@@ -759,6 +765,14 @@ export default function RentDetails() {
         body: "The courier has arrived. Show the delivery QR or OTP to complete the handover.",
         action: null,
         tone: "green",
+      };
+    }
+    if (delivery?.status === "DELIVERY_PAYMENT_PENDING") {
+      return {
+        title: "Handover verified · Delivery payment pending",
+        body: "The borrower must pay the delivery fee and report the transaction. Delivery becomes complete only when the courier checks their bank and confirms receipt.",
+        action: null,
+        tone: "amber",
       };
     }
     if (rental?.status === "RETURN_PENDING") {

@@ -1,7 +1,7 @@
 const crypto = require('node:crypto');
 const pool = require('../../config/database');
 const { ensureOutboundDelivery } = require('../delivery/delivery-request.service');
-const { emitUser } = require('../../shared/realtime');
+const { emitUser, emitDelivery } = require('../../shared/realtime');
 const fail = (message, status = 409) => Object.assign(new Error(message), { status });
 const enabled = () => (process.env.DIRECT_UPI_ENABLED ?? 'true') === 'true';
 const paise = (value) => {
@@ -143,14 +143,14 @@ function createService({
     });
   }
   async function syncDelivery(user) {
-    // A separate obligation for each completed, evidence-verified delivery leg.
+    // Handover makes the fee payable; only courier receipt completes the leg.
     await db.query(
       `INSERT INTO direct_upi_payments(source_key,rental_id,delivery_id,kind,payer_id,recipient_id,amount_paise,upi_id,payee_name)
       SELECT (CASE WHEN d.task_type='RENTAL_RETURN' THEN 'RETURN_DELIVERY' ELSE 'DELIVERY' END)||':'||d.id,r.id,d.id,
       CASE WHEN d.task_type='RENTAL_RETURN' THEN 'RETURN_DELIVERY' ELSE 'DELIVERY' END,r.borrower_id,d.courier_id,
       ROUND(d.courier_earning*100)::bigint,p.upi_id,p.payee_name
       FROM delivery_requests d JOIN rentals r ON r.id=d.rental_id JOIN upi_profiles p ON p.user_id=d.courier_id
-      WHERE r.payment_method='DIRECT_UPI' AND d.status='COMPLETED' AND d.delivery_verified_at IS NOT NULL
+      WHERE r.payment_method='DIRECT_UPI' AND d.status IN ('DELIVERY_PAYMENT_PENDING','COMPLETED') AND d.delivery_verified_at IS NOT NULL
         AND d.task_type IN ('RENTAL_OUTBOUND','RENTAL_RETURN') AND d.courier_earning>0
         AND d.courier_id<>r.borrower_id AND d.courier_id<>r.owner_id
         AND (r.borrower_id=$1 OR r.owner_id=$1 OR d.courier_id=$1)
@@ -256,14 +256,34 @@ function createService({
         action.toUpperCase(),
       ]);
       let deliveryId;
+      let completedDelivery;
       if (action === 'confirm') {
         if (['RENTAL', 'DEPOSIT'].includes(p.kind)) deliveryId = await advance(c, r);
         if (p.kind === 'DEPOSIT_REFUND')
           await c.query("UPDATE rentals SET deposit_status='REFUNDED',updated_at=NOW() WHERE id=$1", [r.id]);
+        if (['DELIVERY', 'RETURN_DELIVERY'].includes(p.kind)) {
+          const d = (await c.query('SELECT * FROM delivery_requests WHERE id=$1 FOR UPDATE', [p.delivery_id])).rows[0];
+          const stage = p.kind === 'RETURN_DELIVERY' ? 'RETURN_RECEIVED' : 'DELIVERY';
+          const verified = await c.query("SELECT 1 FROM handover_verifications WHERE delivery_id=$1 AND stage=$2 AND status='USED'", [p.delivery_id, stage]);
+          if (!d || d.rental_id !== r.id || d.courier_id !== user || !d.delivery_verified_at
+            || !verified.rowCount || !['DELIVERY_PAYMENT_PENDING', 'COMPLETED'].includes(d.status))
+            throw fail('Complete the verified handover before confirming the delivery fee.');
+          await c.query("UPDATE delivery_requests SET status='COMPLETED',completed_at=COALESCE(completed_at,NOW()),updated_at=NOW() WHERE id=$1", [d.id]);
+          await c.query("INSERT INTO transaction_events(rental_id,delivery_id,event_type,actor_user_id) VALUES($1,$2,'DELIVERY_PAYMENT_CONFIRMED',$3)", [r.id, d.id, user]);
+          completedDelivery = d;
+        }
       }
-      return { r, deliveryId, recipient: p.recipient_id };
+      return { r, deliveryId, completedDelivery, recipient: p.recipient_id };
     });
     await announce(result.r, result.deliveryId);
+    if (result.completedDelivery) {
+      const d = result.completedDelivery;
+      const payload = { id: d.id, delivery_id: d.id, rental_id: result.r.id, status: 'COMPLETED', courier_id: d.courier_id };
+      try {
+        emitDelivery(d.id, 'delivery:completed', payload);
+        for (const u of [d.courier_id, d.seller_id, d.customer_id]) notify(u, 'delivery:status', payload);
+      } catch { /* Confirmation is durable even if realtime is unavailable. */ }
+    }
     if (action === 'confirm') {
       try {
         onConfirmed();

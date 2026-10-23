@@ -20,7 +20,7 @@ const listFrom = (result, key) => {
   const value = result.value.data;
   return Array.isArray(value) ? value : Array.isArray(value?.[key]) ? value[key] : [];
 };
-const activeStatuses = new Set(["COURIER_ASSIGNED", "ACCEPTED", "GOING_TO_PICKUP", "ARRIVED_AT_PICKUP", "IN_TRANSIT", "ARRIVED_AT_DESTINATION", "RETURN_COURIER_ASSIGNED", "RETURN_IN_TRANSIT"]);
+const activeStatuses = new Set(["COURIER_ASSIGNED", "ACCEPTED", "GOING_TO_PICKUP", "ARRIVED_AT_PICKUP", "IN_TRANSIT", "ARRIVED_AT_DESTINATION", "RETURN_COURIER_ASSIGNED", "RETURN_IN_TRANSIT", "DELIVERY_PAYMENT_PENDING"]);
 
 export default function DeliveryPage() {
   const { user, api } = useAuth();
@@ -114,7 +114,7 @@ export default function DeliveryPage() {
     socket.on("disconnect", () => setConnection("reconnecting"));
     socket.on("connect_error", () => setConnection("offline"));
     const refresh = () => load();
-    ["delivery:offer", "delivery:offer-unavailable", "delivery:created", "delivery:status", "delivery:assigned", "delivery:completed"].forEach((event) => socket.on(event, refresh));
+    ["delivery:offer", "delivery:offer-unavailable", "delivery:created", "delivery:status", "delivery:assigned", "delivery:completed", "direct-payment:updated"].forEach((event) => socket.on(event, refresh));
     socket.on("delivery:location", (location) => { if (location.delivery_id === active?.id) setPosition(location); });
     window.addEventListener("campusmesh:delivery-change", refresh);
     return () => { socket.close(); window.removeEventListener("campusmesh:delivery-change", refresh); };
@@ -204,7 +204,7 @@ export default function DeliveryPage() {
           <div className="min-w-0">
             <nav aria-label="Delivery sections" className="mb-6 flex gap-5 border-b border-ink/10">{[['requests','Requests'],['active','Current delivery'],['history','History & earnings']].map(([id,label]) => <button key={id} onClick={() => setView(id)} aria-current={view === id ? 'page' : undefined} className={`border-b-2 pb-3 text-xs font-semibold sm:text-sm ${view === id ? 'border-mesh-600 text-mesh-700' : 'border-transparent text-ink/55'}`}>{label}</button>)}</nav>
             {view === 'requests' && <OffersPanel offers={offers} onAccept={accept} onDecline={decline} online={online} reason={availability.reason} connection={connection} busyId={busyId} active={active}/>}
-            {view === 'active' && <div className="space-y-5"><ActiveTask task={active} route={route} verify={verify} setVerify={setVerify} onVerify={confirm} onAdvance={advance} onCheckpoint={checkpoint} onScan={() => setScanner(true)}/>{active && active.task_type !== "WISH_DELIVERY" && <CampusRouteMap campus={campus} route={route} position={position} pickup={pickup} destination={destination}/>}</div>}
+            {view === 'active' && <div className="space-y-5"><ActiveTask onPaymentChange={load} task={active} route={route} verify={verify} setVerify={setVerify} onVerify={confirm} onAdvance={advance} onCheckpoint={checkpoint} onScan={() => setScanner(true)}/>{active && active.task_type !== "WISH_DELIVERY" && <CampusRouteMap campus={campus} route={route} position={position} pickup={pickup} destination={destination}/>}</div>}
             {view === 'history' && <CompletedDeliveries deliveries={tasks}/>}
           </div>
           <aside className="order-first space-y-4 lg:order-last"><RouteSetup form={form} setForm={setForm} locations={locations} onSubmit={saveRoute} online={online} onToggle={toggleOnline} routeSaving={routeSaving}/><div className="px-2 text-xs leading-6 text-ink/55">Receive requests while CampusMesh is open. Review both locations and accept or decline. Accept one delivery at a time. Earnings are recorded after the handover is complete.</div>{active && view !== 'active' && <button onClick={() => setView('active')} className="secondary-button w-full"><Truck size={16}/> Continue current delivery</button>}</aside>
