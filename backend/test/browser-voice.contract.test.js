@@ -56,6 +56,19 @@ test(
       assert.match(mine.agent.think.prompt, /QA private compass/);
       assert.doesNotMatch(other.agent.think.prompt, /QA private compass/);
       assert.ok(!mine.agent.think.prompt.includes(ids[0]));
+      const { createAnnouncements } = require('../src/modules/voice/announcements');
+      const updates = createAnnouncements({ db: pool, capabilities: () => ({ enabled: true, aiConfigured: true }) });
+      const since = new Date(Date.now() - 60000).toISOString();
+      assert.equal((await updates.updates(ids[0], since)).length, 0, 'No confirmation timestamp means no success announcement');
+      await pool.query('UPDATE rentals SET booking_confirmed_at=NOW() WHERE id=$1', [rental]);
+      assert.equal((await updates.updates(ids[0], since)).length, 1);
+      assert.equal((await updates.updates(ids[1], since)).length, 0, 'Other users cannot hear this booking');
+      await assert.rejects(updates.audio(ids[1], { kind: 'booking', rentalId: rental }), { status: 404 });
+      await pool.query("UPDATE rentals SET payment_status='RENTAL_PAID' WHERE id=$1", [rental]);
+      assert.equal((await updates.updates(ids[0], since)).length, 0, 'Deposit still pending');
+      await assert.rejects(updates.audio(ids[0], { kind: 'booking', rentalId: rental }), { status: 404 });
+      await pool.query("UPDATE rentals SET payment_status='FULLY_PAID',status='CANCELLED' WHERE id=$1", [rental]);
+      assert.equal((await updates.updates(ids[0], since)).length, 0, 'Cancelled rentals never speak a success');
       assert.equal(
         (await pool.query('SELECT COUNT(*)::int n FROM support_turns WHERE user_id=ANY($1::uuid[])', [ids]))
           .rows[0].n,

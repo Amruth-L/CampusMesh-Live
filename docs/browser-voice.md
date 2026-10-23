@@ -1,11 +1,24 @@
 # Deepgram browser voice assistant
 
 CampusMesh uses Deepgram's **Voice Agent API**, not a locally trained voice model,
-Web Speech recognition, or a phone call. After a successful explicit sign-in, the
-existing invitation opens `/voice`. The user presses **Start AI voice session**,
+Web Speech recognition, or a phone call. After a successful explicit sign-in, a
+short Deepgram welcome announcement plays when browser audio is permitted.
+The voice-updates bar links to `/voice` for conversation. The user presses **Start AI voice session**,
 allows the microphone and hears the Deepgram greeting. Speech is continuous;
 users can interrupt, mute their microphone, mute playback, type a question while
 the assistant is listening, or end the session. Login/signup and OTP stay unchanged.
+
+## Automatic welcome and booking updates
+
+- After email verification and successful sign-in, a welcome message plays automatically when audio is allowed. Signing up alone does not bypass email verification or request microphone access.
+- The sign-in click/key gesture primes Web Audio. Browsers can still block audio; **Tap to hear** is the honest fallback. Audio is never forced through a browser restriction.
+- A visible tab checks for newly confirmed bookings every 15 seconds. The backend requires the signed-in borrower, `FULLY_PAID`, a confirmation timestamp, an eligible active status and a real (non-demo) listing. Direct UPI reports remain pending until the recipient confirms rent and any required deposit. Razorpay callbacks must already have passed the existing server verification.
+- This reads confirmed state and does not alter payment, lender approval, delivery or refund transitions. No success message is based on navigating to a success URL.
+- Refreshes and polls do not replay heard updates. History is per account on this browser (last 300 events); clearing site storage or using another device resets this history. Catch-up is bounded to 24 hours and the current sign-in session.
+- **Mute updates** stops playback and saves the preference for this account/browser. **Dismiss** skips the current message. Hidden tabs, logout, offline mode, and entering the conversation page stop announcements; the conversation never competes with a background announcement.
+- `/api/voice/announcements` and `/api/voice/announcements/audio` require authenticated, email-verified accounts. The audio endpoint accepts only a welcome or an owned confirmed booking, never arbitrary text. It uses Aura-2 Thalia via Deepgram TTS, with no microphone or separate OpenAI key.
+- Generic welcome/booking MP3s are cached for one hour in memory (two entries, at most 1 MB each), with coalesced requests and 20 requests/user/10 minutes. No names or booking data go to TTS. Responses are private/no-store. Provider failure does not affect login or booking.
+- This does not speak with the website closed, dial a phone, or create unattended due-date calls.
 
 ## Configure locally and on Render
 
@@ -98,7 +111,7 @@ phone reminders, and it is not an identity-verification mechanism.
 From the repository root (install frontend and backend dependencies first):
 
 ```sh
-node --test backend/test/browser-voice.test.js frontend/test/voice-session.test.js
+node --test backend/test/browser-voice.test.js backend/test/voice-announcements.test.js frontend/test/voice-session.test.js frontend/test/announcement-player.test.js
 npm run lint --prefix backend
 npm run lint --prefix frontend
 npm run build --prefix frontend
@@ -114,7 +127,7 @@ real database queries; run only in a disposable `qa_evidence_*` schema with
 
 Before declaring live voice verified, test with an actual configured account:
 
-1. Log in normally and start from the invitation; no microphone request on login.
+1. Log in normally: hear the welcome or use Tap to hear. No microphone request on login. Confirm Mute stops it. Open Talk to assistant to begin a conversation.
 2. Allow microphone, hear the greeting and ask about renting an item.
 3. Ask a follow-up, interrupt the answer, and confirm both transcript and audio.
 4. Mute/unmute, mute output, and send a typed question while it is listening.
@@ -124,8 +137,11 @@ Before declaring live voice verified, test with an actual configured account:
    do not leave an open provider connection.
 8. Repeat on current desktop Chrome/Edge and mobile Safari/Chrome over HTTPS.
 
+For announcement verification, complete a non-demo rental through the existing payment flow. A pending/failed payment must stay silent. After rent and any required deposit are confirmed, the borrower hears one update within 15 seconds in a visible tab. Refresh and confirm it does not repeat. Try muted, offline, blocked autoplay, logout during loading, and switching accounts. Test backend transitions in an isolated schema; never mark real payments paid for testing.
+
 ## Official references and costs
 
+- [Deepgram text-to-speech](https://developers.deepgram.com/docs/text-to-speech)
 - [Voice Agent protocol](https://developers.deepgram.com/docs/voice-agent-message-flow)
 - [Managed LLM options](https://developers.deepgram.com/docs/voice-agent-llm-models)
 - [Voice settings](https://developers.deepgram.com/docs/voice-agent-tts-models)

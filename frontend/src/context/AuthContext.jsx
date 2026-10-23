@@ -63,7 +63,7 @@ export const AuthProvider = ({ children }) => {
       });
       setUser(res.data.profile);
       setIsAuthenticated(true);
-      setVoicePrompt(true);
+      setVoicePrompt(globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`);
     } catch (err) {
       console.error("Login verification failed:", err);
       localStorage.removeItem('token');

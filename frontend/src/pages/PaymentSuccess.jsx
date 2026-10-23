@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 
 export default function PaymentSuccess() {
@@ -13,6 +13,9 @@ export default function PaymentSuccess() {
     nextPath = '/',
     rentals = []
   } = location.state || {};
+
+  // Opening this URL is not proof of payment. Show the server-backed rental list.
+  if (!location.state) return <Navigate to="/account/rentals" replace />;
 
   return (
     <div className="space-y-4">

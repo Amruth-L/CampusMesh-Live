@@ -37,7 +37,7 @@ export default function DepositPayment() {
     };
 
     fetchBookingDetails();
-  }, [id]);
+  }, [id, navigate]);
 
   const handlePayment = async () => {
     if (!booking) return;

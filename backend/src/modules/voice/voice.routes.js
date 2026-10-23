@@ -1,10 +1,12 @@
 const express = require('express');
 const auth = require('../../middleware/authMiddleware');
 const { voiceService } = require('./voice.service');
+const { createAnnouncements } = require('./announcements');
 
-function createVoiceRouter({ authenticate = auth, db, service } = {}) {
+function createVoiceRouter({ authenticate = auth, db, service, announcements } = {}) {
   db ||= require('../../config/database');
   service ||= voiceService;
+  announcements ||= createAnnouncements({ db, capabilities: service.capabilities });
   const router = express.Router();
   router.use(authenticate);
   router.use(async (req, res, next) => {
@@ -31,6 +33,19 @@ function createVoiceRouter({ authenticate = auth, db, service } = {}) {
       });
     }
   };
+  router.get(
+    '/announcements',
+    handle(async (req, res) =>
+      res.json({ updates: await announcements.updates(req.user.id, req.query.since) }),
+    ),
+  );
+  router.post(
+    '/announcements/audio',
+    handle(async (req, res) => {
+      const audio = await announcements.audio(req.user.id, req.body);
+      res.type('audio/mpeg').send(audio);
+    }),
+  );
   router.get(
     '/capabilities',
     handle((req, res) => res.json(service.capabilities())),
