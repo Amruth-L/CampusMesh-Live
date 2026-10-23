@@ -1,13 +1,10 @@
 const express = require('express');
 const auth = require('../../middleware/authMiddleware');
-const { createVoiceService } = require('./voice.service');
+const { voiceService } = require('./voice.service');
 
 function createVoiceRouter({ authenticate = auth, db, service } = {}) {
   db ||= require('../../config/database');
-  if (!service) {
-    const support = require('../support/support.service');
-    service = createVoiceService({ answer: support.answer, redact: support.redact });
-  }
+  service ||= voiceService;
   const router = express.Router();
   router.use(authenticate);
   router.use(async (req, res, next) => {
@@ -27,13 +24,11 @@ function createVoiceRouter({ authenticate = auth, db, service } = {}) {
     try {
       await fn(req, res);
     } catch (error) {
-      res
-        .status(error.status || 503)
-        .json({
-          error: error.status
-            ? error.message
-            : 'Your question could not be answered. Please retry or use Support.',
-        });
+      res.status(error.status || 503).json({
+        error: error.status
+          ? error.message
+          : 'Your question could not be answered. Please retry or use Support.',
+      });
     }
   };
   router.get(
@@ -43,10 +38,6 @@ function createVoiceRouter({ authenticate = auth, db, service } = {}) {
   router.post(
     '/sessions',
     handle((req, res) => res.status(201).json(service.start(req.user.id))),
-  );
-  router.post(
-    '/sessions/:id/turns',
-    handle(async (req, res) => res.json(await service.turn(req.user.id, req.params.id, req.body?.message))),
   );
   router.delete(
     '/sessions/:id',

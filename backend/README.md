@@ -109,10 +109,11 @@ The generic welcome introduces CampusMesh and thanks the user for joining, witho
 
 ### Optional generative support
 
-The interactive [browser voice assistant](../docs/browser-voice.md) reuses this
-service and JWT authentication at `/api/voice`. It adds speech recognition,
-spoken replies and temporary conversation context without a telephone provider.
-See that guide for architecture, environment settings, privacy and acceptance tests.
+The interactive [browser voice assistant](../docs/browser-voice.md) uses Deepgram's
+Voice Agent API through an authenticated server-side Socket.IO bridge. Configure
+`DEEPGRAM_API_KEY` privately and keep `BROWSER_VOICE_ENABLED=true`. It reuses JWT
+and account/help data, but does not use browser speech synthesis or require an
+OpenAI key. See the guide for configuration, costs, privacy and acceptance tests.
 
 The English help assistant works immediately from curated CampusMesh answers and the signed-in user's own rental/Wish Box records. It can save support tickets, but does not contact an external support team or promise a response time.
 

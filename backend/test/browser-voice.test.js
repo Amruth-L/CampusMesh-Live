@@ -1,197 +1,248 @@
-/* global fetch, AbortController */
+/* global fetch */
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const express = require('express');
+const http = require('node:http');
+const { EventEmitter, once } = require('node:events');
 const jwt = require('jsonwebtoken');
+const { Server } = require('socket.io');
+const { io: client } = require('../../frontend/node_modules/socket.io-client');
 const { createVoiceService } = require('../src/modules/voice/voice.service');
 const { createVoiceRouter } = require('../src/modules/voice/voice.routes');
+const { attachVoice } = require('../src/modules/voice/voice.socket');
+const { agentSettings } = require('../src/modules/voice/deepgram.settings');
+const configured = () => ({ enabled: true, aiConfigured: true, key: 'never-expose' });
+const fakeDB = {
+  query: async (_sql, [id]) => ({ rows: id === 'deleted' ? [] : [{ email_verified: id !== 'unverified' }] }),
+};
 
-const reply = { answer: 'Open My rentals to request your return.', mode: 'ai_grounded', sources: [] };
-const service = (options) =>
-  createVoiceService({
-    answer: async () => reply,
-    redact: (text) => text.replace(/secret/g, '[removed]'),
-    settings: () => ({ enabled: true, aiConfigured: true }),
-    ...options,
-  });
-
-test('voice endpoints enforce existing JWT, verified accounts and session ownership', async (t) => {
-  const old = process.env.JWT_SECRET;
+async function fixture(t) {
+  const previous = process.env.JWT_SECRET;
   process.env.JWT_SECRET = 'voice-fixture-only';
-  const voice = service();
+  const voice = createVoiceService({ settings: configured });
   const app = express();
   app.use(express.json());
-  app.use(
-    '/api/voice',
-    createVoiceRouter({
-      service: voice,
-      db: {
-        query: async (_sql, [id]) => ({
-          rows: id === 'deleted' ? [] : [{ email_verified: id !== 'unverified' }],
-        }),
-      },
-    }),
-  );
-  const server = app.listen(0, '127.0.0.1');
-  await new Promise((resolve) => server.once('listening', resolve));
-  t.after(async () => {
-    voice.dispose();
-    await new Promise((resolve) => server.close(resolve));
-    if (old === undefined) delete process.env.JWT_SECRET;
-    else process.env.JWT_SECRET = old;
-  });
-  const request = async (user, path, method = 'GET', body) => {
-    const response = await fetch(`http://127.0.0.1:${server.address().port}/api/voice${path}`, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(user ? { Authorization: `Bearer ${jwt.sign({ id: user }, process.env.JWT_SECRET)}` } : {}),
-      },
-      ...(body ? { body: JSON.stringify(body) } : {}),
-    });
-    return {
-      status: response.status,
-      headers: response.headers,
-      data: response.status === 204 ? null : await response.json(),
-    };
-  };
-  assert.equal((await request(null, '/sessions', 'POST')).status, 401);
-  assert.equal((await request('unverified', '/sessions', 'POST')).status, 403);
-  assert.equal((await request('deleted', '/capabilities')).status, 403);
-  const created = await request('alice', '/sessions', 'POST', { userId: 'bob' });
-  assert.equal(created.status, 201);
-  assert.equal(created.headers.get('cache-control'), 'no-store');
-  assert.equal(created.data.apiKey, undefined);
-  const path = `/sessions/${created.data.id}`;
-  assert.equal((await request('bob', path + '/turns', 'POST', { message: 'My rentals?' })).status, 410);
-  assert.equal((await request('bob', path, 'DELETE')).status, 204);
-  assert.equal(
-    (await request('alice', path + '/turns', 'POST', { message: 'My rentals?' })).data.answer,
-    reply.answer,
-  );
-  assert.equal((await request('alice', path + '/turns', 'POST', { message: 'x'.repeat(1501) })).status, 400);
-  assert.equal((await request('alice', path, 'DELETE')).status, 204);
-  assert.equal((await request('alice', path + '/turns', 'POST', { message: 'Hi' })).status, 410);
-});
-
-test('ephemeral conversation remembers only redacted owned turns; limits and expiry apply', async (t) => {
-  let now = 1000000;
-  const seen = [];
-  const voice = service({
-    clock: () => now,
-    answer: async (id, text, options) => {
-      seen.push({ id, text, ...options });
-      return reply;
-    },
-  });
-  t.after(() => voice.dispose());
-  const session = voice.start('alice');
-  await voice.turn('alice', session.id, 'secret return question');
-  await voice.turn('alice', session.id, 'What about that?');
-  assert.equal(seen[1].id, 'alice');
-  assert.equal(seen[1].save, false);
-  assert.equal(seen[1].voice, true);
-  assert.equal(seen[1].history[0].text, '[removed] return question');
-  for (let i = 0; i < 8; i++) await voice.turn('alice', session.id, 'return');
-  await assert.rejects(voice.turn('alice', session.id, 'again'), { status: 429 });
-  now += 61000;
-  for (let i = 0; i < 20; i++) {
-    if (i % 10 === 0) now += 61000;
-    await voice.turn('alice', session.id, 'return');
-  }
-  await assert.rejects(voice.turn('alice', session.id, 'limit'), { status: 429 });
-  now += 600001;
-  await assert.rejects(voice.turn('alice', session.id, 'expired'), { status: 410 });
-  for (let i = 0; i < 5; i++) voice.start('bob');
-  assert.throws(() => voice.start('bob'), { status: 429 });
-});
-
-test('end and session replacement abort in-flight answers and prevent late replies', async (t) => {
-  let finish, signal;
-  const voice = service({
-    answer: async (_id, _text, options) => {
-      signal = options.signal;
-      return new Promise((resolve) => {
-        finish = resolve;
+  app.use('/api/voice', createVoiceRouter({ service: voice, db: fakeDB }));
+  const server = http.createServer(app),
+    io = new Server(server);
+  const providers = [];
+  attachVoice(io, {
+    service: voice,
+    db: fakeDB,
+    settings: async (user, _db, rate) => ({ type: 'Settings', account: user, sample_rate: rate }),
+    connect: () => {
+      const provider = new EventEmitter();
+      Object.assign(provider, {
+        readyState: 1,
+        bufferedAmount: 0,
+        sent: [],
+        terminated: false,
+        send(data) {
+          this.sent.push(data);
+          this.emit('sent', data);
+        },
+        terminate() {
+          this.terminated = true;
+          this.emit('close');
+        },
+        message(data, binary = false) {
+          this.emit('message', binary ? data : Buffer.from(JSON.stringify(data)), binary);
+        },
       });
+      providers.push(provider);
+      return provider;
     },
   });
-  t.after(() => voice.dispose());
-  const first = voice.start('alice');
-  const pending = voice.turn('alice', first.id, 'My rental');
-  await assert.rejects(voice.turn('alice', first.id, 'duplicate'), { status: 409 });
-  voice.start('alice');
-  assert.equal(signal.aborted, true);
-  finish(reply);
-  await assert.rejects(pending, { status: 410 });
-});
-
-test('grounded AI voice requests carry bounded history, no storage, cancellation and honest fallback', async (t) => {
-  const { answer } = require('../src/modules/support/support.service');
-  const before = { key: process.env.OPENAI_API_KEY, model: process.env.OPENAI_MODEL };
-  process.env.OPENAI_API_KEY = 'fixture-only';
-  process.env.OPENAI_MODEL = 'fixture-model';
-  t.after(() => {
-    for (const [key, value] of [
-      ['OPENAI_API_KEY', before.key],
-      ['OPENAI_MODEL', before.model],
-    ]) {
-      if (value === undefined) delete process.env[key];
-      else process.env[key] = value;
-    }
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  const url = `http://127.0.0.1:${server.address().port}`;
+  const token = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '10m' });
+  const sockets = [];
+  t.after(async () => {
+    sockets.forEach((s) => s.disconnect());
+    voice.dispose();
+    await new Promise((r) => io.close(r));
+    if (previous === undefined) delete process.env.JWT_SECRET;
+    else process.env.JWT_SECRET = previous;
   });
-  let payload;
-  const options = {
-    save: false,
-    voice: true,
-    contextOverride: { rentals: [], wishes: [] },
-    history: [{ role: 'user', text: 'My return secret@example.com' }],
-    transport: async (_url, request) => {
-      payload = JSON.parse(request.body);
-      return {
-        ok: true,
-        json: async () => ({
-          output: [
-            {
-              content: [
-                {
-                  type: 'output_text',
-                  text: JSON.stringify({
-                    answer: 'You can request a return in My rentals. Is it a delivery return?',
-                    source_ids: ['return'],
-                    needs_human: false,
-                  }),
-                },
-              ],
-            },
-          ],
-        }),
-      };
+  return {
+    voice,
+    providers,
+    async request(user, path, method = 'GET') {
+      const res = await fetch(url + '/api/voice' + path, {
+        method,
+        headers: user ? { Authorization: 'Bearer ' + token(user) } : {},
+      });
+      return { status: res.status, data: res.status === 204 ? null : await res.json() };
+    },
+    socket(user, sessionId) {
+      const socket = client(url + '/voice', {
+        transports: ['websocket'],
+        forceNew: true,
+        reconnection: false,
+        autoConnect: false,
+        auth: { token: user ? token(user) : '', sessionId, sampleRate: 48000 },
+      });
+      sockets.push(socket);
+      return socket;
     },
   };
-  const result = await answer('alice', 'How do I return?', options);
-  assert.equal(result.mode, 'ai_grounded');
-  assert.equal(payload.store, false);
-  assert.match(payload.instructions, /spoken conversation/);
-  assert.doesNotMatch(payload.input, /secret@example/);
-  assert.equal(JSON.parse(payload.input).conversation.length, 1);
-  const fallback = await answer('alice', 'return', {
-    ...options,
-    transport: async () => {
-      throw Error('provider failure');
-    },
+}
+const tick = () => new Promise((resolve) => setTimeout(resolve, 25));
+
+test(
+  'HTTP and streaming authenticate verified users; tickets cannot cross accounts',
+  { timeout: 10000 },
+  async (t) => {
+    const f = await fixture(t);
+    assert.equal((await f.request(null, '/sessions', 'POST')).status, 401);
+    assert.equal((await f.request('unverified', '/sessions', 'POST')).status, 403);
+    assert.equal((await f.request('deleted', '/capabilities')).status, 403);
+    const result = await f.request('alice', '/sessions', 'POST');
+    assert.equal(result.status, 201);
+    assert.equal(result.data.key, undefined);
+    for (const user of [null, 'unverified']) {
+      const socket = f.socket(user, result.data.id),
+        rejected = once(socket, 'connect_error');
+      socket.connect();
+      assert.match((await rejected)[0].message, /Sign in/);
+      socket.disconnect();
+    }
+    const wrong = f.socket('bob', result.data.id),
+      rejected = once(wrong, 'voice:error');
+    wrong.connect();
+    await rejected;
+    assert.equal(f.providers.length, 0);
+    assert.equal((await f.request('bob', `/sessions/${result.data.id}`, 'DELETE')).status, 204);
+    let closed = false;
+    f.voice.claim('alice', result.data.id, () => {
+      closed = true;
+    });
+    await f.request('alice', `/sessions/${result.data.id}`, 'DELETE');
+    assert.equal(closed, true);
+  },
+);
+
+test(
+  'Deepgram bridge waits for handshake, carries PCM and text, sanitizes events and closes resources',
+  { timeout: 10000 },
+  async (t) => {
+    const f = await fixture(t),
+      ticket = f.voice.start('alice');
+    const socket = f.socket('alice', ticket.id),
+      connected = once(socket, 'connect');
+    socket.connect();
+    await connected;
+    await tick();
+    const upstream = f.providers[0];
+    assert.equal(upstream.sent.length, 0);
+    socket.emit('voice:audio', Buffer.alloc(1024));
+    await tick();
+    assert.equal(upstream.sent.length, 0);
+    upstream.message({ type: 'Welcome' });
+    assert.deepEqual(JSON.parse(upstream.sent[0]), {
+      type: 'Settings',
+      account: 'alice',
+      sample_rate: 48000,
+    });
+    const ready = once(socket, 'voice:ready');
+    upstream.message({ type: 'SettingsApplied' });
+    await ready;
+    const audio = once(socket, 'voice:audio');
+    upstream.message(Buffer.from([0, 1, 0, 2]), true);
+    assert.equal((await audio)[0].byteLength, 4);
+    const event = once(socket, 'voice:event');
+    upstream.message({ type: 'ConversationText', role: 'assistant', content: 'Hello', secret: 'discard' });
+    assert.deepEqual((await event)[0], { type: 'ConversationText', role: 'assistant', content: 'Hello' });
+    socket.emit('voice:audio', Buffer.alloc(2048));
+    socket.emit('voice:text', 'My return?');
+    await tick();
+    assert.ok(upstream.sent.some((b) => Buffer.isBuffer(b) && b.length === 2048));
+    assert.ok(upstream.sent.some((b) => typeof b === 'string' && b.includes('InjectUserMessage')));
+    socket.emit('voice:settings', { prompt: 'untrusted override' });
+    await tick();
+    assert.ok(!upstream.sent.some((b) => String(b).includes('untrusted override')));
+    const ended = once(socket, 'voice:ended');
+    socket.emit('voice:end');
+    await ended;
+    assert.equal(upstream.terminated, true);
+    assert.throws(() => f.voice.claim('alice', ticket.id, () => {}), { status: 410 });
+  },
+);
+
+test('provider failure ends the session without exposing its description', { timeout: 10000 }, async (t) => {
+  const f = await fixture(t),
+    ticket = f.voice.start('alice'),
+    socket = f.socket('alice', ticket.id);
+  const connected = once(socket, 'connect');
+  socket.connect();
+  await connected;
+  await tick();
+  const error = once(socket, 'voice:error');
+  f.providers[0].message({
+    type: 'Error',
+    code: 'INVALID_SETTINGS',
+    description: 'private-provider-payload',
   });
-  assert.equal(fallback.mode, 'help_library_fallback');
-  const cancelled = new AbortController();
-  cancelled.abort();
-  await assert.rejects(
-    answer('alice', 'return', {
-      ...options,
-      signal: cancelled.signal,
-      transport: async () => {
-        throw Error('cancelled');
+  assert.doesNotMatch((await error)[0].message, /private-provider/);
+  assert.equal(f.providers[0].terminated, true);
+});
+
+test('tickets expire, cannot be replayed, replace prior sessions and limit starts', (t) => {
+  let now = 100000;
+  const voice = createVoiceService({ settings: configured, clock: () => now });
+  t.after(() => voice.dispose());
+  const expired = voice.start('a');
+  now += 31000;
+  assert.throws(() => voice.claim('a', expired.id, () => {}), { status: 410 });
+  const first = voice.start('a');
+  let closed = false;
+  voice.claim('a', first.id, () => {
+    closed = true;
+  });
+  assert.throws(() => voice.claim('a', first.id, () => {}), { status: 410 });
+  voice.start('a');
+  assert.equal(closed, true);
+  voice.start('a');
+  voice.start('a');
+  assert.throws(() => voice.start('a'), { status: 429 });
+  const disabled = createVoiceService({ settings: () => ({ enabled: true, aiConfigured: false }) });
+  assert.throws(() => disabled.start('a'), { status: 503 });
+  disabled.dispose();
+});
+
+test('Deepgram settings use managed AI and expose only minimal owned records', async () => {
+  const calls = [];
+  const config = await agentSettings(
+    'alice',
+    {
+      query: async (sql, params) => {
+        calls.push(params);
+        return {
+          rows: sql.includes('FROM rentals')
+            ? [
+                {
+                  id: 'private-id',
+                  title: 'Laptop owner@example.com',
+                  status: 'RENTAL_ACTIVE',
+                  due_date: '2026-11-01',
+                  payment_status: 'FULLY_PAID',
+                  deposit_status: 'PAID',
+                  phone: '1234567890',
+                },
+              ]
+            : [],
+        };
       },
-    }),
-    { status: 410 },
+    },
+    48000,
   );
+  assert.deepEqual(calls, [['alice'], ['alice']]);
+  assert.equal(config.audio.input.sample_rate, 48000);
+  assert.equal(config.agent.think.provider.model, 'gpt-4o-mini');
+  assert.equal(config.agent.think.endpoint, undefined);
+  assert.equal(config.agent.speak.provider.model, 'aura-2-thalia-en');
+  assert.doesNotMatch(config.agent.think.prompt, /private-id|owner@example|1234567890/);
+  assert.match(config.agent.think.prompt, /2026-11-01/);
+  assert.equal(config.mip_opt_out, true);
 });

@@ -29,6 +29,7 @@ io.on('connection', (socket) => {
   });
   socket.on('delivery:leave', (id) => socket.leave(`delivery:${id}`));
 });
+require('./modules/voice/voice.socket').attachVoice(io, { db: pool });
 realtime.setIO(io);
 const port = Number(process.env.PORT || 3003);
 server.listen(port, () => {

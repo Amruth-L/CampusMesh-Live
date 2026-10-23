@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Headphones, Mic, MicOff, PhoneOff, Send, Volume2 } from "lucide-react";
+import { Headphones, Mic, MicOff, PhoneOff, Send } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { VoiceSession, voiceCapabilities } from "./voice-session";
 
 const phaseLabels = {
   idle: "Ready when you are",
   connecting: "Starting your session…",
-  ready: "Your turn — tap Talk or type",
+  ready: "Ready",
   listening: "Listening…",
   thinking: "Finding your answer…",
   speaking: "Assistant speaking",
@@ -78,8 +78,8 @@ export default function VoicePage() {
     bottom.current?.scrollIntoView({ block: "nearest" });
   }, [state.transcript.length]);
 
-  const active = Boolean(state.session);
-  const busy = state.phase === "thinking" || state.phase === "connecting";
+  const active = Boolean(state.session) || state.phase === "connecting";
+  const busy = state.phase !== "listening";
   const start = () => {
     controller.current.setAudio(audio);
     controller.current.start();
@@ -90,9 +90,6 @@ export default function VoicePage() {
     controller.current.ask(text);
     setText("");
   };
-  const lastReply = [...state.transcript]
-    .reverse()
-    .find((turn) => turn.role === "assistant");
   return (
     <main className="mx-auto max-w-5xl px-4 py-8 pb-28 sm:px-6 lg:py-12">
       <Link
@@ -122,15 +119,15 @@ export default function VoicePage() {
               </div>
               <div className="min-w-0">
                 <p role="status" className="font-bold">
-                  {state.muted && state.phase === "ready"
+                  {state.muted && state.phase === "listening"
                     ? "Microphone muted — you can still type"
                     : phaseLabels[state.phase]}
                 </p>
                 <p className="mt-1 text-xs leading-5 text-ink/60">
                   {capabilities
                     ? capabilities.aiConfigured
-                      ? "AI-assisted conversation"
-                      : "Built-in help · generative AI unavailable"
+                      ? "Powered by Deepgram Voice Agent"
+                      : "Deepgram setup is pending"
                     : "Checking availability…"}
                 </p>
               </div>
@@ -138,29 +135,19 @@ export default function VoicePage() {
             {!active ? (
               <button
                 onClick={start}
-                disabled={!capabilities?.enabled || busy}
+                disabled={
+                  !capabilities?.enabled ||
+                  !capabilities?.aiConfigured ||
+                  !browser.supported
+                }
                 className="brand-button mt-5 min-h-12 w-full sm:w-auto"
               >
-                {busy
-                  ? "Connecting…"
-                  : state.phase === "idle"
-                    ? "Start AI voice session"
-                    : "Start a new session"}
+                {state.phase === "idle"
+                  ? "Start AI voice session"
+                  : "Start a new session"}
               </button>
             ) : (
               <div className="mt-5 flex flex-wrap gap-2">
-                <button
-                  onClick={() =>
-                    state.phase === "listening"
-                      ? controller.current.finishListening()
-                      : controller.current.listen()
-                  }
-                  disabled={busy || state.muted || !browser.recognition}
-                  className="brand-button min-h-12"
-                >
-                  <Mic size={18} aria-hidden="true" />
-                  {state.phase === "listening" ? "Finish speaking" : "Talk"}
-                </button>
                 <button
                   onClick={() => controller.current.toggleMute()}
                   aria-pressed={state.muted}
@@ -184,8 +171,8 @@ export default function VoicePage() {
             )}
             {active && (
               <p className="mt-3 text-xs leading-5 text-ink/60">
-                Tap Talk for each turn. Listening stops after your sentence.
-                Sessions last up to 10 minutes.
+                Speak naturally and interrupt when you need to. Sessions last up
+                to 10 minutes; muting keeps the session connected.
               </p>
             )}
             {loadError && (
@@ -193,15 +180,16 @@ export default function VoicePage() {
                 {loadError}
               </p>
             )}
-            {capabilities && !capabilities.enabled && (
-              <p role="alert" className="mt-4 text-sm text-ink/70">
-                Voice assistance is temporarily unavailable. You can use{" "}
-                <Link to="/support" className="underline">
-                  text Support
-                </Link>
-                .
-              </p>
-            )}
+            {capabilities &&
+              (!capabilities.enabled || !capabilities.aiConfigured) && (
+                <p role="alert" className="mt-4 text-sm text-ink/70">
+                  Deepgram voice is not ready yet. You can use{" "}
+                  <Link to="/support" className="underline">
+                    text Support
+                  </Link>
+                  .
+                </p>
+              )}
             {state.error && (
               <p role="alert" className="mt-4 text-sm leading-6 text-red-700">
                 {state.error}
@@ -212,10 +200,10 @@ export default function VoicePage() {
                 {state.notice}
               </p>
             )}
-            {!browser.recognition && (
+            {!browser.supported && (
               <p className="mt-4 text-sm leading-6 text-ink/65">
-                This browser doesn’t offer speech recognition here. You can type
-                and listen to replies, or try Chrome or Safari over HTTPS.
+                This browser cannot start microphone audio here. Use a current
+                browser over HTTPS, or open text Support.
               </p>
             )}
           </div>
@@ -227,8 +215,8 @@ export default function VoicePage() {
           >
             {!state.transcript.length && (
               <p className="text-sm leading-7 text-ink/60">
-                Start a session for a welcome greeting. Your microphone stays
-                off until you tap Talk and allow access.
+                Choose Start AI voice session and allow microphone access.
+                Deepgram will greet you and listen for your question.
               </p>
             )}
             {state.transcript.map((turn, i) => (
@@ -246,33 +234,8 @@ export default function VoicePage() {
                 <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-7">
                   {turn.text}
                 </p>
-                {turn.role === "assistant" && turn.mode !== "greeting" && (
-                  <p className="mt-2 text-xs text-ink/60">
-                    {turn.mode === "ai_grounded"
-                      ? "AI-assisted answer"
-                      : "CampusMesh help & account records"}
-                  </p>
-                )}
-                {!!turn.sources?.length && (
-                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2">
-                    {turn.sources.map((source) => (
-                      <Link
-                        key={source.id}
-                        to={source.url}
-                        className="text-xs font-semibold text-mesh-700 underline underline-offset-4"
-                      >
-                        {source.title}
-                      </Link>
-                    ))}
-                  </div>
-                )}
               </div>
             ))}
-            {state.interim && (
-              <p className="break-words border-l-2 border-mesh-300 pl-3 text-sm text-ink/60">
-                Hearing: {state.interim}
-              </p>
-            )}
             <div ref={bottom} />
           </div>
           <form onSubmit={submit} className="border-t border-ink/10 p-5 sm:p-6">
@@ -310,7 +273,7 @@ export default function VoicePage() {
               <input
                 type="checkbox"
                 checked={audio}
-                disabled={!browser.speech}
+                disabled={!browser.supported}
                 onChange={(e) => {
                   setAudio(e.target.checked);
                   controller.current.setAudio(e.target.checked);
@@ -320,24 +283,9 @@ export default function VoicePage() {
               Read replies aloud
             </label>
             <p className="mt-2 text-xs leading-5 text-ink/60">
-              {state.voiceName ||
-                "Prefers a soft female English voice when your device provides one. Otherwise uses its English voice."}
+              Deepgram Thalia · female English voice with a relaxed speaking
+              pace.
             </p>
-            {active && lastReply && (
-              <button
-                onClick={() => controller.current.speak(lastReply.text)}
-                disabled={
-                  busy ||
-                  state.phase === "listening" ||
-                  !audio ||
-                  !browser.speech
-                }
-                className="secondary-button mt-3 min-h-11"
-              >
-                <Volume2 size={16} aria-hidden="true" />
-                Replay reply
-              </button>
-            )}
           </div>
           <div className="border-t border-ink/10 pt-5">
             <h2 className="font-bold">You stay in control</h2>
@@ -347,10 +295,10 @@ export default function VoicePage() {
               payments or change orders.
             </p>
             <p className="mt-3 text-ink/65">
-              Your browser’s speech service may process audio. Questions and
-              relevant account records are sent to the configured AI service
-              when available. CampusMesh doesn’t save voice recordings or this
-              transcript to your account.
+              Microphone audio and a limited snapshot of your own rentals are
+              sent through our server to Deepgram and its managed AI service.
+              CampusMesh doesn’t save voice recordings or this transcript to
+              your account.
             </p>
             <p className="mt-3 text-ink/65">
               Never share passwords, sign-in codes or UPI PINs. Leaving this

@@ -1,154 +1,138 @@
-# Browser voice assistant
+# Deepgram browser voice assistant
 
-CampusMesh now has a signed-in, English voice assistant at `/voice`. After an
-explicit successful login or signup verification, a dismissible invitation offers
-**Start AI voice**. Restoring an existing login does not display another invitation.
-The same feature is always reachable from **Voice assistant** in the navigation
-and from Support. Login, signup, email verification and telephone reminders retain
-their existing authentication and provider flows.
+CampusMesh uses Deepgram's **Voice Agent API**, not a locally trained voice model,
+Web Speech recognition, or a phone call. After a successful explicit sign-in, the
+existing invitation opens `/voice`. The user presses **Start AI voice session**,
+allows the microphone and hears the Deepgram greeting. Speech is continuous;
+users can interrupt, mute their microphone, mute playback, type a question while
+the assistant is listening, or end the session. Login/signup and OTP stay unchanged.
 
-## Architecture and trade-offs
+## Configure locally and on Render
 
-| Option | Cost and latency | Compatibility and integration | Decision |
-| --- | --- | --- | --- |
-| Browser speech recognition + browser speech synthesis + grounded text AI | No telephone or audio-generation API charge from CampusMesh. Text-model usage is billed by the AI provider. A reply follows each completed sentence, with a short recognition/network/model pause. | Reuses existing auth, support retrieval and Responses API integration; no new dependency. Speech recognition is not supported uniformly. Device voices vary. Typed input and visible replies remain available. | Implemented: the practical first release for this student project. |
-| Native speech-to-speech through WebRTC, such as OpenAI Realtime | More fluid audio and interruption handling; usage-based audio charges. | Backend exchanges authenticated SDP or issues short-lived credentials. Requires an AI account with model access and credit, additional audio lifecycle and provider controls. | A future upgrade if full-duplex audio is needed. This release does not claim to stream Realtime audio. |
-| Self-hosted recognition + language model + speech synthesis | Avoids per-request vendor billing but consumes server CPU/GPU, storage and operations time. | Needs several models and services. A small free Render instance is a poor fit for consistently responsive inference. | Evaluated; not added to this existing application. |
+1. Sign in at <https://console.deepgram.com/>. Select your project, then **Settings →
+   API Keys → Create a New API Key**. Give it a descriptive name such as
+   `CampusMesh voice`. Use a key with permission to call Voice Agent (usage/write);
+   do not give the application account-administration access unnecessarily.
+2. Check that the project has Voice Agent access and available credit. Deepgram
+   advertises signup credit, but eligibility and your actual balance are shown in
+   your console. This is usage-billed, not permanently free voice.
+3. Add these backend-only variables privately to `backend/.env`:
 
-Sources: [Web Speech recognition and compatibility](https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition),
-[OpenAI WebRTC architecture](https://developers.openai.com/api/docs/guides/voice-webrtc),
-[OpenAI API pricing](https://developers.openai.com/api/docs/pricing),
-[whisper.cpp microphone transcription example](https://github.com/ggml-org/whisper.cpp/blob/master/examples/stream/README.md).
-Prices, voice availability and provider access can change; no free AI credit is assumed.
+   ```dotenv
+   BROWSER_VOICE_ENABLED=true
+   DEEPGRAM_API_KEY=YOUR_PRIVATE_DEEPGRAM_KEY
+   ```
 
-Web Audio is useful for meters and custom audio processing; it does not itself
-recognize speech or generate answers. This release uses Web Speech for recognition
-and playback and therefore does not need a custom Web Audio graph or WebRTC connection.
+4. On Render, open the existing CampusMesh service → **Environment**. Add
+   `DEEPGRAM_API_KEY` and set `BROWSER_VOICE_ENABLED=true`. Edit existing rows instead
+   of creating duplicates. Click **Save, rebuild, and deploy**.
+5. Locally restart `npm run dev` in `backend`; start the frontend normally. On
+   Render wait for **Live**. Open CampusMesh, sign in, choose **Voice assistant**,
+   press Start and allow microphone access. Use headphones for the clearest test.
 
-## User experience
+Never place this key in a `VITE_` variable, commit it, paste it into chat, or send it
+to the browser. No separate `OPENAI_API_KEY` is required for voice: Deepgram manages
+its configured LLM. The existing optional text-support AI configuration is separate.
+Missing Deepgram configuration disables Start and provides a text Support link.
+A configured key is not proof that the provider has credit or accepts requests.
 
-1. Sign in normally, then choose the voice invitation or open `/voice`.
-2. Choose **Start AI voice session** to hear a welcome greeting. This does not
-   access the microphone or make a telephone call.
-3. Choose **Talk** and permit microphone access. Ask one question. Recognition
-   ends after the sentence; **Finish speaking** also ends that listening turn.
-4. The backend answers using CampusMesh help and the current user's own account
-   records. Hear and read the reply, then choose Talk for the next turn. Tap Talk
-   during playback to interrupt the assistant. Typed questions work throughout.
-5. **Mute mic** stops listening immediately and blocks Talk until unmuted. The
-   **Read replies aloud** option independently controls assistant audio.
-6. **End session**, signing out, leaving the page/tab, lost connectivity or the
-   ten-minute limit stops capture/playback and ends the conversation. The visible
-   transcript remains until leaving or starting another session.
+## Architecture and choice
 
-The assistant prefers known female English device voices, including Indian English
-when available, with a slightly slower delivery. Web Speech exposes no gender field;
-it cannot guarantee a particular voice or tone. It falls back to the device's English
-voice and shows its name. It never claims to be a person or to verify identity.
+| Option | Trade-off |
+| --- | --- |
+| Deepgram browser connection with a temporary token | Shorter audio path, but browser-held provider tokens complicate server-enforced duration, configuration and spend limits. |
+| **Deepgram through the existing Node/Socket.IO server** | Chosen: one extra network hop; server controls credentials, account context, allowed messages and session lifetime. Reuses the app's existing real-time transport. |
+| Self-hosted speech and language models | Requires compute and operational work; not used. |
 
-## Configuration
+`browser microphone → AudioWorklet PCM → authenticated /voice Socket.IO namespace
+→ Deepgram Voice Agent → PCM speech + transcript → browser Web Audio`
 
-For local use, set these in `backend/.env`; for the hosted site, set the same keys
-in **Render → CampusMesh service → Environment**, then save and deploy:
+The worklet only converts samples to PCM. It does not generate speech or recognize
+words. Deepgram provides Nova-3 recognition, a managed `gpt-4o-mini` reasoning model,
+and Aura-2 Thalia female English speech at 0.9 speed. No custom model is trained.
+Provider settings live in `backend/src/modules/voice/deepgram.settings.js`.
 
-```dotenv
-BROWSER_VOICE_ENABLED=true
-OPENAI_API_KEY=
-OPENAI_MODEL=
-```
+HTTP `POST /api/voice/sessions` issues a one-use, 30-second connection ticket.
+The Socket.IO handshake needs both that ticket and the current CampusMesh JWT.
+The server rechecks email verification, claims the ticket for its owner, obtains
+minimal account facts, then connects to `wss://agent.deepgram.com/v1/agent/converse`.
+It sends Settings only after Welcome and audio only after SettingsApplied.
+Clients cannot change the prompt, models, provider URL or account identity.
+Provider keys never leave the backend. There is no public token endpoint.
 
-Enter your API key privately and choose a text model available to that API project
-which supports the Responses API and JSON Schema structured output, for example
-`gpt-4.1-mini` if available to your project. The existing
-support chat uses these same settings. No additional SDK, phone number, Twilio,
-Authkey, SMS verification or Realtime API key is needed. Configure a provider usage
-budget and monitor actual consumption. API use is separate from a ChatGPT subscription.
+The agent receives curated help and a start-of-session snapshot of the signed-in
+user's last eight owned/borrowed rentals and five related wishes. Only titles,
+statuses and due dates are included: no internal IDs, email, mobile, bank or UPI
+fields. Titles are redacted and bounded. It cannot perform payments, refunds or
+account actions. To check newly changed status, start a new session.
 
-When either OpenAI setting is blank, browser speech still works with the built-in
-help library and account records. The UI says **Built-in help · generative AI
-unavailable**. This is spoken help, not open-ended model-generated conversation.
-When a configured model fails or times out, an explicitly labelled help reply is
-used. An invalid model/key or exhausted credit must be corrected with the provider;
-a simulated test cannot establish that live generation is operational.
+CampusMesh does not persist audio/transcripts. Deepgram and its managed LLM process
+the audio/text under their service terms; this is not a promise of zero provider
+retention. `mip_opt_out: true` requests exclusion from Deepgram model improvement.
+The page explains the data flow before the microphone is requested.
 
-`BROWSER_VOICE_ENABLED=false` disables new sessions and further answers. Keep keys
-on the backend only. Do not add them to frontend env files or `VITE_` variables.
-Existing SES, S3, payment and phone-provider settings need no change.
+## Limits and failure behavior
 
-Local commands (after the project's normal database/env setup):
+- One session per user; a new session closes the previous one.
+- Five starts per ten minutes per user, ten simultaneous sessions per Node process.
+- Ten-minute maximum or JWT expiry, whichever comes first; 30 user turns.
+- Typed messages: 1–1500 characters, at most ten per minute.
+- PCM packet/throughput limits and upstream backpressure protection.
+- End, logout, page/tab exit, microphone loss and network failure close microphone,
+  audio playback, timers and the provider connection. No automatic reconnection
+  that could silently begin a second billed session.
+- Muting stops microphone transmission but leaves the provider session open;
+  **End session** stops provider usage. Silence may still be billable.
+- UserStartedSpeaking cancels queued assistant audio for interruption.
+- Missing credit, invalid settings or provider/network failure show a retry message;
+  they do not silently fall back to browser-generated speech.
 
-```sh
-npm run dev --prefix backend
-npm run dev --prefix frontend
-```
+The ticket registry is in memory and intended for the current single Render
+instance. Multi-instance deployment needs a shared ticket/rate-limit store and
+correct Socket.IO routing. Restarting/deploying ends active conversations. Render
+cold starts can delay connection. Browser voice does not provide unattended
+phone reminders, and it is not an identity-verification mechanism.
 
-Keep the frontend's existing public API base URL pointed at the backend. Hosted
-microphone use requires HTTPS; localhost is allowed for development. Some embedded
-previews, Brave configurations, Firefox and mobile/PWA combinations do not provide
-Web Speech recognition even if the microphone hardware works. Open the site directly
-in a supported browser, allow microphone permission, or use the typed fallback.
+## Tests
 
-## Backend boundaries
-
-- `GET /api/voice/capabilities`: authenticated availability and mode, never keys.
-- `POST /api/voice/sessions`: verified existing account; creates an opaque session ID,
-  fixed greeting and expiry. The request cannot choose a different user.
-- `POST /api/voice/sessions/:id/turns`: checks ownership, expiry, one in-flight answer,
-  input size and rate limits. Reads only the JWT user's records through the existing
-  support service. Uses up to eight redacted conversation messages for follow-ups.
-- `DELETE /api/voice/sessions/:id`: idempotently ends the caller's session and aborts
-  an in-flight AI request. Other users cannot end or query that session.
-- Every route uses existing Bearer JWT authentication and checks that the account
-  still exists and has verified its email. Voice is never an authentication factor.
-- No raw audio is uploaded to CampusMesh. Browser recognition may send audio to the
-  browser vendor's service. Questions and selected account facts go to the configured
-  AI provider. Responses use `store:false`; this does not override provider retention
-  policies. Account secrets should never be spoken to the assistant.
-- Transcripts stay in the page and bounded server memory, never `support_turns`,
-  localStorage or the account database. Ending a session removes server history;
-  crashes/disconnects are bounded by expiry and periodic cleanup. Proxy logs must not
-  be configured to record request bodies or Authorization headers.
-- Limits: 10 minutes/session, 30 turns/session, 10 turns/minute, five starts per
-  user per ten minutes, one active session per user, 200 concurrent sessions.
-  AI requests time out after 12 seconds. Browser listening stops after 30 seconds.
-- This first release keeps state and limits in one Node process. A restart/deploy
-  requires starting a new session. Before running multiple replicas, move the
-  session/limiter store to shared storage such as Redis. Render free-tier cold starts
-  can delay initial access. No background job is required for browser voice.
-
-## Validation
-
-Automated checks (no microphone recordings, provider charges or production fixtures):
+From the repository root (install frontend and backend dependencies first):
 
 ```sh
-node --test backend/test/browser-voice.test.js frontend/test/*.test.js
+node --test backend/test/browser-voice.test.js frontend/test/voice-session.test.js
+npm run lint --prefix backend
 npm run lint --prefix frontend
 npm run build --prefix frontend
 ```
 
-The voice tests cover real JWT enforcement, unverified/deleted accounts, ownership,
-concurrent turns, session replacement/cancellation, rate/turn limits, expiry,
-redacted context, provider failure, microphone denial, unsupported browsers, late
-responses after ending, mute, and cleanup. Provider transport and Web Speech are
-controlled fakes; they do not prove live microphone or AI-provider delivery.
+The tests simulate Deepgram, not a paid call. They exercise real HTTP/JWT and
+Socket.IO authentication, ticket ownership/replay/expiry, provider message ordering,
+PCM/text forwarding, credential redaction, error shutdown, microphone denial,
+late permission results, mute, playback and interruption. The gated
+`backend/test/browser-voice.contract.test.js` also verifies account isolation with
+real database queries; run only in a disposable `qa_evidence_*` schema with
+`VOICE_E2E=1` and no provider keys. No schema migration is needed for voice.
 
-Manual acceptance on your own device:
+Before declaring live voice verified, test with an actual configured account:
 
-- Sign out and sign in; see the invitation without a microphone prompt. Dismiss it
-  and confirm the normal destination and logout still work.
-- Start a session, then Talk. Allow the mic and ask “How does Wish Box work?” Follow
-  with another question. Confirm a transcript, reply playback and correct mode label.
-- With an AI key configured, check that replies say **AI-assisted answer**. If they
-  say **CampusMesh help & account records**, inspect API model access/billing; the
-  live provider has not succeeded for that turn.
-- Deny the mic, then type a question. Test mute during listening, Talk during speech,
-  audio off, End during a pending reply, logout, leaving the tab, and airplane mode.
-  Capture must stop and no late answer may resume audio.
-- Use a second signed-in account: its voice session must show only its own records.
-  Test desktop and a real phone, including narrow layouts and visible logout.
-- Verify typing/playback on a browser without speech recognition. No microphone or
-  provider failure should block the rest of CampusMesh.
+1. Log in normally and start from the invitation; no microphone request on login.
+2. Allow microphone, hear the greeting and ask about renting an item.
+3. Ask a follow-up, interrupt the answer, and confirm both transcript and audio.
+4. Mute/unmute, mute output, and send a typed question while it is listening.
+5. Deny microphone on a fresh attempt; confirm text Support remains usable.
+6. End, log out or leave the tab; confirm the browser microphone indicator stops.
+7. Check Deepgram's usage dashboard for the session. Confirm expiry/network errors
+   do not leave an open provider connection.
+8. Repeat on current desktop Chrome/Edge and mobile Safari/Chrome over HTTPS.
 
-This does not place welcome, booking or due-date calls to a phone. Proactive browser
-audio cannot reliably ring a closed app, bypass autoplay rules or use a background
-microphone. Telephone reminders remain a separate, explicitly opted-in service.
+## Official references and costs
+
+- [Voice Agent protocol](https://developers.deepgram.com/docs/voice-agent-message-flow)
+- [Managed LLM options](https://developers.deepgram.com/docs/voice-agent-llm-models)
+- [Voice settings](https://developers.deepgram.com/docs/voice-agent-tts-models)
+- [Creating API keys](https://developers.deepgram.com/docs/create-additional-api-keys)
+- [Deepgram pricing](https://deepgram.com/pricing)
+
+At implementation, the published Standard managed Voice Agent rate is $0.075/min,
+with advertised $200 signup credit for eligible new accounts. Verify current
+pricing and actual credit in the console before relying on either. The integration
+does not enable auto-recharge, buy credits, or place telephone calls.

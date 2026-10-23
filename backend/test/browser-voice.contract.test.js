@@ -12,6 +12,7 @@ test(
   async () => {
     const pool = require('../src/config/database');
     const app = require('../src/app');
+    const { agentSettings } = require('../src/modules/voice/deepgram.settings');
     const ids = [randomUUID(), randomUUID()];
     const listing = randomUUID(),
       rental = randomUUID();
@@ -47,28 +48,19 @@ test(
         "INSERT INTO rentals(id,listing_id,borrower_id,owner_id,start_date,end_date,rental_days,rental_fee,booking_amount,status,payment_status) VALUES($1,$2,$3,$3,CURRENT_DATE,CURRENT_DATE+2,3,60,60,'RENTAL_ACTIVE','FULLY_PAID')",
         [rental, listing, ids[0]],
       );
-      const mine = await request(ids[0], '/sessions', {});
-      const other = await request(ids[1], '/sessions', {});
-      assert.equal(mine.status, 201);
-      assert.equal(mine.data.aiConfigured, false);
-      const answer = await request(ids[0], `/sessions/${mine.data.id}/turns`, {
-        message: 'When are my rentals due?',
-      });
-      assert.equal(answer.status, 200);
-      assert.match(answer.data.answer, /QA private compass/);
-      assert.equal(answer.data.mode, 'help_library');
-      const unrelated = await request(ids[1], `/sessions/${other.data.id}/turns`, {
-        message: 'When are my rentals due?',
-      });
-      assert.equal(unrelated.status, 200);
-      assert.doesNotMatch(unrelated.data.answer, /QA private compass/);
+      const capabilities = await request(ids[0], '/capabilities');
+      assert.equal(capabilities.status, 200);
+      assert.equal(capabilities.data.provider, 'deepgram');
+      const mine = await agentSettings(ids[0], pool, 48000);
+      const other = await agentSettings(ids[1], pool, 48000);
+      assert.match(mine.agent.think.prompt, /QA private compass/);
+      assert.doesNotMatch(other.agent.think.prompt, /QA private compass/);
+      assert.ok(!mine.agent.think.prompt.includes(ids[0]));
       assert.equal(
         (await pool.query('SELECT COUNT(*)::int n FROM support_turns WHERE user_id=ANY($1::uuid[])', [ids]))
           .rows[0].n,
         0,
       );
-      await request(ids[0], `/sessions/${mine.data.id}`, null, 'DELETE');
-      await request(ids[1], `/sessions/${other.data.id}`, null, 'DELETE');
     } finally {
       await new Promise((resolve) => server.close(resolve));
       await pool.end();
