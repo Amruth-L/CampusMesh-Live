@@ -53,10 +53,10 @@ export default function App() {
     <>
       <AppNavbar />
       <VoiceWelcomePrompt />
-      {user && !["/support", "/voice"].includes(pathname) && (
+      {user && pathname !== "/voice" && (
         <Link
-          to="/support"
-          aria-label="Customer support"
+          to="/voice"
+          aria-label="Need help? Open voice assistant"
           className="fixed bottom-22 right-4 z-30 rounded-full border border-mesh-200 bg-white px-4 py-3 text-xs font-semibold text-mesh-700 shadow-md lg:bottom-5"
         >
           Need help?

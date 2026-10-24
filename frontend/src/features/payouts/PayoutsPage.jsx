@@ -219,14 +219,14 @@ function PayoutsPage() {
             <BankOnboardingForm busy={Boolean(busy)} retry={account.setupRetry}
               onSubmit={(body) => action('onboard', '/account/onboard', 'POST', body)} />
           )}
-          <section aria-labelledby="payout-flow-title" className="space-y-3">
-            <h2 id="payout-flow-title" className="text-lg font-semibold">How money reaches your bank</h2>
+          <details className="space-y-3">
+            <summary className="cursor-pointer text-sm font-semibold">How bank payouts work</summary>
             <ol className="list-decimal space-y-2 pl-5 text-sm leading-6 text-ink/75">
-              <li>The renter pays CampusMesh through Razorpay. The payment must be confirmed as captured.</li>
-              <li>Your rental earnings become eligible after you confirm the return. Delivery earnings become eligible after verified handover. The refundable deposit is kept separate.</li>
-              <li>Razorpay Route transfers eligible earnings to your verified recipient account, then settles them to your bank on its settlement schedule. We show “Bank settlement confirmed” only after provider confirmation.</li>
+              <li>The renter pays through Razorpay; capture must be confirmed.</li>
+              <li>Rental earnings qualify after return confirmation; delivery earnings after verified handover. Deposits stay separate.</li>
+              <li>Razorpay Route sends eligible earnings to your verified account. We mark bank settlement only after provider confirmation.</li>
             </ol>
-          </section>
+          </details>
           {service.mode === "test" && (
             <p className="text-base font-medium text-amber-800">
               Test records only. These amounts do not represent money in a bank
@@ -434,7 +434,7 @@ export default function PaymentOptions() {
   return <>
     <DirectDashboard />
     <details className="mx-auto max-w-5xl px-5 pb-8" onToggle={e=>setShowPrevious(e.currentTarget.open)}>
-      <summary className="cursor-pointer font-semibold">Previous Razorpay payout records</summary>
+      <summary className="cursor-pointer font-semibold">Previous bank payouts</summary>
       {showPrevious && <PayoutsPage />}
     </details>
   </>;

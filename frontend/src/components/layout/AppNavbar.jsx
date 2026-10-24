@@ -3,6 +3,7 @@ import Brand from "../Brand";
 import { Link, useLocation } from "react-router-dom";
 import {
   ShoppingBag,
+  ShoppingCart,
   Store,
   Truck,
   LogOut,
@@ -72,14 +73,10 @@ export default function AppNavbar() {
           : [
               ["/marketplace", "Browse items"],
               ["/account/rentals", "My rentals"],
-              ["/account/saved", "Saved"],
-              ["/cart", "Cart"],
             ];
   links.push(
     ["/payouts", "Payments"],
     ["/insights", "Insights"],
-    ["/reminders", "Reminders"],
-    ["/support", "Support"],
     ["/voice", "Voice assistant"],
   );
   const isActiveLink = (to) =>
@@ -92,8 +89,8 @@ export default function AppNavbar() {
     <>
       <header className="sticky top-0 z-40 border-b border-ink/15 bg-white shadow-sm">
         <div className="mx-auto flex h-16 max-w-[1240px] items-center gap-2 px-3 sm:h-17 sm:gap-4 sm:px-8">
-          <Link to={user ? "/choose-mode" : "/"} className="mr-auto text-lg">
-            <Brand />
+          <Link to={user ? "/choose-mode" : "/"} aria-label="CampusMesh home" className="mr-auto shrink-0 text-lg">
+            <Brand compact={Boolean(user)} />
           </Link>
           {user ? (
             <>
@@ -121,6 +118,16 @@ export default function AppNavbar() {
                   Print <span className="rounded bg-white px-1.5 py-1 text-[10px]">Coming soon</span>
                 </span>
               </nav>
+              <Link
+                to="/cart"
+                aria-label="Cart"
+                title="Cart"
+                aria-current={pathname === "/cart" || pathname === "/checkout" ? "page" : undefined}
+                className={`flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-lg px-3 text-sm font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mesh-700 ${pathname === "/cart" || pathname === "/checkout" ? "bg-mesh-700 text-white" : "text-ink hover:bg-paper"}`}
+              >
+                <ShoppingCart size={21} strokeWidth={2.25} aria-hidden="true" />
+                <span className="hidden xl:inline">Cart</span>
+              </Link>
               <DeliveryNotifications />
               <Link
                 to="/account/settings"

@@ -96,15 +96,14 @@ export default function VoicePage() {
         to="/support"
         className="text-sm font-semibold text-mesh-700 underline underline-offset-4"
       >
-        Back to Support
+        Text help
       </Link>
       <div className="mt-6 max-w-2xl">
         <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
           Talk to CampusMesh
         </h1>
         <p className="mt-3 leading-7 text-ink/70">
-          A voice assistant for rentals, returns and campus deliveries. Ask a
-          question, hear a reply, and keep the conversation going.
+          Ask about rentals, returns or deliveries.
         </p>
       </div>
       <div className="mt-8 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_260px]">
@@ -143,7 +142,7 @@ export default function VoicePage() {
                 className="brand-button mt-5 min-h-12 w-full sm:w-auto"
               >
                 {state.phase === "idle"
-                  ? "Start AI voice session"
+                  ? "Start talking"
                   : "Start a new session"}
               </button>
             ) : (
@@ -215,8 +214,7 @@ export default function VoicePage() {
           >
             {!state.transcript.length && (
               <p className="text-sm leading-7 text-ink/60">
-                Choose Start AI voice session and allow microphone access.
-                Deepgram will greet you and listen for your question.
+                Tap Start talking and allow your microphone.
               </p>
             )}
             {state.transcript.map((turn, i) => (
@@ -287,8 +285,8 @@ export default function VoicePage() {
               pace.
             </p>
           </div>
-          <div className="border-t border-ink/10 pt-5">
-            <h2 className="font-bold">You stay in control</h2>
+          <details className="border-t border-ink/10 pt-5">
+            <summary className="cursor-pointer font-bold">Privacy & session details</summary>
             <p className="mt-2 text-ink/65">
               This is a browser conversation, not a telephone call or identity
               check. The assistant can explain your next step; it cannot make
@@ -304,12 +302,12 @@ export default function VoicePage() {
               Never share passwords, sign-in codes or UPI PINs. Leaving this
               page or tab ends the session.
             </p>
-          </div>
+          </details>
           <Link
             to="/support"
             className="inline-flex min-h-11 items-center font-semibold text-mesh-700 underline underline-offset-4"
           >
-            Use text Support instead
+            Use text help
           </Link>
         </aside>
       </div>

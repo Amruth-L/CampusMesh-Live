@@ -28,7 +28,6 @@ import HandoverCredential from "../../components/HandoverCredential";
 const tabs = [
   ["rentals", "My rentals", Package],
   ["listings", "My listings", ListChecks],
-  ["saved", "Saved", Bookmark],
   ["history", "History", History],
   ["settings", "Settings", Settings],
 ];

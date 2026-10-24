@@ -18,8 +18,8 @@ const names = {
 };
 const states = {
   PENDING: "Awaiting payment",
-  REPORTED: "Awaiting recipient confirmation",
-  CONFIRMED: "Receipt confirmed by recipient",
+  REPORTED: "Waiting for receipt confirmation",
+  CONFIRMED: "Receipt confirmed",
   DISPUTED: "Receipt disputed — do not pay again",
 };
 export function UpiProfile({ compact = false, onSaved } = {}) {
@@ -65,7 +65,7 @@ export function UpiProfile({ compact = false, onSaved } = {}) {
         confirm,
       });
       setMessage(
-        "UPI details saved. Unpaid payment requests and their QR codes now use your updated account. Reported and confirmed receipts keep the account actually paid.",
+        "UPI updated for unpaid requests. Existing receipts are unchanged.",
       );
       setSaved(data);
       window.dispatchEvent(new Event("campusmesh:upi-saved"));
@@ -78,39 +78,35 @@ export function UpiProfile({ compact = false, onSaved } = {}) {
       setBusy(false);
     }
   }
-  if (loading) return <p role="status">Loading your receiving UPI details…</p>;
+  if (loading) return <p role="status">Loading UPI account…</p>;
   if (loadError) return <p role="alert" className="text-red-700">{message} <button className="underline" onClick={() => window.location.reload()}>Reload</button></p>;
   if (saved && !editing) return (
     <section className="rounded-xl border border-mesh-200 bg-white p-5 sm:p-6" aria-label="Saved receiving UPI account">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-mesh-800" role="status">Receiving UPI details saved</h2>
+          <h2 className="text-xl font-bold text-mesh-800" role="status">Your UPI account</h2>
           <p className="mt-3 font-semibold">{saved.payee_name}</p>
           <p className="mt-1 break-all">{saved.upi_id}</p>
         </div>
-        <button className="secondary-button" onClick={() => { setEditing(true); setConfirm(false); setMessage(""); }}>Edit UPI details</button>
+        <button className="secondary-button" onClick={() => { setEditing(true); setConfirm(false); setMessage(""); }}>Edit</button>
       </div>
-      <p className="mt-4 text-sm leading-6 text-ink/75">Setup is complete. No payment has been made by saving these details. The payer must authorise a transfer in their UPI app, and you confirm receipt after checking your bank.</p>
-      <p className="mt-2 text-sm text-ink/75">CampusMesh has not verified this UPI account with your bank.</p>
-      {!compact && <div className="mt-5 border-t border-ink/15 pt-5">
-        <h3 className="font-bold">Next: open a rental or delivery</h3>
-        <p className="mt-2 text-sm leading-6">To receive rent, publish your own item and accept another student's request in the lending dashboard. The renter will then see your payment QR in Rental details. Delivery fees appear after verified handover.</p>
-        <div className="mt-4 flex flex-wrap gap-3">
-          <Link to="/add-listing" className="brand-button">List an item</Link>
-          <Link to="/lend" className="secondary-button">Lending requests</Link>
-          <Link to="/account/rentals" className="secondary-button">My rentals</Link>
-          <Link to="/delivery" className="secondary-button">Delivery dashboard</Link>
-        </div>
+      <p className="mt-4 text-sm leading-6 text-ink/75">For rent, delivery earnings and deposit refunds. Confirm receipts after checking your bank.</p>
+      {message && <p role="status" className="mt-2 text-sm text-mesh-800">{message}</p>}
+      <details className="mt-3 text-sm text-ink/70">
+        <summary className="cursor-pointer font-semibold">About this account</summary>
+        <p className="mt-2 leading-6">Saving a UPI ID does not transfer money or verify bank ownership. Unpaid requests use your latest details; reported receipts keep the account paid.</p>
+      </details>
+      {!compact && <div className="mt-4 flex flex-wrap gap-3 border-t border-ink/10 pt-4">
+        <Link to="/lend" className="secondary-button text-sm">Lending requests</Link>
+        <Link to="/delivery" className="secondary-button text-sm">My deliveries</Link>
       </div>}
     </section>
   );
   return (
     <section className="rounded-xl border border-ink/15 bg-white p-5 sm:p-6">
-      <h2 className="text-xl font-bold">Your receiving UPI account</h2>
+      <h2 className="text-xl font-bold">Add your UPI account</h2>
       <p className="mt-2 text-sm leading-6 text-ink/75">
-        Use your own UPI ID for rental earnings, delivery fees and deposit
-        refunds. CampusMesh saves these details but does not verify account
-        ownership with your bank.
+        Receive earnings and refunds here. Use your own UPI ID; bank ownership is not verified by CampusMesh.
       </p>
       <form onSubmit={save} className="mt-5 grid gap-4 sm:grid-cols-2">
         <label className="grid gap-2 text-sm font-semibold">
@@ -145,8 +141,7 @@ export function UpiProfile({ compact = false, onSaved } = {}) {
             onChange={(e) => setConfirm(e.target.checked)}
             className="mt-1"
           />
-          This is my UPI account. I checked the ID and receiving name in my UPI
-          app.
+          I checked this UPI ID and name in my UPI app. This account is mine.
         </label>
         <button disabled={busy || !confirm} className="brand-button disabled:opacity-50">
           {busy ? "Saving…" : saved ? "Save changes" : "Save UPI details"}
@@ -210,8 +205,8 @@ function PaymentCard({ payment: p, reload }) {
         Recipient UPI:{" "}
         <span className="break-all font-semibold">{p.upi_id}</span>
       </p>
-      <p className="mt-1 text-sm">Receiving account name: {p.payee_name}</p>
-      {p.status==='PENDING' && changed && <p role="status" className="mt-3 rounded-lg bg-amber-50 p-3 text-sm leading-6 text-amber-950">The recipient updated their UPI details. This QR uses their latest account. If you already paid, do not pay again; select the account you actually paid when reporting below.</p>}
+      <p className="mt-1 text-sm">Account name: {p.payee_name}</p>
+      {p.status==='PENDING' && changed && <p role="status" className="mt-3 rounded-lg bg-amber-50 p-3 text-sm leading-6 text-amber-950">UPI details changed. Already paid? Select the account you paid below; do not pay again.</p>}
       <Link
         className="mt-2 inline-block text-sm font-semibold underline"
         to={`/rent-details/${p.rental_id}`}
@@ -233,9 +228,7 @@ function PaymentCard({ payment: p, reload }) {
           </div>
           <div className="space-y-3 text-sm">
             <p>
-              Check the recipient name and exact amount in your UPI app before
-              authorising. If this link is unsupported, pay using the displayed
-              UPI ID.
+              Check the name and amount before paying. If the QR or link fails, use the UPI ID above.
             </p>
             {changed && <label className="grid gap-2 font-semibold">
               Account you actually paid
@@ -245,7 +238,7 @@ function PaymentCard({ payment: p, reload }) {
               </select>
             </label>}
             <label className="grid gap-2 font-semibold">
-              UPI transaction reference
+              Transaction reference (UTR)
               <input
                 value={reference}
                 onChange={(e) => setReference(e.target.value)}
@@ -269,7 +262,7 @@ function PaymentCard({ payment: p, reload }) {
               onClick={() => act("report")}
               className="brand-button disabled:opacity-50"
             >
-              {p.kind === "DEPOSIT_REFUND" ? "Report deposit refund sent" : "Report payment sent"}
+              {p.kind === "DEPOSIT_REFUND" ? "I sent the refund" : "I sent the payment"}
             </button>
           </div>
         </div>
@@ -277,9 +270,7 @@ function PaymentCard({ payment: p, reload }) {
       {!payer && ["REPORTED", "DISPUTED"].includes(p.status) && (
         <div className="mt-4 space-y-3 text-sm">
           <p>
-            Reported reference: <strong>{p.reference}</strong>. Check the
-            amount, reference and actual credit in your bank or UPI app. A
-            screenshot alone is not proof.
+            Reference: <strong>{p.reference}</strong>. Confirm only after this amount reaches your bank; a screenshot is not proof.
           </p>
           <label className="flex items-start gap-2">
             <input
@@ -312,22 +303,21 @@ function PaymentCard({ payment: p, reload }) {
       )}
       {p.status === "REPORTED" && payer && (
         <p className="mt-3 text-sm">
-          The recipient must confirm receipt. Do not send another payment.
+          Waiting for the recipient. Do not pay again.
         </p>
       )}
       {p.status === "DISPUTED" && (
         <p className="mt-3 text-sm">
-          Compare the transaction with the recipient and contact{" "}
+          Check with the recipient or contact{" "}
           <Link to="/support" className="underline">
             support
           </Link>
-          . No automatic retry or refund has been made.
+          . No retry or refund has been made.
         </p>
       )}
       {p.status === "CONFIRMED" && (
         <p className="mt-3 text-sm text-ink/70">
-          Manually confirmed {new Date(p.confirmed_at).toLocaleString()}.
-          CampusMesh has not independently verified this bank transaction.
+          Confirmed by recipient · {new Date(p.confirmed_at).toLocaleString()}. Not bank-verified by CampusMesh.
         </p>
       )}
       {error && (
@@ -393,16 +383,18 @@ export function DirectPayments({ rental = null, deliveryId = null, onChange }) {
   return (
     <section className="space-y-4" aria-label="Direct UPI payments">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-bold">Direct UPI payments</h2>
+        <h2 className="text-xl font-bold">{rental || deliveryId ? "Payments" : "Payment activity"}</h2>
         <button className="secondary-button" onClick={load}>
-          Refresh payments
+          Refresh
         </button>
       </div>
       <p className="text-sm leading-6 text-ink/75">
-        Pay each recipient separately. Receipt is confirmed manually by that
-        recipient. CampusMesh does not collect, split or hold this money. No
-        platform fee is charged for these rentals.
+        Pay directly by UPI. The recipient confirms receipt.
       </p>
+      <details className="text-sm text-ink/70">
+        <summary className="cursor-pointer font-semibold">How payments work</summary>
+        <p className="mt-2 max-w-2xl leading-6">Pay rent and deposits to the lender, delivery fees to the courier, and refunds to the renter. Each is a separate transfer. CampusMesh does not hold or split money and charges no platform fee for these rentals.</p>
+      </details>
       {rental?.owner_response === "PENDING" && (
         <div className="rounded-xl bg-mesh-50 p-4">
           <p>No payment is due until the lender accepts.</p>
@@ -413,7 +405,7 @@ export function DirectPayments({ rental = null, deliveryId = null, onChange }) {
                 onClick={() => run("ACCEPTED")}
                 className="brand-button"
               >
-                Accept rental request
+                Accept request
               </button>
               <button
                 disabled={busy}
@@ -431,18 +423,17 @@ export function DirectPayments({ rental = null, deliveryId = null, onChange }) {
       )}
       {rental?.deposit_status === "REFUNDED" && (
         <p className="rounded-xl bg-mesh-50 p-4 font-semibold text-mesh-900">
-          Deposit refund receipt confirmed by the renter.
+          Renter confirmed the deposit refund.
         </p>
       )}
       {rental?.delivery_requested && (
         <p className="text-sm">
-          Outbound delivery: {money(rental.delivery_fee)}, paid separately after
-          verified handover. A courier return has its own fee.
+          Delivery: {money(rental.delivery_fee)}, due after handover. Return delivery is charged separately.
         </p>
       )}
       {rental?.return_workflow?.requested && Number(rental.deposit_amount)>0 && !rental.return_workflow.refund_account_ready && user.id===rental.borrower_id && (
         <div className="space-y-3">
-          <p className="text-sm font-semibold">Add your receiving UPI account here for the {money(rental.deposit_amount)} deposit refund. This does not pay anyone or approve the item condition.</p>
+          <p className="text-sm font-semibold">Add your UPI ID to receive your {money(rental.deposit_amount)} deposit refund.</p>
           <UpiProfile compact onSaved={async () => { await load(); await onChange?.(); }} />
         </div>
       )}
@@ -450,10 +441,10 @@ export function DirectPayments({ rental = null, deliveryId = null, onChange }) {
         <div className="rounded-xl bg-amber-50 p-4 text-amber-950">
           <p>Deposit refund: {money(rental.deposit_amount)}.</p>
           <p className="mt-2 text-sm leading-6">{rental.return_workflow?.refund_account_ready
-            ? 'The receiving account is ready. Refresh payments to load the refund request. The lender sends the refund and the renter confirms bank receipt.'
+            ? 'UPI account ready. Refresh to view the refund request.'
             : user.id===rental.borrower_id
-              ? 'Save your own receiving UPI details in the form above. Your refund request will appear automatically after the owner approves the item condition.'
-              : 'Waiting for the renter to add their receiving UPI details on this rental page. Their refund request will appear automatically; you cannot enter bank details on their behalf.'}</p>
+              ? 'Add your UPI ID above. The refund appears after the owner checks the returned item.'
+              : 'Waiting for the renter to add their UPI ID. The refund request will appear automatically.'}</p>
         </div>
       )}
       {error && (
@@ -473,31 +464,29 @@ export function DirectPayments({ rental = null, deliveryId = null, onChange }) {
       ))}
       {loaded && !items.length && !rental?.return_workflow?.requested && rental?.deposit_status !== "REFUND_PENDING" && (
         <div className="border-y border-ink/15 py-5">
-          <h3 className="font-bold">{deliveryId ? "Set up your receiving UPI account" : "No payment is due yet"}</h3>
-          <p className="mt-2 text-sm leading-6 text-ink/75">{deliveryId ? "Save your receiving UPI ID in Payments, then refresh payments here so the borrower can pay your delivery fee." : "A rental payment QR appears after the lender accepts your request. Saving a UPI ID does not create an order or move money."}</p>
+          <h3 className="font-bold">{deliveryId ? "Add your UPI account" : "No payment is due yet"}</h3>
+          <p className="mt-2 text-sm leading-6 text-ink/75">{deliveryId ? "Add your UPI ID in Payments. The delivery fee appears after verified handover." : "Payment requests appear after lender acceptance."}</p>
           <div className="mt-3 flex flex-wrap gap-3">
-            <Link to="/marketplace" className="secondary-button">Browse items to rent</Link>
-            <Link to="/account/rentals" className="secondary-button">Open my rental requests</Link>
+            <Link to={deliveryId ? "/payouts" : "/account/rentals"} className="secondary-button">{deliveryId ? "Add UPI details" : "My rentals"}</Link>
           </div>
         </div>
       )}
-      <Link
+      {(rental || deliveryId) && <Link
         to="/payouts"
-        className="inline-block font-semibold text-mesh-800 underline"
+        className="inline-block text-sm font-semibold text-mesh-800 underline"
       >
-        Manage receiving UPI details and all payments
-      </Link>
+        All payments & UPI account
+      </Link>}
     </section>
   );
 }
 export default function DirectDashboard() {
   return (
-    <main className="mx-auto max-w-5xl space-y-7 px-5 py-8">
-      <h1 className="text-3xl font-bold">Payments & receipts</h1>
-      <p>
-        Rental fees and deposits go to the lender. Delivery fees go to the
-        courier after handover. Refunds go back to the renter.
-      </p>
+    <main className="mx-auto max-w-5xl space-y-6 px-4 py-7 pb-28 sm:px-6 lg:pb-12">
+      <div>
+        <h1 className="text-3xl font-bold">Payments</h1>
+        <p className="mt-2 text-sm text-ink/70">Manage your UPI account and track payments.</p>
+      </div>
       <UpiProfile />
       <DirectPayments />
     </main>
