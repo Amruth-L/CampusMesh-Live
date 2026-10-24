@@ -17,7 +17,7 @@ exports.addToCart = async (req, res) => {
 
   try {
     // 1. Fetch listing details to verify existence and get rent price
-    const listingRes = await pool.query('SELECT * FROM listings WHERE id = $1', [item_id]);
+    const listingRes = await pool.query('SELECT * FROM listings WHERE id = $1 AND deleted_at IS NULL', [item_id]);
     if (listingRes.rows.length === 0) {
       return res.status(404).json({ error: 'Listing not found.' });
     }
@@ -104,7 +104,7 @@ exports.getCart = async (req, res) => {
        FROM cart c
        JOIN listings l ON c.item_id = l.id
        JOIN users u ON l.owner_id = u.id
-       WHERE c.user_id = $1
+       WHERE c.user_id = $1 AND l.deleted_at IS NULL
        ORDER BY c.created_at DESC`,
       [user_id],
     );

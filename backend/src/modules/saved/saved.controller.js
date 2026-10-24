@@ -14,7 +14,7 @@ exports.getWishlist = async (req, res) => {
        FROM wishlist w
        JOIN listings l ON w.item_id = l.id
        JOIN users u ON l.owner_id = u.id
-       WHERE w.user_id = $1
+       WHERE w.user_id = $1 AND l.deleted_at IS NULL
        ORDER BY w.created_at DESC`,
       [user_id],
     );
@@ -37,7 +37,7 @@ exports.toggleWishlist = async (req, res) => {
 
   try {
     // Check if item exists in listings
-    const listingCheck = await pool.query('SELECT id FROM listings WHERE id = $1', [item_id]);
+    const listingCheck = await pool.query('SELECT id FROM listings WHERE id = $1 AND deleted_at IS NULL', [item_id]);
     if (listingCheck.rows.length === 0) {
       return res.status(404).json({ error: 'Listing not found.' });
     }

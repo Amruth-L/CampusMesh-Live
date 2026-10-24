@@ -698,7 +698,7 @@ export default function AccountPage({ workspace }) {
     }));
   }, [api]);
   const deleteListing = useCallback(async (id) => {
-    if (!window.confirm("Delete this listing?")) return;
+    if (!window.confirm("Delete this listing? Existing rentals and payments will stay available.")) return;
     setActionError("");
     try { await api.delete(`/listings/${id}`); }
     catch (error) { setActionError(error.response?.data?.error || "Could not delete this listing."); return; }

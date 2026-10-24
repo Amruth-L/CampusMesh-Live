@@ -29,7 +29,7 @@ exports.bookRental = async (req, res) => {
     // must observe the same committed rental instead of both inserting one.
     const listingRes = await client.query('SELECT * FROM listings WHERE id = $1 FOR NO KEY UPDATE', [listing_id]);
     const listing = listingRes.rows[0];
-    if (!listing) {
+    if (!listing || listing.deleted_at) {
       await client.query('ROLLBACK');
       return res.status(404).json({ error: 'Listing not found.' });
     }

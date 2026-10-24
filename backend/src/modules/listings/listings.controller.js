@@ -132,7 +132,7 @@ exports.getListings = async (req, res) => {
       FROM listings l
       JOIN users u ON l.owner_id = u.id
       LEFT JOIN demand d ON d.listing_id=l.id LEFT JOIN interest i ON i.listing_id=l.id
-      WHERE COALESCE(l.is_active, TRUE) = TRUE
+      WHERE COALESCE(l.is_active, TRUE) = TRUE AND l.deleted_at IS NULL
       ORDER BY l.created_at DESC
     `);
     res.json(listings.rows);
@@ -149,7 +149,7 @@ exports.getMyListings = async (req, res) => {
         COUNT(r.id) FILTER (WHERE r.status IN ('OWNER_PENDING','RENTAL_PAYMENT_COMPLETED')
           AND ${bookingPaymentReceivedSql('r')})::int AS pending_request_count
       FROM listings l LEFT JOIN rentals r ON r.listing_id=l.id AND ${submittedRentalSql('r')}
-      WHERE l.owner_id=$1 GROUP BY l.id ORDER BY l.created_at DESC`,
+      WHERE l.owner_id=$1 AND l.deleted_at IS NULL GROUP BY l.id ORDER BY l.created_at DESC`,
       [req.user.id],
     );
     res.json(rows);
@@ -161,7 +161,7 @@ exports.getMyListings = async (req, res) => {
 
 exports.getAvailability = async (req, res) => {
   try {
-    const exists = await pool.query('SELECT id FROM listings WHERE id=$1', [req.params.id]);
+    const exists = await pool.query('SELECT id FROM listings WHERE id=$1 AND deleted_at IS NULL', [req.params.id]);
     if (!exists.rowCount) return res.status(404).json({ error: 'Listing not found.' });
     const { rows } = await pool.query(
       `SELECT start_date,end_date FROM rentals r
@@ -178,7 +178,7 @@ exports.getAvailability = async (req, res) => {
 };
 
 exports.recordView = async (req, res) => {
-  const exists = await pool.query('SELECT id FROM listings WHERE id=$1', [req.params.id]);
+  const exists = await pool.query('SELECT id FROM listings WHERE id=$1 AND deleted_at IS NULL', [req.params.id]);
   if (!exists.rowCount) return res.status(404).json({ error: 'Listing not found.' });
   const recent = await pool.query(
     `SELECT id FROM listing_interactions WHERE listing_id=$1 AND user_id=$2
@@ -216,7 +216,7 @@ exports.getListingById = async (req, res) => {
       SELECT l.*, u.name as owner_name, u.email as owner_email 
       FROM listings l 
       JOIN users u ON l.owner_id = u.id 
-      WHERE l.id = $1
+      WHERE l.id = $1 AND l.deleted_at IS NULL
     `,
       [id],
     );
@@ -242,7 +242,7 @@ exports.updateListing = async (req, res) => {
     const owner_id = req.user.id;
 
     // Check if listing exists and belongs to user
-    const listingCheck = await pool.query('SELECT * FROM listings WHERE id = $1', [id]);
+    const listingCheck = await pool.query('SELECT * FROM listings WHERE id = $1 AND deleted_at IS NULL', [id]);
     if (listingCheck.rows.length === 0) {
       return res.status(404).json({ error: 'Listing not found' });
     }
@@ -261,7 +261,7 @@ exports.updateListing = async (req, res) => {
     }
     const updatedListing = await pool.query(
       `UPDATE listings SET title=$1,description=$2,price=$3,category=$4,image_url=$5,is_active=$6,image_urls=$7,updated_at=NOW()
-       WHERE id=$8 AND owner_id=$9 RETURNING *`,
+       WHERE id=$8 AND owner_id=$9 AND deleted_at IS NULL RETURNING *`,
       [
         title ?? current.title,
         description ?? current.description,
@@ -289,27 +289,15 @@ exports.updateListing = async (req, res) => {
 };
 
 exports.deleteListing = async (req, res) => {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(req.params.id)) {
+    return res.status(400).json({ error: 'Invalid listing ID.' });
+  }
   try {
-    const { id } = req.params;
-    const owner_id = req.user.id;
-
-    // Check if listing exists and belongs to user
-    const listingCheck = await pool.query('SELECT * FROM listings WHERE id = $1', [id]);
-    if (listingCheck.rows.length === 0) {
-      return res.status(404).json({ error: 'Listing not found' });
-    }
-
-    if (listingCheck.rows[0].owner_id !== owner_id) {
-      return res.status(403).json({ error: 'Forbidden: You can only delete your own listings' });
-    }
-
-    await pool.query('DELETE FROM listings WHERE id = $1', [id]);
-    await removeUnusedPhotos(galleryOf(listingCheck.rows[0]));
-
-    res.json({ message: 'Listing deleted successfully' });
+    const result = await require('./delete-listing').deleteListing(pool, req.params.id, req.user.id);
+    await removeUnusedPhotos(result.photos);
+    res.json({ message: 'Listing deleted.', archived: result.archived });
   } catch (error) {
-    console.error(error.message);
-    res.status(500).json({ error: 'Server Error' });
+    console.error('[listing] delete failed', error.code || error.name);
+    res.status(error.status || 500).json({ error: error.status ? error.message : 'Could not delete this listing. Please try again.' });
   }
 };
-
