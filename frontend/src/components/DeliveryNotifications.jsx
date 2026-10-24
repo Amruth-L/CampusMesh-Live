@@ -1,3 +1,4 @@
+import { paymentAction, paymentNames, paymentNeedsAction } from "../lib/payment-actions";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Bell, Truck, X } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
@@ -12,6 +13,8 @@ export default function DeliveryNotifications() {
   const [offers, setOffers] = useState([]);
   const [wishes, setWishes] = useState([]);
   const [returns, setReturns] = useState([]);
+  const [paymentRequests, setPaymentRequests] = useState([]);
+  const [paymentError, setPaymentError] = useState("");
   const [wishToast, setWishToast] = useState(null);
   const [open, setOpen] = useState(false);
   const [toast, setToast] = useState(null);
@@ -77,6 +80,24 @@ export default function DeliveryNotifications() {
     } catch {
       setError("Could not refresh delivery requests.");
     }
+  }, [api, user.id]);
+  useEffect(() => {
+    let active = true;
+    const refreshPayments = async () => {
+      try {
+        const { data } = await api.get('/api/direct-upi/payments');
+        if (active) { setPaymentRequests(data.filter(payment => paymentNeedsAction(payment, user.id))); setPaymentError(''); }
+      } catch {
+        if (active) setPaymentError('Payment notifications could not refresh. Open Payments to retry.');
+      }
+    };
+    refreshPayments();
+    const socket = io(API_BASE_URL, { auth: { token: localStorage.getItem('token') } });
+    ['connect', 'direct-payment:updated', 'rental:status'].forEach(event => socket.on(event, refreshPayments));
+    const timer = setInterval(refreshPayments, 15000);
+    window.addEventListener('focus', refreshPayments);
+    window.addEventListener('campusmesh:payment-change', refreshPayments);
+    return () => { active = false; clearInterval(timer); socket.close(); window.removeEventListener('focus', refreshPayments); window.removeEventListener('campusmesh:payment-change', refreshPayments); };
   }, [api, user.id]);
   useEffect(() => {
     seen.current.clear();
@@ -154,7 +175,7 @@ export default function DeliveryNotifications() {
   return (
     <div ref={panel}>
       <button
-        aria-label={`Notifications, ${pending.length + wishes.length + returns.length} pending`}
+        aria-label={`Notifications, ${pending.length + wishes.length + returns.length + paymentRequests.length} pending`}
         aria-expanded={open}
         aria-controls="delivery-notifications"
         onClick={() => {
@@ -165,23 +186,23 @@ export default function DeliveryNotifications() {
         className="relative grid size-9 place-items-center rounded-lg hover:bg-paper"
       >
         <Bell size={20} />
-        {pending.length + wishes.length + returns.length > 0 && (
+        {pending.length + wishes.length + returns.length + paymentRequests.length > 0 && (
           <span className="absolute -right-1 -top-1 grid min-w-4 place-items-center rounded-full bg-mesh-600 px-1 text-[10px] font-semibold text-white">
-            {pending.length + wishes.length + returns.length}
+            {pending.length + wishes.length + returns.length + paymentRequests.length}
           </span>
         )}
       </button>
       {open && (
         <section
           id="delivery-notifications"
-          aria-label="Delivery notifications"
+          aria-label="Notifications"
           className="fixed right-3 top-18 z-50 max-h-[calc(100dvh-10rem)] w-[min(26rem,calc(100vw-1.5rem))] overflow-y-auto rounded-xl border border-ink/15 bg-white shadow-lg"
         >
           <div className="sticky top-0 z-10 flex items-center justify-between border-b border-ink/10 bg-white p-4">
             <h2 className="text-sm font-semibold">
               Notifications{" "}
               <span className="ml-1 text-mesh-700">
-                {pending.length + wishes.length + returns.length}
+                {pending.length + wishes.length + returns.length + paymentRequests.length}
               </span>
             </h2>
             <button
@@ -204,6 +225,11 @@ export default function DeliveryNotifications() {
                 </button>
               </p>
             )}
+            {paymentError && <Link to="/payouts" onClick={() => setOpen(false)} className="block text-sm text-red-700 underline">{paymentError}</Link>}
+            {paymentRequests.map(payment => <Link key={`payment:${payment.id}`} to={`/rent-details/${payment.rental_id}#payments`} onClick={() => setOpen(false)} className="block rounded-lg border border-mesh-200 bg-mesh-50 p-4">
+              <b className="text-sm">{paymentAction(payment, user.id).label} · ₹{Number(payment.amount).toFixed(2)}</b>
+              <p className="mt-1 text-xs">{paymentNames[payment.kind]} · {payment.title}</p>
+            </Link>)}
             {returns.map(request => <Link key={request.id} to={`/rent-details/${request.id}`} onClick={() => setOpen(false)} className="block rounded-lg border border-amber-200 bg-amber-50 p-4">
               <b className="text-sm">{request.return_actionable ? "Return destination needed" : "Rental request needs your response"}</b>
               <p className="mt-1 text-xs">{request.return_actionable
@@ -251,11 +277,11 @@ export default function DeliveryNotifications() {
                 onDecline={(o) => respond(o, "decline")}
               />
             ))}
-            {!pending.length && !wishes.length && !returns.length && !error && (
+            {!pending.length && !wishes.length && !returns.length && !paymentRequests.length && !error && !paymentError && (
               <div className="px-5 py-8 text-center">
                 <Truck className="mx-auto text-ink/30" />
                 <p className="mt-3 text-sm font-medium">
-                  No pending delivery requests
+                  No pending requests
                 </p>
                 <p className="mt-2 text-xs leading-5 text-ink/60">
                   Enable errand alerts in Wish Box, or go online in the delivery dashboard.

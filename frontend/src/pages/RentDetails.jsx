@@ -555,7 +555,9 @@ export default function RentDetails() {
     tone: "blue",
   };
   const deliveryConfig = DELIVERY_STATUS[delivery?.status];
-  const displayConfig = rental?.return_workflow?.can_inspect
+  const displayConfig = ['COMPLETED', 'DEPOSIT_REFUNDED', 'CANCELLED'].includes(rental?.status)
+    ? { ...rentalConfig, label: rental.status === 'CANCELLED' ? 'Cancelled' : 'Rental closed' }
+    : rental?.return_workflow?.can_inspect
     ? { label: 'Owner inspection required', tone: 'amber' }
     : rental?.return_workflow?.inspected && rental?.deposit_status === 'REFUNDED' && !rental.return_workflow.delivery_settled
       ? { label: 'Return courier fee pending', tone: 'amber' }
@@ -583,9 +585,9 @@ export default function RentDetails() {
     if (rental.payment_method==='DIRECT_UPI' && ['OWNER_PENDING','BOOKING_PAYMENT_PENDING','DEPOSIT_PENDING'].includes(rental.status)) return null;
     if (rental.payment_method === 'DIRECT_UPI' && rental.return_workflow?.can_inspect) {
       return {
-        title: 'Item returned · Owner inspection required',
-        body: isOwner ? 'Check the returned item against the pickup and return photos below. Approve its condition to release the deposit refund. Courier fee confirmation is a separate step.' : 'Your return handover is recorded. The owner must check the item condition before sending your deposit refund.',
-        action: isOwner ? 'Inspect item & approve refund' : null,
+        title: 'Check returned item',
+        body: isOwner ? 'Compare the condition photos before approving the refund.' : 'Waiting for the owner to check the item.',
+        action: isOwner ? 'Inspect & approve refund' : null,
         actionFn: () => { setConditionConfirmed(false); setShowInspectionModal(true); },
         tone: 'amber',
       };
@@ -777,7 +779,7 @@ export default function RentDetails() {
     );
 
   return (
-    <main className="min-h-screen bg-paper pb-16 text-ink">
+    <main className="min-h-screen bg-paper pb-28 text-ink lg:pb-16">
       <div className="mx-auto max-w-[1180px] space-y-5 px-5 py-6 sm:px-7 lg:px-10">
         {/* Navigation & Status Header */}
         <div className="flex flex-wrap items-center justify-between gap-4">
@@ -800,50 +802,28 @@ export default function RentDetails() {
           </div>
         </div>
 
-        {rental.return_workflow?.requested && blockedCopy && <section className="rounded-xl border border-ink/15 bg-white p-5" aria-label="Next return action">
-          <h2 className="text-lg font-bold">{blockedCopy.title}</h2>
-          <p className="mt-2 text-sm leading-6 text-ink/75">{blockedCopy.body}</p>
-          {blockedCopy.action && <button className="brand-button mt-4" onClick={blockedCopy.actionFn}>{blockedCopy.action}</button>}
-        </section>}
-        {rental.payment_method==='DIRECT_UPI' && <DirectPayments rental={rental} onChange={load}/>}
-        {/* Listing Header Card */}
-        <section className="flex flex-col justify-between gap-5 rounded-[1.7rem] border border-mesh-900/10 bg-[radial-gradient(circle_at_100%_0%,rgba(76,145,82,.18),transparent_35%),white] p-6 shadow-[0_15px_50px_rgba(35,58,40,.07)] md:flex-row md:items-end">
-          <div className="flex items-start gap-4">
-            {rental.listing_image ? (
-              <img
-                src={rental.listing_image}
-                alt=""
-                className="size-20 shrink-0 rounded-2xl object-cover"
-              />
-            ) : (
-              <span className="grid size-20 shrink-0 place-items-center rounded-2xl bg-mesh-50 text-mesh-700">
-                <Package />
-              </span>
-            )}
-            <div>
-              <span className="text-[.68rem] font-extrabold uppercase tracking-[.16em] text-mesh-600">
-                {rental.listing_category || "Rental"}
-              </span>
-              <h1 className="mt-2 max-w-[38rem] font-display text-4xl font-semibold leading-tight sm:text-5xl">
-                {rental.listing_title}
-              </h1>
-              <p className="mt-2 flex items-center gap-1.5 text-sm text-ink/50">
-                <House size={14} /> {rental.listing_location || "Campus pickup"}
-              </p>
+        <section className="flex items-center justify-between gap-3 border-b border-ink/10 pb-4">
+          <div className="flex min-w-0 items-center gap-3">
+            {rental.listing_image ? <img src={rental.listing_image} alt="" className="size-12 shrink-0 rounded-lg object-cover" /> : <Package size={28} className="shrink-0 text-mesh-700" />}
+            <div className="min-w-0">
+              <h1 className="break-words text-xl font-bold sm:text-2xl">{rental.listing_title}</h1>
+              <p className="mt-1 flex items-center gap-1 text-xs text-ink/70"><House size={13} />{rental.listing_location || 'Campus pickup'}</p>
             </div>
           </div>
-          <button
-            onClick={copyId}
-            className="inline-flex items-center gap-2 self-start rounded-xl border border-ink/10 bg-white px-3 py-2 text-xs font-bold text-ink/50 md:self-end"
-          >
-            <Copy size={14} /> {copied ? "Copied booking ID" : "Copy booking ID"}
-          </button>
+          <button onClick={copyId} title="Copy booking ID" aria-label={copied ? 'Booking ID copied' : 'Copy booking ID'} className="grid size-11 shrink-0 place-items-center rounded-lg text-ink/70 hover:bg-white"><Copy size={17} /></button>
         </section>
+        {rental.payment_method === 'DIRECT_UPI' && <DirectPayments rental={rental} onChange={load} />}
+        {rental.return_workflow?.requested && blockedCopy && (rental.payment_method !== 'DIRECT_UPI' || blockedCopy.action) && <section className="rounded-xl border border-ink/15 bg-white p-4" aria-label="Next return action">
+          <h2 className="font-bold">{blockedCopy.title}</h2>
+          <p className="mt-1 text-sm text-ink/75">{blockedCopy.body}</p>
+          {blockedCopy.action && <button className="brand-button mt-3" onClick={blockedCopy.actionFn}>{blockedCopy.action}</button>}
+        </section>}
 
         {isDelivery && <DeliveryProgress rental={rental} delivery={delivery} error={deliveryError} />}
 
         {isBorrower && (
-          <section className="rounded-2xl border border-ink/15 bg-white p-5">
+          <details className="border-b border-ink/10 py-3">
+            <summary className="cursor-pointer text-sm font-semibold">Call updates</summary>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="flex items-center gap-2 text-base font-bold text-ink"><Phone size={18} className="text-mesh-700" /> {callStatus?.title || "Booking call status"}</h2>
               <Link to="/reminders" className="text-sm font-bold text-mesh-700 underline underline-offset-4">Manage calls</Link>
@@ -855,7 +835,7 @@ export default function RentDetails() {
                 <p className="mt-3 text-xs font-semibold text-ink/65">Calling hours: {callStatus.callWindow}</p>
               </>
             ) : <p className="mt-2 text-sm text-ink/70">Call status could not be loaded. Check Reminders for your phone verification and call preferences.</p>}
-          </section>
+          </details>
         )}
 
         {deliveryError && <p role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">{deliveryError}</p>}

@@ -1,3 +1,4 @@
+import { groupPayments, paymentAction, paymentNames } from "../../lib/payment-actions";
 import { io } from 'socket.io-client';
 import { API_BASE_URL } from '../../lib/api';
 import ReturnSettlementProgress from './ReturnSettlementProgress';
@@ -9,19 +10,6 @@ const money = (n) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(
     Number(n || 0),
   );
-const names = {
-  RENTAL: "Rental fee",
-  DEPOSIT: "Refundable deposit",
-  DELIVERY: "Delivery fee",
-  RETURN_DELIVERY: "Return delivery fee",
-  DEPOSIT_REFUND: "Deposit refund",
-};
-const states = {
-  PENDING: "Awaiting payment",
-  REPORTED: "Waiting for receipt confirmation",
-  CONFIRMED: "Receipt confirmed",
-  DISPUTED: "Receipt disputed — do not pay again",
-};
 export function UpiProfile({ compact = false, onSaved } = {}) {
   const { api } = useAuth();
   const [upi, setUpi] = useState(""),
@@ -84,13 +72,13 @@ export function UpiProfile({ compact = false, onSaved } = {}) {
     <section className="rounded-xl border border-mesh-200 bg-white p-5 sm:p-6" aria-label="Saved receiving UPI account">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-mesh-800" role="status">Your UPI account</h2>
+          <h2 className="text-base font-bold text-mesh-800">Your UPI account</h2>
           <p className="mt-3 font-semibold">{saved.payee_name}</p>
           <p className="mt-1 break-all">{saved.upi_id}</p>
         </div>
         <button className="secondary-button" onClick={() => { setEditing(true); setConfirm(false); setMessage(""); }}>Edit</button>
       </div>
-      <p className="mt-4 text-sm leading-6 text-ink/75">For rent, delivery earnings and deposit refunds. Confirm receipts after checking your bank.</p>
+      <p className="mt-4 text-sm leading-6 text-ink/75">For earnings and refunds.</p>
       {message && <p role="status" className="mt-2 text-sm text-mesh-800">{message}</p>}
       <details className="mt-3 text-sm text-ink/70">
         <summary className="cursor-pointer font-semibold">About this account</summary>
@@ -177,6 +165,7 @@ function PaymentCard({ payment: p, reload }) {
         recipient_revision: changed ? Number(paidRevision) : p.recipient_revision || 1,
       });
       setConfirm(false);
+      window.dispatchEvent(new Event("campusmesh:payment-change"));
       await reload();
     } catch (e) {
       setError(e.response?.data?.error || "Could not update payment.");
@@ -184,147 +173,63 @@ function PaymentCard({ payment: p, reload }) {
       setBusy(false);
     }
   }
+  const action = paymentAction(p, user.id);
+  const [expanded, setExpanded] = useState(false);
+  useEffect(() => { setExpanded(false); setConfirm(false); }, [p.status]);
   return (
-    <article className="rounded-xl border border-ink/15 bg-white p-5">
-      <div className="flex flex-wrap justify-between gap-3">
-        <div>
-          <h3 className="font-bold">
-            {names[p.kind]} · {p.title}
-          </h3>
-          <p className="mt-1 text-sm text-ink/75">
-            {payer ? "Pay to" : "From"}{" "}
-            {payer ? p.recipient_name : p.payer_name}
-          </p>
+    <article id={`payment-${p.id}`} className="scroll-mt-40 rounded-xl border border-ink/15 bg-white p-4 sm:p-5">
+      <div className="flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center sm:gap-4">
+        <div className="min-w-0 flex-1">
+          <h3 className="text-sm font-bold">{paymentNames[p.kind] || 'Payment'} <span className="font-normal text-ink/70">· {p.title}</span></h3>
+          <strong className="mt-1 block text-2xl font-bold tabular-nums">{money(p.amount)}</strong>
+          <p className="mt-1 text-sm text-ink/75">{payer ? 'To' : 'From'} {payer ? p.recipient_name : p.payer_name}</p>
+          <p role="status" className={`mt-1 text-xs font-semibold ${p.status === 'DISPUTED' ? 'text-red-700' : 'text-mesh-800'}`}>{action.status}</p>
         </div>
-        <strong className="text-xl">{money(p.amount)}</strong>
+        <button onClick={() => setExpanded(!expanded)} aria-expanded={expanded} aria-controls={`payment-action-${p.id}`} className={`${action.priority === 0 ? 'brand-button' : 'secondary-button'} w-full shrink-0 text-sm sm:w-auto`}>
+          {expanded ? 'Close' : action.label}
+        </button>
       </div>
-      <p role="status" className="mt-3 font-semibold text-mesh-800">
-        {states[p.status]}
-      </p>
-      <p className="mt-2 text-sm">
-        Recipient UPI:{" "}
-        <span className="break-all font-semibold">{p.upi_id}</span>
-      </p>
-      <p className="mt-1 text-sm">Account name: {p.payee_name}</p>
-      {p.status==='PENDING' && changed && <p role="status" className="mt-3 rounded-lg bg-amber-50 p-3 text-sm leading-6 text-amber-950">UPI details changed. Already paid? Select the account you paid below; do not pay again.</p>}
-      <Link
-        className="mt-2 inline-block text-sm font-semibold underline"
-        to={`/rent-details/${p.rental_id}`}
-      >
-        Rental details
-      </Link>
-      {payer && p.status === "PENDING" && (
-        <div className="mt-5 grid gap-5 sm:grid-cols-[180px_1fr]">
-          <div>
-            <QRCodeSVG
-              value={p.uri}
-              size={170}
-              title={`Pay ${money(p.amount)} to ${p.payee_name}`}
-              marginSize={2}
-            />
-            <a href={p.uri} className="secondary-button mt-3 w-full text-sm">
-              Open UPI app
-            </a>
+      {expanded && <div id={`payment-action-${p.id}`} className="mt-4 border-t border-ink/10 pt-4">
+        {payer && p.status === 'PENDING' && <>
+          {changed && <p role="status" className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-950">UPI account changed. Already paid? Choose the account you paid below; do not pay again.</p>}
+          <div className="grid gap-5 sm:grid-cols-[180px_minmax(0,1fr)]">
+            <div className="flex flex-col items-start gap-2">
+              <a href={p.uri} className="brand-button w-full text-sm">Open UPI app</a>
+              <QRCodeSVG value={p.uri} size={170} title={`Pay ${money(p.amount)} to ${p.payee_name}`} marginSize={2} />
+              <p className="w-full break-all text-xs text-ink/75">{p.payee_name}<br />{p.upi_id}</p>
+            </div>
+            <div className="space-y-3 text-sm">
+              <p>Check the name and amount in your UPI app. After paying, add the reference below.</p>
+              {changed && <label className="grid gap-2 font-semibold">Account you paid
+                <select value={paidRevision} onChange={e => { setPaidRevision(e.target.value); setConfirm(false); }} className="w-full rounded-lg border border-ink/25 bg-white p-3">
+                  <option value="">Choose account</option>
+                  {versions.map(v => <option key={v.revision} value={v.revision}>{v.revision === p.recipient_revision ? 'Current' : 'Previous'}: {v.upi_id} · {v.payee_name}</option>)}
+                </select>
+              </label>}
+              <label className="grid gap-2 font-semibold">UPI reference (UTR)
+                <input value={reference} onChange={e => setReference(e.target.value)} inputMode="numeric" maxLength={12} placeholder="12-digit reference" className="w-full rounded-lg border border-ink/25 p-3" />
+              </label>
+              <label className="flex items-start gap-2"><input type="checkbox" checked={confirm} onChange={e => setConfirm(e.target.checked)} className="mt-1" />I sent {money(p.amount)} to {changed ? 'the selected account' : p.payee_name}.</label>
+              <button disabled={busy || !confirm || !/^\d{12}$/.test(reference) || (changed && !paidRevision)} onClick={() => act('report')} className="brand-button disabled:opacity-50">{busy ? 'Sending…' : 'Payment sent'}</button>
+            </div>
           </div>
-          <div className="space-y-3 text-sm">
-            <p>
-              Check the name and amount before paying. If the QR or link fails, use the UPI ID above.
-            </p>
-            {changed && <label className="grid gap-2 font-semibold">
-              Account you actually paid
-              <select value={paidRevision} onChange={e=>{setPaidRevision(e.target.value);setConfirm(false);}} className="w-full rounded-lg border border-ink/25 bg-white p-3">
-                <option value="">Select the UPI ID on your transaction</option>
-                {versions.map(v=><option key={v.revision} value={v.revision}>{v.revision===p.recipient_revision?'Current':'Previous'}: {v.upi_id} · {v.payee_name}</option>)}
-              </select>
-            </label>}
-            <label className="grid gap-2 font-semibold">
-              Transaction reference (UTR)
-              <input
-                value={reference}
-                onChange={(e) => setReference(e.target.value)}
-                inputMode="numeric"
-                maxLength={12}
-                placeholder="12-digit reference"
-                className="w-full rounded-lg border border-ink/25 p-3"
-              />
-            </label>
-            <label className="flex items-start gap-2">
-              <input
-                type="checkbox"
-                checked={confirm}
-                onChange={(e) => setConfirm(e.target.checked)}
-                className="mt-1"
-              />
-              I sent this exact amount to {changed ? "the account selected above" : "the displayed recipient"}.
-            </label>
-            <button
-              disabled={busy || !confirm || !/^\d{12}$/.test(reference) || (changed && !paidRevision)}
-              onClick={() => act("report")}
-              className="brand-button disabled:opacity-50"
-            >
-              {p.kind === "DEPOSIT_REFUND" ? "I sent the refund" : "I sent the payment"}
-            </button>
-          </div>
-        </div>
-      )}
-      {!payer && ["REPORTED", "DISPUTED"].includes(p.status) && (
-        <div className="mt-4 space-y-3 text-sm">
-          <p>
-            Reference: <strong>{p.reference}</strong>. Confirm only after this amount reaches your bank; a screenshot is not proof.
-          </p>
-          <label className="flex items-start gap-2">
-            <input
-              type="checkbox"
-              checked={confirm}
-              onChange={(e) => setConfirm(e.target.checked)}
-              className="mt-1"
-            />
-            I checked my bank or UPI transaction history.
-          </label>
+        </>}
+        {!payer && ['REPORTED', 'DISPUTED'].includes(p.status) && <div className="space-y-3 text-sm">
+          <p>Reference: <strong>{p.reference}</strong></p>
+          <p>Confirm only after {money(p.amount)} reaches your bank.</p>
+          <label className="flex items-start gap-2"><input type="checkbox" checked={confirm} onChange={e => setConfirm(e.target.checked)} className="mt-1" />I checked my bank or UPI history.</label>
           <div className="flex flex-wrap gap-3">
-            <button
-              disabled={busy || !confirm}
-              onClick={() => act("confirm")}
-              className="brand-button disabled:opacity-50"
-            >
-              {p.kind === "DEPOSIT_REFUND" ? "Confirm refund received: " : "I received "}{money(p.amount)}
-            </button>
-            {p.status === "REPORTED" && (
-              <button
-                disabled={busy || !confirm}
-                onClick={() => act("dispute")}
-                className="secondary-button disabled:opacity-50"
-              >
-                Payment not received
-              </button>
-            )}
+            <button disabled={busy || !confirm} onClick={() => act('confirm')} className="brand-button disabled:opacity-50">{busy ? 'Updating…' : `Received ${money(p.amount)}`}</button>
+            {p.status === 'REPORTED' && <button disabled={busy || !confirm} onClick={() => act('dispute')} className="secondary-button disabled:opacity-50">Not received</button>}
           </div>
-        </div>
-      )}
-      {p.status === "REPORTED" && payer && (
-        <p className="mt-3 text-sm">
-          Waiting for the recipient. Do not pay again.
-        </p>
-      )}
-      {p.status === "DISPUTED" && (
-        <p className="mt-3 text-sm">
-          Check with the recipient or contact{" "}
-          <Link to="/support" className="underline">
-            support
-          </Link>
-          . No retry or refund has been made.
-        </p>
-      )}
-      {p.status === "CONFIRMED" && (
-        <p className="mt-3 text-sm text-ink/70">
-          Confirmed by recipient · {new Date(p.confirmed_at).toLocaleString()}. Not bank-verified by CampusMesh.
-        </p>
-      )}
-      {error && (
-        <p role="alert" className="mt-3 text-sm text-red-700">
-          {error}
-        </p>
-      )}
+        </div>}
+        {p.status === 'REPORTED' && payer && <p className="text-sm">Waiting for {p.recipient_name} to confirm. Do not pay again.</p>}
+        {!payer && p.status === 'PENDING' && <p className="text-sm">{p.payer_name} has not reported payment yet.</p>}
+        {p.status === 'DISPUTED' && <p className="mt-3 text-sm">Check with the other person or <Link to="/support" className="underline">get help</Link>. Do not send another payment.</p>}
+        {p.status === 'CONFIRMED' && <p className="text-sm">Confirmed by recipient · {new Date(p.confirmed_at).toLocaleString()}<br />Reference: {p.reference || '—'}. Not bank-verified by CampusMesh.</p>}
+        <Link className="mt-4 inline-block text-sm font-semibold text-mesh-800 underline" to={`/rent-details/${p.rental_id}`}>Rental details</Link>
+      </div>}
+      {error && <p role="alert" className="mt-3 text-sm text-red-700">{error}</p>}
     </article>
   );
 }
@@ -352,6 +257,7 @@ export function DirectPayments({ rental = null, deliveryId = null, onChange }) {
     const timer = setInterval(load, 15000);
     const socket=io(API_BASE_URL,{auth:{token:localStorage.getItem('token')},reconnectionAttempts:3});
     socket.on('direct-payment:updated',load);
+    socket.on('rental:status',load);
     socket.on('connect',load);
     window.addEventListener('focus',load);
     window.addEventListener('campusmesh:upi-saved',load);
@@ -372,6 +278,7 @@ export function DirectPayments({ rental = null, deliveryId = null, onChange }) {
           rental_id: rental.id,
           response: action,
         });
+      window.dispatchEvent(new Event("campusmesh:payment-change"));
       await load();
       await onChange?.();
     } catch (e) {
@@ -380,115 +287,60 @@ export function DirectPayments({ rental = null, deliveryId = null, onChange }) {
       setBusy(false);
     }
   }
+  const { active, history } = groupPayments(items, user.id);
+  const refresh = async () => { await load(); await onChange?.(); };
+  const returning = rental && !deliveryId && (rental.status?.startsWith('RETURN_') || ['REFUND_PENDING', 'REFUNDED'].includes(rental.deposit_status) || rental.status === 'COMPLETED');
   return (
-    <section className="space-y-4" aria-label="Direct UPI payments">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-bold">{rental || deliveryId ? "Payments" : "Payment activity"}</h2>
-        <button className="secondary-button" onClick={load}>
-          Refresh
-        </button>
+    <section id="payments" className="scroll-mt-36 space-y-3" aria-label="Direct UPI payments">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-lg font-bold">{rental || deliveryId ? 'Payments' : 'Payment requests'}</h2>
+        <button className="min-h-11 px-2 text-sm font-semibold text-mesh-800 underline" onClick={load}>Refresh</button>
       </div>
-      <p className="text-sm leading-6 text-ink/75">
-        Pay directly by UPI. The recipient confirms receipt.
-      </p>
-      <details className="text-sm text-ink/70">
-        <summary className="cursor-pointer font-semibold">How payments work</summary>
-        <p className="mt-2 max-w-2xl leading-6">Pay rent and deposits to the lender, delivery fees to the courier, and refunds to the renter. Each is a separate transfer. CampusMesh does not hold or split money and charges no platform fee for these rentals.</p>
-      </details>
-      {rental?.owner_response === "PENDING" && (
-        <div className="rounded-xl bg-mesh-50 p-4">
-          <p>No payment is due until the lender accepts.</p>
-          {user.id === rental.owner_id && (
-            <div className="mt-3 flex flex-wrap gap-3">
-              <button
-                disabled={busy}
-                onClick={() => run("ACCEPTED")}
-                className="brand-button"
-              >
-                Accept request
-              </button>
-              <button
-                disabled={busy}
-                onClick={() => run("REJECTED")}
-                className="secondary-button"
-              >
-                Decline request
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-      {rental && !deliveryId && (rental.status?.startsWith('RETURN_') || ['REFUND_PENDING', 'REFUNDED'].includes(rental.deposit_status) || rental.status === 'COMPLETED') && (
-        <ReturnSettlementProgress rental={rental} refund={items.find(p => p.kind === 'DEPOSIT_REFUND')} />
-      )}
-      {rental?.deposit_status === "REFUNDED" && (
-        <p className="rounded-xl bg-mesh-50 p-4 font-semibold text-mesh-900">
-          Renter confirmed the deposit refund.
-        </p>
-      )}
-      {rental?.delivery_requested && (
-        <p className="text-sm">
-          Delivery: {money(rental.delivery_fee)}, due after handover. Return delivery is charged separately.
-        </p>
-      )}
-      {rental?.return_workflow?.requested && Number(rental.deposit_amount)>0 && !rental.return_workflow.refund_account_ready && user.id===rental.borrower_id && (
-        <div className="space-y-3">
-          <p className="text-sm font-semibold">Add your UPI ID to receive your {money(rental.deposit_amount)} deposit refund.</p>
-          <UpiProfile compact onSaved={async () => { await load(); await onChange?.(); }} />
-        </div>
-      )}
-      {rental?.deposit_status === "REFUND_PENDING" && !items.some(p => p.kind === "DEPOSIT_REFUND") && (
-        <div className="rounded-xl bg-amber-50 p-4 text-amber-950">
-          <p>Deposit refund: {money(rental.deposit_amount)}.</p>
-          <p className="mt-2 text-sm leading-6">{rental.return_workflow?.refund_account_ready
-            ? 'UPI account ready. Refresh to view the refund request.'
-            : user.id===rental.borrower_id
-              ? 'Add your UPI ID above. The refund appears after the owner checks the returned item.'
-              : 'Waiting for the renter to add their UPI ID. The refund request will appear automatically.'}</p>
-        </div>
-      )}
-      {error && (
-        <p role="alert" className="text-red-700">
-          {error}
-        </p>
-      )}
-      {items.map((p) => (
-        <PaymentCard
-          key={p.id}
-          payment={p}
-          reload={async () => {
-            await load();
-            await onChange?.();
-          }}
-        />
-      ))}
-      {loaded && !items.length && !rental?.return_workflow?.requested && rental?.deposit_status !== "REFUND_PENDING" && (
-        <div className="border-y border-ink/15 py-5">
-          <h3 className="font-bold">{deliveryId ? "Add your UPI account" : "No payment is due yet"}</h3>
-          <p className="mt-2 text-sm leading-6 text-ink/75">{deliveryId ? "Add your UPI ID in Payments. The delivery fee appears after verified handover." : "Payment requests appear after lender acceptance."}</p>
-          <div className="mt-3 flex flex-wrap gap-3">
-            <Link to={deliveryId ? "/payouts" : "/account/rentals"} className="secondary-button">{deliveryId ? "Add UPI details" : "My rentals"}</Link>
-          </div>
-        </div>
-      )}
-      {(rental || deliveryId) && <Link
-        to="/payouts"
-        className="inline-block text-sm font-semibold text-mesh-800 underline"
-      >
-        All payments & UPI account
-      </Link>}
+      {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+      {!loaded && !error && <p role="status" className="text-sm text-ink/70">Loading payments…</p>}
+      <p role="status" className="sr-only">{loaded ? `${active.length} pending payment requests` : ''}</p>
+      {active.map(p => <PaymentCard key={p.id} payment={p} reload={refresh} />)}
+      {rental?.owner_response === 'PENDING' && <div className="rounded-xl border border-ink/15 bg-white p-4">
+        <p className="text-sm">{user.id === rental.owner_id ? 'Accept this request to ask for payment.' : 'Waiting for owner acceptance. No payment due yet.'}</p>
+        {user.id === rental.owner_id && <div className="mt-3 flex flex-wrap gap-3">
+          <button disabled={busy} onClick={() => run('ACCEPTED')} className="brand-button disabled:opacity-50">Accept request</button>
+          <button disabled={busy} onClick={() => run('REJECTED')} className="secondary-button disabled:opacity-50">Decline</button>
+        </div>}
+      </div>}
+      {rental?.return_workflow?.requested && Number(rental.deposit_amount) > 0 && !rental.return_workflow.refund_account_ready && user.id === rental.borrower_id && <div className="space-y-3">
+        <p className="text-sm font-semibold">Add your UPI ID for your {money(rental.deposit_amount)} refund.</p>
+        <UpiProfile compact onSaved={refresh} />
+      </div>}
+      {rental?.deposit_status === 'REFUND_PENDING' && !items.some(p => p.kind === 'DEPOSIT_REFUND') && <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+        <h3 className="font-bold">Refund · {money(rental.deposit_amount)}</h3>
+        <p className="mt-1 text-sm">{rental.return_workflow?.refund_account_ready ? 'Preparing your refund request…' : 'Waiting for the renter’s UPI ID.'}</p>
+      </div>}
+      {loaded && !active.length && rental?.owner_response !== 'PENDING' && rental?.deposit_status !== 'REFUND_PENDING' && <p className="rounded-xl border border-ink/15 bg-white p-4 text-sm font-semibold">No payment due.</p>}
+      {deliveryId && loaded && !items.length && <Link to="/payouts#upi-account" className="inline-block text-sm font-semibold text-mesh-800 underline">Set up UPI to receive delivery fees</Link>}
+      {history.length > 0 && <details className="border-y border-ink/10 py-3">
+        <summary className="cursor-pointer text-sm font-semibold">Payment history ({history.length})</summary>
+        <div className="mt-3 space-y-3">{history.map(p => <PaymentCard key={p.id} payment={p} reload={refresh} />)}</div>
+      </details>}
+      {returning && <ReturnSettlementProgress rental={rental} refund={items.find(p => p.kind === 'DEPOSIT_REFUND')} />}
+      <div className="flex flex-wrap items-start justify-between gap-3 pt-1 text-xs text-ink/75">
+        <details className="max-w-xl">
+          <summary className="cursor-pointer font-semibold">How UPI payments work</summary>
+          <p className="mt-2 leading-5">Pay each person directly in your UPI app, then enter the reference. The recipient checks their bank and confirms receipt. Rent and deposits go to the owner, delivery fees to the courier, and refunds to the renter. CampusMesh does not hold or split these payments.</p>
+        </details>
+        {(rental || deliveryId) && <Link to="/payouts" className="font-semibold text-mesh-800 underline">All payments</Link>}
+      </div>
     </section>
   );
 }
 export default function DirectDashboard() {
   return (
-    <main className="mx-auto max-w-5xl space-y-6 px-4 py-7 pb-28 sm:px-6 lg:pb-12">
-      <div>
-        <h1 className="text-3xl font-bold">Payments</h1>
-        <p className="mt-2 text-sm text-ink/70">Manage your UPI account and track payments.</p>
-      </div>
-      <UpiProfile />
+    <main className="mx-auto max-w-5xl space-y-5 px-4 py-6 pb-28 sm:px-6 lg:pb-12">
+      <h1 className="text-3xl font-bold">Payments</h1>
       <DirectPayments />
+      <details id="upi-account" className="scroll-mt-36 border-t border-ink/15 pt-4" open={window.location.hash === '#upi-account' || undefined}>
+        <summary className="cursor-pointer text-sm font-semibold">Receiving UPI account</summary>
+        <div className="mt-3"><UpiProfile compact /></div>
+      </details>
     </main>
   );
 }
