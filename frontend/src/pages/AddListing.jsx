@@ -407,7 +407,7 @@ const AddListing = () => {
               onClick={() => navigate('/lend')}
               className="mb-5 inline-flex items-center gap-1.5 text-xs font-semibold text-ink/45 transition hover:text-mesh-700"
             >
-              <ArrowLeft size={14} /> Back to lending dashboard
+              <ArrowLeft size={14} /> Back to listing dashboard
             </button>
             <span className="flex items-center gap-1.5 text-[.68rem] font-semibold uppercase tracking-[.16em] text-mesh-600">
               <Package size={14} /> Lend

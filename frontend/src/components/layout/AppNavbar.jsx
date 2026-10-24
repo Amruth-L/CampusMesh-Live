@@ -16,7 +16,7 @@ import DeliveryNotifications from "../DeliveryNotifications";
 
 const workspaces = [
   ["/marketplace", "Rent", ShoppingBag],
-  ["/lend", "Lend", Store],
+  ["/lend", "List", Store],
   ["/delivery", "Deliver", Truck],
   ["/wish-box", "Wish Box", Sparkles],
 ];
@@ -52,7 +52,7 @@ export default function AppNavbar() {
             "/edit-listing",
             "/owner-dashboard",
           ].some((p) => pathname.startsWith(p))
-        ? "Lend"
+        ? "List"
         : "Rent";
   const links =
     workspace === "Wish Box"
@@ -65,9 +65,9 @@ export default function AppNavbar() {
             ["/delivery", "Delivery dashboard"],
             ["/delivery/wishes", "Wish Box errands"],
           ]
-        : workspace === "Lend"
+        : workspace === "List"
           ? [
-              ["/lend", "Lending dashboard"],
+              ["/lend", "Listing dashboard"],
               ["/add-listing", "List an item"],
             ]
           : [

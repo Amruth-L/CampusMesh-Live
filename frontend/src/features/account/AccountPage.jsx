@@ -1,3 +1,4 @@
+import { ownerRequestGroup, ownerRequestStatus, ownerRequestNextAction } from "../../lib/owner-requests";
 import TrustDetails from "../intelligence/TrustDetails";
 import { matchesRentalFilter, rentalProgress } from "../../lib/rental-status";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -187,19 +188,6 @@ function RentalProgress({ rental }) {
 }
 
 
-const ownerStatusLabel = (request) => {
-  if (request.return_actionable) return "Confirm return destination";
-  if (request.actionable) return "Needs your response";
-  if (request.status === "DEPOSIT_PENDING") return "Deposit pending";
-  if (request.status === "MATCHING_COURIER") return "Finding courier";
-  if (request.status === "NO_COURIER_AVAILABLE") return "Waiting for courier";
-  if (request.delivery?.status === "COURIER_ASSIGNED") return "Courier assigned";
-  if (request.delivery?.status === "ARRIVED_AT_PICKUP") return "Pickup verification";
-  if (request.delivery?.status === "ARRIVED_AT_DESTINATION") return "Delivery verification";
-  if (request.delivery?.status === "COMPLETED" || request.phase === "COMPLETED") return "Completed";
-  return friendlyStatus(request.status);
-};
-
 const formatDate = (value) => value
   ? new Date(value).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
   : "—";
@@ -215,25 +203,42 @@ function ConnectionBadge({ state }) {
   );
 }
 
-function OwnerRequestQueue({ requests, summary, loading, connection, error, responding, onRespond, selectedListingId, onClearFilter }) {
-  const [requestFilter, setRequestFilter] = useState("pending");
-  const pending = requests.filter((request) => request.actionable || request.return_actionable);
-  const visible = selectedListingId
-    ? requests.filter((request) => request.listing_id === selectedListingId)
-    : requestFilter === "pending" ? pending : requests;
+function OwnerRequestQueue({ requests, loading, connection, error, responding, onRespond, selectedListingId, onClearFilter }) {
+  const [requestFilter, setRequestFilter] = useState("open");
+  const [notice, setNotice] = useState("");
+  const scoped = selectedListingId ? requests.filter((request) => request.listing_id === selectedListingId) : requests;
+  const groups = [
+    { id: "new", label: "New requests", empty: "No new requests. Accepted rentals are in the Accepted tab." },
+    { id: "accepted", label: "Accepted rentals", empty: "Accepted requests stay here through payment, pickup and the rental period." },
+    { id: "returns", label: "Returns & refunds", empty: "Return requests and deposit refunds will appear here." },
+    { id: "history", label: "History", empty: "Completed, rejected and cancelled requests appear here." },
+  ].map((group) => ({ ...group, items: scoped.filter((request) => ownerRequestGroup(request) === group.id) }));
+  const openCount = groups.filter((group) => group.id !== "history").reduce((sum, group) => sum + group.items.length, 0);
+  const filters = [["open", "In progress", openCount], ...groups.map((group) => [group.id, group.id === "accepted" ? "Accepted" : group.id === "returns" ? "Returns" : group.label, group.items.length])];
+  const visibleGroups = groups.filter((group) => requestFilter === "open" ? group.id !== "history" && group.items.length : group.id === requestFilter);
+  const visibleCount = visibleGroups.reduce((sum, group) => sum + group.items.length, 0);
+  async function respond(request, response) {
+    setNotice("");
+    const updated = await onRespond(request.id, response);
+    if (!updated) return;
+    setNotice(`${response === "ACCEPTED" ? "Accepted" : "Rejected"} ${request.borrower_name || "the renter"}'s request for ${request.listing_title || "this item"}.`);
+    if (response === "ACCEPTED") setRequestFilter("accepted");
+  }
 
   return (
     <section id="incoming-rental-requests" className="mb-6 scroll-mt-44 rounded-xl border border-mesh-900/10 bg-white p-5 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <span className="text-xs font-medium text-ink/65">Owner inbox</span>
-          <h2 className="mt-1 text-xl font-semibold">Incoming rental requests</h2>
-          <p className="mt-1 max-w-2xl text-sm text-ink/65">Requests appear after the rental payment is confirmed. Accept a paid request to continue with the deposit and handover.</p>
+          <h2 className="mt-1 text-xl font-semibold">Requests & rentals</h2>
+          <p className="mt-1 max-w-2xl text-sm text-ink/65">See who requested your items and what to do next.</p>
         </div>
         <ConnectionBadge state={connection} />
       </div>
 
-      <div className="mt-5 flex gap-2">{[['pending', `Needs response (${summary.pending || 0})`], ['all', `All requests (${summary.total || 0})`]].map(([id,label]) => <button key={id} onClick={() => setRequestFilter(id)} aria-pressed={requestFilter === id} className={`rounded-lg px-3 py-2 text-xs font-medium ${requestFilter === id ? 'bg-ink text-white' : 'bg-paper text-ink/60'}`}>{label}</button>)}</div>
+      <div className="mt-5 flex flex-wrap gap-2" aria-label="Filter listing requests">
+        {filters.map(([id, label, count]) => <button key={id} onClick={() => setRequestFilter(id)} aria-pressed={requestFilter === id} className={`min-h-11 rounded-lg px-3 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mesh-700 ${requestFilter === id ? 'bg-ink text-white' : 'bg-paper text-ink/75 hover:bg-mesh-50'}`}>{label} <span className="ml-1 tabular-nums">({count})</span></button>)}
+      </div>
+      {notice && <p role="status" className="mt-4 text-sm font-semibold text-mesh-800">{notice}</p>}
 
       {error && (
         <div className="mt-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700">
@@ -243,52 +248,58 @@ function OwnerRequestQueue({ requests, summary, loading, connection, error, resp
       )}
       {selectedListingId && (
         <button onClick={onClearFilter} className="mt-4 text-xs font-semibold text-mesh-700 hover:text-mesh-900">
-          Showing requests for one listing · Show all
+          One item selected · Show all items
         </button>
       )}
       {loading && requests.length === 0 ? (
         <div className="mt-5 h-28 animate-pulse rounded-2xl bg-ink/5" />
-      ) : visible.length === 0 ? (
+      ) : visibleCount === 0 ? (
         <div className="mt-5 rounded-2xl border border-dashed border-ink/15 bg-paper/60 p-6 text-center">
           <Check className="mx-auto text-mesh-600" size={22} />
-          <p className="mt-2 text-sm font-semibold">No requests in this view</p>
-          <p className="mt-1 text-sm text-ink/60">Accept and Reject become available once the renter’s payment is verified. Unpaid checkout attempts are not submitted requests.</p>
+          <p className="mt-2 text-sm font-semibold">{requestFilter === "open" ? "No ongoing requests" : `No ${requestFilter === "new" ? "new requests" : requestFilter === "accepted" ? "accepted rentals" : requestFilter === "returns" ? "returns" : "past requests"}`}</p>
+          <p className="mt-1 text-sm text-ink/60">{requestFilter === "open" ? "New requests and accepted rentals will appear here. Past requests are in History." : groups.find((group) => group.id === requestFilter)?.empty}</p>
         </div>
       ) : (
-        <div className="mt-5 space-y-3">
-          {visible.map((request) => (
+        <div className="mt-6 space-y-8">
+          {visibleGroups.map((group) => <section key={group.id} aria-label={group.label}>
+            <h3 className="mb-3 text-base font-bold">{group.label} <span className="font-medium text-ink/70">({group.items.length})</span></h3>
+            <div className="space-y-3">
+          {group.items.map((request) => (
             <article key={request.id} className={`rounded-2xl border p-4 ${request.actionable ? "border-amber-200 bg-amber-50/45" : "border-ink/10 bg-paper/35"}`}>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
                 <img src={request.listing_image || listingFallback} alt="" className="size-16 shrink-0 rounded-xl object-cover" />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-semibold">{request.listing_title || "Campus rental"}</h3>
-                    <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold ${request.actionable ? "bg-amber-100 text-amber-800" : "bg-white text-ink/55"}`}>{ownerStatusLabel(request)}</span>
+                    <h4 className="break-words text-lg font-bold">{request.borrower_name || "Verified student"}</h4>
+                    <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${request.actionable ? "bg-amber-100 text-amber-800" : "bg-mesh-50 text-mesh-800"}`}>{ownerRequestStatus(request)}</span>
                     {request.delivery_requested && <span className="rounded-full bg-sky-50 px-2.5 py-1 text-[10px] font-semibold text-sky-700">Delivery requested</span>}
                   </div>
-                  <p className="mt-1 text-sm text-ink/60">Requested by <strong className="text-ink">{request.borrower_name || "Verified student"}</strong>{request.borrower_hostel ? ` · ${request.borrower_hostel}` : ""}</p>
+                  <p className="mt-1 break-words text-sm font-semibold">{request.listing_title || "Campus rental"}</p>
+                  <p className="mt-1 break-all text-xs leading-5 text-ink/70">{request.borrower_email}{request.borrower_hostel ? ` · ${request.borrower_hostel}` : ""}</p>
                   <TrustDetails rentalId={request.id}/>
-                  <div className="mt-3 grid gap-2 text-xs text-ink/55 sm:grid-cols-2">
+                  <div className="mt-3 grid gap-2 text-sm text-ink/75 sm:grid-cols-2">
                     <span><b className="text-ink/75">Dates:</b> {formatDate(request.start_date)} → {formatDate(request.end_date)} · {request.rental_days || 0} days</span>
                     <span><b className="text-ink/75">Booking:</b> ₹{Number(request.booking_amount || 0).toLocaleString("en-IN")} · <b className="text-ink/75">Deposit:</b> ₹{Number(request.deposit_amount || 0).toLocaleString("en-IN")}</span>
                     {request.delivery_requested && <span className="flex items-start gap-1"><MapPin size={14} className="mt-0.5 shrink-0 text-mesh-600" /><span><b className="text-ink/75">Route:</b> {request.delivery?.pickup?.label || "Pickup location"} → {request.delivery?.destination?.label || request.drop_location_label || "Drop location"}</span></span>}
                     {request.delivery?.courier && <span className="flex items-center gap-1"><Truck size={14} className="text-mesh-600" /> Courier: <b className="text-ink/75">{request.delivery.courier.name}</b></span>}
                   </div>
-                  <p className="mt-3 text-xs font-semibold text-mesh-800">Next: {request.next_action}</p>
+                  <p className="mt-3 text-xs font-semibold text-mesh-800">Next: {ownerRequestNextAction(request)}</p>
                   {request.delivery?.task_type !== "RENTAL_RETURN" && request.delivery?.status === "ARRIVED_AT_PICKUP" && request.delivery?.id && (
                     <HandoverCredential deliveryId={request.delivery.id} stage="PICKUP" title="Show pickup QR & OTP to the courier" />
                   )}
                 </div>
-                <div className="flex shrink-0 flex-row gap-2 sm:flex-col">
+                <div className="flex shrink-0 flex-wrap gap-2 sm:flex-col">
                   {request.actionable && <>
-                    <button onClick={() => onRespond(request.id, "ACCEPTED")} disabled={!!responding[request.id]} className="min-h-11 rounded-xl bg-mesh-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-mesh-700 disabled:opacity-50">{responding[request.id] === "ACCEPTED" ? "Accepting…" : "Accept request"}</button>
-                    <button onClick={() => onRespond(request.id, "REJECTED")} disabled={!!responding[request.id]} className="min-h-11 rounded-xl border border-red-200 bg-white px-5 py-3 text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-50">{responding[request.id] === "REJECTED" ? "Rejecting…" : "Reject"}</button>
+                    <button onClick={() => respond(request, "ACCEPTED")} disabled={!!responding[request.id]} className="min-h-11 rounded-xl bg-mesh-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-mesh-700 disabled:opacity-50">{responding[request.id] === "ACCEPTED" ? "Accepting…" : "Accept request"}</button>
+                    <button onClick={() => respond(request, "REJECTED")} disabled={!!responding[request.id]} className="min-h-11 rounded-xl border border-red-200 bg-white px-5 py-3 text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-50">{responding[request.id] === "REJECTED" ? "Rejecting…" : "Reject"}</button>
                   </>}
-                  <Link to={`/rent-details/${request.id}`} className="rounded-xl border border-ink/10 bg-white px-3 py-2 text-center text-xs font-semibold text-ink/65 transition hover:border-mesh-300 hover:bg-mesh-50">{request.return_actionable ? "Choose return destination" : "Details"}</Link>
+                  <Link to={`/rent-details/${request.id}`} className="min-h-11 rounded-xl border border-ink/15 bg-white px-3 py-3 text-center text-sm font-semibold text-ink transition hover:border-mesh-300 hover:bg-mesh-50">{request.return_actionable ? "Accept return" : group.id === "accepted" ? "Manage rental" : group.id === "returns" ? "Manage return" : "View request"}</Link>
                 </div>
               </div>
             </article>
           ))}
+            </div>
+          </section>)}
         </div>
       )}
     </section>
@@ -608,9 +619,9 @@ export default function AccountPage({ workspace }) {
       const response = await api.get("/api/rentals/my-listings-requests");
       const payload = response.data;
       const requests = Array.isArray(payload) ? payload : payload.requests || [];
-      const pending = requests.filter((request) => request.actionable || ["OWNER_PENDING", "RENTAL_PAYMENT_COMPLETED"].includes(request.status)).length;
+      const pending = requests.filter((request) => request.actionable || request.return_actionable).length;
       setOwnerRequests(requests);
-      setOwnerSummary(payload.summary || { pending, active: 0, completed: 0, total: requests.length });
+      setOwnerSummary({ pending, active: requests.filter((request) => ['accepted', 'returns'].includes(ownerRequestGroup(request))).length, completed: requests.filter((request) => ownerRequestGroup(request) === 'history').length, total: requests.length });
       setOwnerError("");
     } catch (error) {
       setOwnerConnection("offline");
@@ -656,11 +667,17 @@ export default function AccountPage({ workspace }) {
   const respondToRequest = useCallback(async (rentalId, response) => {
     setResponding((current) => ({ ...current, [rentalId]: response }));
     try {
-      await api.post("/api/rentals/respond", { rental_id: rentalId, response });
+      const result = await api.post("/api/rentals/respond", { rental_id: rentalId, response });
+      // Keep the confirmed decision visible even if the subsequent refresh fails.
+      setOwnerRequests((current) => current.map((request) => request.id !== rentalId ? request : {
+        ...request, owner_response: response, actionable: false,
+        status: result.data.status || (response === 'REJECTED' ? 'CANCELLED' : request.payment_method === 'DIRECT_UPI' ? 'BOOKING_PAYMENT_PENDING' : 'DEPOSIT_PENDING'),
+      }));
       await loadOwnerRequests();
-      setOwnerError("");
+      return true;
     } catch (error) {
       setOwnerError(error.response?.data?.error || "Could not update this rental request");
+      return false;
     } finally {
       setResponding((current) => ({ ...current, [rentalId]: null }));
     }
@@ -706,10 +723,9 @@ export default function AccountPage({ workspace }) {
         rentals: <RentalsTab rentals={data.rentals} />,
         listings: (
           <>
-            <nav aria-label="Lending sections" className="mb-5 flex gap-6 border-b border-ink/10">{[['requests', 'Rental requests'], ['items', 'My items']].map(([id, label]) => <button key={id} onClick={() => setLendingView(id)} aria-current={lendingView === id ? 'page' : undefined} className={`border-b-2 pb-3 text-sm font-semibold ${lendingView === id ? 'border-mesh-600 text-mesh-700' : 'border-transparent text-ink/55'}`}>{label}</button>)}</nav>
+            <nav aria-label="Listing sections" className="mb-5 flex gap-6 border-b border-ink/10">{[['requests', 'Requests & rentals'], ['items', 'My items']].map(([id, label]) => <button key={id} onClick={() => setLendingView(id)} aria-current={lendingView === id ? 'page' : undefined} className={`border-b-2 pb-3 text-sm font-semibold ${lendingView === id ? 'border-mesh-600 text-mesh-700' : 'border-transparent text-ink/55'}`}>{label}</button>)}</nav>
             {lendingView === 'requests' ? <OwnerRequestQueue
               requests={ownerRequests}
-              summary={ownerSummary}
               loading={ownerLoading}
               connection={ownerConnection}
               error={ownerError}
@@ -735,14 +751,14 @@ export default function AccountPage({ workspace }) {
         ),
         settings: <SettingsTab user={user} save={updateProfile} />,
       })[active],
-    [active, lendingView, data, user, ownerRequests, ownerSummary, ownerLoading, ownerConnection, ownerError, responding, selectedListingId, api, respondToRequest, focusRequests, removeSaved, deleteListing, toggleListing, navigate, updateProfile],
+    [active, lendingView, data, user, ownerRequests, ownerLoading, ownerConnection, ownerError, responding, selectedListingId, api, respondToRequest, focusRequests, removeSaved, deleteListing, toggleListing, navigate, updateProfile],
   );
   return (
     <main className="min-h-screen bg-paper">
       <div className="mx-auto w-full max-w-[1240px] px-5 sm:px-7 lg:px-10 py-8 sm:py-12">
-        <header className="mb-7 flex flex-wrap items-start justify-between gap-4"><div><h1 className="page-title">{lending ? 'Lending dashboard' : active === 'settings' ? 'Account settings' : active === 'saved' ? 'Saved items' : active === 'history' ? 'Rental history' : 'My rentals'}</h1><p className="page-copy">{lending ? 'Manage your items, respond to requests, and arrange handovers.' : 'Track your requests, pickups, and returns.'}</p></div><Link to={lending ? '/add-listing' : '/marketplace'} className="brand-button text-sm"><CirclePlus size={17}/>{lending ? 'List an item' : 'Browse items'}</Link></header>
+        <header className="mb-7 flex flex-wrap items-start justify-between gap-4"><div><h1 className="page-title">{lending ? 'Listing dashboard' : active === 'settings' ? 'Account settings' : active === 'saved' ? 'Saved items' : active === 'history' ? 'Rental history' : 'My rentals'}</h1><p className="page-copy">{lending ? 'Manage your items, respond to requests, and arrange handovers.' : 'Track your requests, pickups, and returns.'}</p></div><Link to={lending ? '/add-listing' : '/marketplace'} className="brand-button text-sm"><CirclePlus size={17}/>{lending ? 'List an item' : 'Browse items'}</Link></header>
         <div className="mb-7 grid grid-cols-3 gap-3">
-          {(lending ? [['Listed items', loading || loadErrors.listings ? '—' : data.listings.length], ['Pending requests', ownerLoading || ownerError ? '—' : ownerSummary.pending], ['Active rentals', ownerLoading || ownerError ? '—' : ownerSummary.active]] : [['Total rentals', loading || loadErrors.rentals ? '—' : data.rentals.length], ['Active rentals', loading || loadErrors.rentals ? '—' : data.rentals.filter(r => matchesRentalFilter(r.status, 'Active')).length], ['Saved items', loading || loadErrors.saved ? '—' : data.saved.length]]).map(([label,value]) => <div key={label} className="panel p-4 sm:p-5"><span className="text-xs text-ink/60">{label}</span><strong className="mt-3 block text-3xl font-semibold tracking-tight">{value}</strong></div>)}
+          {(lending ? [['Listed items', loading || loadErrors.listings ? '—' : data.listings.length], ['Pending requests', ownerLoading || ownerError ? '—' : ownerSummary.pending], ['Ongoing rentals', ownerLoading || ownerError ? '—' : ownerSummary.active]] : [['Total rentals', loading || loadErrors.rentals ? '—' : data.rentals.length], ['Active rentals', loading || loadErrors.rentals ? '—' : data.rentals.filter(r => matchesRentalFilter(r.status, 'Active')).length], ['Saved items', loading || loadErrors.saved ? '—' : data.saved.length]]).map(([label,value]) => <div key={label} className="panel p-4 sm:p-5"><span className="text-xs text-ink/60">{label}</span><strong className="mt-3 block text-3xl font-semibold tracking-tight">{value}</strong></div>)}
         </div>
         {actionError && <p role="alert" className="mb-5 rounded-xl bg-red-50 p-4 text-sm font-bold text-red-700">{actionError}</p>}
         {paymentConfirmation && (

@@ -97,7 +97,7 @@ export function UpiProfile({ compact = false, onSaved } = {}) {
         <p className="mt-2 leading-6">Saving a UPI ID does not transfer money or verify bank ownership. Unpaid requests use your latest details; reported receipts keep the account paid.</p>
       </details>
       {!compact && <div className="mt-4 flex flex-wrap gap-3 border-t border-ink/10 pt-4">
-        <Link to="/lend" className="secondary-button text-sm">Lending requests</Link>
+        <Link to="/lend" className="secondary-button text-sm">Listing requests</Link>
         <Link to="/delivery" className="secondary-button text-sm">My deliveries</Link>
       </div>}
     </section>
