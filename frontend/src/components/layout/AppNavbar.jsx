@@ -11,7 +11,7 @@ import {
   Sparkles,
   LockKeyhole,
 } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/auth-context";
 import DeliveryNotifications from "../DeliveryNotifications";
 
 const workspaces = [
@@ -41,7 +41,8 @@ export default function AppNavbar() {
     )
   )
     return null;
-  const workspace = pathname.startsWith("/wish-box")
+  const shared = ["/payouts","/account/settings","/voice","/insights","/support","/reminders"].includes(pathname);
+  const workspace = shared ? "Account" : pathname.startsWith("/wish-box")
     ? "Wish Box"
     : pathname.startsWith("/delivery")
       ? "Deliver"
@@ -163,7 +164,7 @@ export default function AppNavbar() {
         </div>
         {user && pathname !== "/choose-mode" && (
           <nav
-            aria-label={`${workspace} navigation`}
+            aria-label={`${workspace} navigation — scroll for more`}
             className="border-t border-ink/10"
           >
             <div

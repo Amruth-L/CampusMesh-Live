@@ -24,8 +24,8 @@
   --color-bg: #f3f8f5;
   --color-border: rgba(35, 58, 40, 0.12);
   --color-text: #202522;
-  --color-text-secondary: rgba(23, 33, 27, 0.58);
-  --color-text-subtle: rgba(23, 33, 27, 0.38);
+  --color-text-secondary: #59665e;
+  --color-text-subtle: #647168;
   --color-primary: #237442;
   --color-primary-light: #e4f2e9;
   --color-primary-dark: #1b5d35;
@@ -36,7 +36,7 @@
   --bg-color: #f7f8f7;
   --border-color: rgba(35, 58, 40, 0.12);
   --text-dark: #202522;
-  --text-muted: rgba(23, 33, 27, 0.58);
+  --text-muted: #59665e;
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
   --radius-lg: 1rem;
@@ -67,3 +67,13 @@ button:not(:disabled), select { cursor: pointer; }
 @media(min-width:640px) { .page-shell { padding-left: 2rem; padding-right: 2rem; } }
 
 @media(max-width:639px) { main.page-shell { padding-bottom: 6rem; } }
+
+/* Reserve fixed navigation space for every route, including non-main forms. */
+.route-content { min-width:0; overflow-wrap:anywhere; }
+@media(max-width:1023px) { .route-content { padding-bottom:calc(5rem + env(safe-area-inset-bottom,0px)); } }
+input, select, textarea { max-width:100%; }
+::placeholder { color:#647168; opacity:1; }
+::selection { background:#c9e5d3; color:#173d25; }
+/* Secondary copy must remain readable, including existing opacity utilities. */
+[class*="text-ink/3"], [class*="text-ink/4"], [class*="text-ink/5"], [class*="text-ink/6"] { color:#59665e; }
+[class*="text-white/6"] { color:#d2dfd6; }

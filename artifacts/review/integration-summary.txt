@@ -1,0 +1,8 @@
+direct-upi 0 ℹ pass 12, ℹ fail 0, ℹ skipped 0
+handover-evidence 0 ℹ pass 6, ℹ fail 0, ℹ skipped 0
+cart-checkout 0 ℹ pass 10, ℹ fail 0, ℹ skipped 0
+rental-booking 0 ℹ pass 8, ℹ fail 0, ℹ skipped 0
+rental-payment-recovery 0 ℹ pass 7, ℹ fail 0, ℹ skipped 0
+delivery-payment-completion 0 ℹ pass 6, ℹ fail 0, ℹ skipped 0
+open-delivery-return 0 ℹ pass 8, ℹ fail 0, ℹ skipped 0
+listing-deletion 0 ℹ pass 4, ℹ fail 0, ℹ skipped 0

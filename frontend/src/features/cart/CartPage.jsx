@@ -8,7 +8,7 @@ import {
   Truck,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/auth-context";
 import { listingFallback } from "../../lib/assets";
 const money = (value) =>
   `₹${Number(value || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -42,20 +42,17 @@ export default function Cart() {
         delivery_requested: patch.delivery_requested ?? item.delivery_requested,
         drop_location_id: patch.drop_location_id ?? item.drop_location_id,
       });
-      setItems((current) =>
-        current.map((row) =>
-          row.id === item.id ? { ...row, ...data.cartItem } : row,
-        ),
-      );
+      setItems((current) => current.map(row => row.id===item.id ? {...row,...data.cartItem,quote:data.quote} : row));
     } catch (error) {
       setNotice(error.response?.data?.error || "Could not update this rental.");
     }
   };
   const remove = async (id) => {
-    await api.delete(`/api/cart/${id}`);
+    try { await api.delete(`/api/cart/${id}`);
     setItems((current) => current.filter((item) => item.id !== id));
     setSelected((current) => current.filter((itemId) => itemId !== id));
     window.dispatchEvent(new Event("cart-updated"));
+    } catch { setNotice("Could not remove item. Please retry."); }
   };
   const chosen = useMemo(
     () => items.filter((item) => selected.includes(item.id)),
@@ -89,6 +86,7 @@ export default function Cart() {
       selectedCount: chosen.length,
     };
   }, [chosen]);
+  const direct = chosen.length > 0 && chosen.every(item=>item.quote?.paymentMethod === "DIRECT_UPI");
   const checkout = () =>
     navigate("/checkout", {
       state: {
@@ -113,7 +111,7 @@ export default function Cart() {
           <span className="text-[.68rem] font-extrabold uppercase tracking-[.16em] text-mesh-600 flex items-center gap-1">
             <ShoppingBag size={14} /> Rental cart
           </span>
-          <h1 className="mt-3 font-display text-5xl font-semibold">
+          <h1 className="mt-3 font-display text-3xl sm:text-4xl font-semibold">
             Review your dates.
           </h1>
           <p className="mt-3 text-sm text-ink/50">
@@ -278,13 +276,13 @@ export default function Cart() {
                 ))}
                 <p className="flex justify-between border-t border-ink/10 pt-4 text-lg font-extrabold">
                   <span>Pay now</span>
-                  <span>{money(breakdown.bookingTotal)}</span>
+                  <span>{money(direct ? 0 : breakdown.bookingTotal)}</span>
                 </p>
                 <div className="rounded-xl bg-mesh-50 p-3 text-xs leading-5 text-mesh-800">
                   <Check className="mb-1" size={16} />
                   <b>{money(breakdown.depositTotal)} refundable deposits</b>
                   <p className="text-ink/50">
-                    Collected only after owner approval.
+                    {direct ? `After acceptance: ${money(breakdown.rentalTotal + breakdown.depositTotal)} rent + deposit. After handover: ${money(breakdown.deliveryTotal)} delivery.` : "Deposit follows lender acceptance."}
                   </p>
                 </div>
               </div>

@@ -20,14 +20,7 @@ io.use((socket, next) => {
 });
 io.on('connection', (socket) => {
   socket.join(`user:${socket.user.id}`);
-  socket.on('delivery:join', async (id) => {
-    const allowed = await pool.query(
-      'SELECT id FROM delivery_requests WHERE id=$1 AND $2 IN (customer_id,seller_id,courier_id)',
-      [id, socket.user.id],
-    );
-    if (allowed.rowCount) socket.join(`delivery:${id}`);
-  });
-  socket.on('delivery:leave', (id) => socket.leave(`delivery:${id}`));
+  require('./modules/delivery/delivery.socket').attachDeliveryRooms(socket, pool);
 });
 require('./modules/voice/voice.socket').attachVoice(io, { db: pool });
 realtime.setIO(io);

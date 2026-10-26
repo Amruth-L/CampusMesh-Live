@@ -21,7 +21,7 @@ import {
   Truck,
 } from "lucide-react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/auth-context";
 import { listingFallback } from "../../lib/assets";
 import { API_BASE_URL } from "../../lib/api";
 import HandoverCredential from "../../components/HandoverCredential";
@@ -533,7 +533,7 @@ function SettingsTab({ user, save }) {
   };
   return (
     <form onSubmit={submit} className="rounded-xl border border-mesh-900/10 bg-white  max-w-3xl p-6 sm:p-8">
-      <Link to="/payouts" className="mb-6 inline-flex text-sm font-semibold text-mesh-700 underline">Manage bank payouts</Link>
+      <Link to="/payouts" className="mb-6 inline-flex text-sm font-semibold text-mesh-700 underline">Payment details & receipts</Link>
       <div className="mb-7 flex items-center gap-4">
         <span className="grid size-13 place-items-center rounded-full bg-mesh-600 font-semibold text-white">
           {user?.name?.slice(0, 1) || "C"}
@@ -756,10 +756,10 @@ export default function AccountPage({ workspace }) {
   return (
     <main className="min-h-screen bg-paper">
       <div className="mx-auto w-full max-w-[1240px] px-5 sm:px-7 lg:px-10 py-8 sm:py-12">
-        <header className="mb-7 flex flex-wrap items-start justify-between gap-4"><div><h1 className="page-title">{lending ? 'Listing dashboard' : active === 'settings' ? 'Account settings' : active === 'saved' ? 'Saved items' : active === 'history' ? 'Rental history' : 'My rentals'}</h1><p className="page-copy">{lending ? 'Manage your items, respond to requests, and arrange handovers.' : 'Track your requests, pickups, and returns.'}</p></div><Link to={lending ? '/add-listing' : '/marketplace'} className="brand-button text-sm"><CirclePlus size={17}/>{lending ? 'List an item' : 'Browse items'}</Link></header>
-        <div className="mb-7 grid grid-cols-3 gap-3">
+        <header className="mb-7 flex flex-wrap items-start justify-between gap-4"><div><h1 className="page-title">{lending ? 'Listing dashboard' : active === 'settings' ? 'Account settings' : active === 'saved' ? 'Saved items' : active === 'history' ? 'Rental history' : 'My rentals'}</h1><p className="page-copy">{lending ? 'Manage your items, respond to requests, and arrange handovers.' : active === 'settings' ? 'Manage your profile and contact details.' : 'Track your requests, pickups, and returns.'}</p></div><Link to={lending ? '/add-listing' : '/marketplace'} className="brand-button text-sm"><CirclePlus size={17}/>{lending ? 'List an item' : 'Browse items'}</Link></header>
+        {active !== 'settings' && <div className="mb-7 grid grid-cols-3 gap-3">
           {(lending ? [['Listed items', loading || loadErrors.listings ? '—' : data.listings.length], ['Pending requests', ownerLoading || ownerError ? '—' : ownerSummary.pending], ['Ongoing rentals', ownerLoading || ownerError ? '—' : ownerSummary.active]] : [['Total rentals', loading || loadErrors.rentals ? '—' : data.rentals.length], ['Active rentals', loading || loadErrors.rentals ? '—' : data.rentals.filter(r => matchesRentalFilter(r.status, 'Active')).length], ['Saved items', loading || loadErrors.saved ? '—' : data.saved.length]]).map(([label,value]) => <div key={label} className="panel p-4 sm:p-5"><span className="text-xs text-ink/60">{label}</span><strong className="mt-3 block text-3xl font-semibold tracking-tight">{value}</strong></div>)}
-        </div>
+        </div>}
         {actionError && <p role="alert" className="mb-5 rounded-xl bg-red-50 p-4 text-sm font-bold text-red-700">{actionError}</p>}
         {paymentConfirmation && (
           <motion.div

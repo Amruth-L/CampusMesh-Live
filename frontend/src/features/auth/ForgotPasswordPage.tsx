@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, ArrowRight, Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/auth-context';
 import { getApiError, requestPasswordReset, resetPassword } from './auth.service';
 import type { AuthLoadingState } from './auth.types';
 
@@ -32,7 +32,7 @@ const ForgotPassword: React.FC = () => {
     setSuccess('');
     if (isLoading) return;
     if (remaining > 0) { setStep(2); setSuccess('Use the code already sent to your email.'); return; }
-    if (!/^[^\s@]+@dbit\.co\.in$/i.test(email.trim())) { setError('Enter your DBIT email.'); return; }
+    if (!/^[^\s@]+@dbit\.co\.in$/i.test(email.trim())) { setError('Enter your DBIT campus email.'); return; }
     setLoadingState('loading');
     setLoadingAction('request');
 
@@ -118,7 +118,7 @@ const ForgotPassword: React.FC = () => {
           </h2>
           <p className="mt-4 text-sm leading-6 text-ink/48">
             {step === 1 ? (
-              'Enter your university email to receive a reset code.'
+              'Enter your DBIT campus email to receive a reset code.'
             ) : (
               <>Enter the 6-digit code sent to <strong className="break-all text-ink/75">{email}</strong>.</>
             )}
@@ -149,7 +149,7 @@ const ForgotPassword: React.FC = () => {
           {step === 1 ? (
             <form className="mt-8 space-y-5" onSubmit={handleRequestOtp} noValidate>
               <label className="block" htmlFor="fp-email">
-                <span className="mb-2 block text-xs font-medium text-ink/65">University email</span>
+                <span className="mb-2 block text-xs font-medium text-ink/65">DBIT campus email</span>
                 <span className="relative block">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-ink/32" size={18} />
                   <input

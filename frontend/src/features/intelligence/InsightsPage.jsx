@@ -7,7 +7,7 @@ import {
   ArrowRight,
   RefreshCw,
 } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/auth-context";
 import { listingImage } from "../../lib/assets";
 export default function InsightsPage() {
   const { api } = useAuth();

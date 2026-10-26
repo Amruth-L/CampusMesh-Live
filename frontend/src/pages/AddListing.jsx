@@ -1,9 +1,9 @@
+import listingCategories from '../../../shared/listing-options.json';
 import { useState, useRef, useEffect } from 'react';
 import {
   AlertCircle,
   ArrowLeft,
   BadgeCheck,
-  CalendarDays,
   Camera,
   Check,
   ImagePlus,
@@ -19,8 +19,8 @@ import {
   UserRound,
   X,
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/auth-context';
+import { useNavigate, useParams } from 'react-router-dom';
 import { campusLocationLabel, normalizeCampusLocations } from '../lib/campus';
 
 const DRAFT_STORAGE_KEY = 'campusmesh_listing_draft';
@@ -28,6 +28,12 @@ const DRAFT_STORAGE_KEY = 'campusmesh_listing_draft';
 const AddListing = () => {
   const { api, user } = useAuth();
   const navigate = useNavigate();
+  const { id } = useParams();
+  const editing = Boolean(id);
+  const [fetching,setFetching] = useState(editing);
+  const [loaded,setLoaded] = useState(!editing);
+  const [feedback,setFeedback] = useState('');
+  const [preview,setPreview] = useState(false);
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
 
@@ -40,8 +46,6 @@ const AddListing = () => {
     price: '',
     rentPrice: '',
     deposit: '',
-    availability: 'Available Now',
-    customDate: '',
     location: '',
     pickupLocationId: '',
     deliveryAvailable: false,
@@ -66,6 +70,7 @@ const AddListing = () => {
 
   // Restore a locally saved draft when the create-listing page is opened again.
   useEffect(() => {
+    if (editing) return;
     try {
       const savedDraft = localStorage.getItem(DRAFT_STORAGE_KEY);
       if (!savedDraft) return;
@@ -78,9 +83,9 @@ const AddListing = () => {
       if (Number.isInteger(draft.coverIndex)) setCoverIndex(draft.coverIndex);
     } catch (draftError) {
       console.warn('Unable to restore listing draft:', draftError);
-      localStorage.removeItem(DRAFT_STORAGE_KEY);
+      if (!editing) localStorage.removeItem(DRAFT_STORAGE_KEY);
     }
-  }, []);
+  }, [editing]);
 
   useEffect(() => {
     let cancelled = false;
@@ -108,22 +113,24 @@ const AddListing = () => {
     };
   }, [api]);
 
-  // Dropdown options
-  const categories = [
-    'Books',
-    'Electronics',
-    'Stationery',
-    'Lab Equipment',
-    'Furniture',
-    'Sports',
-    'Kitchen',
-    'Fashion',
-    'Gaming',
-    'Hostel Essentials'
-  ];
+  useEffect(() => {
+    if (!editing) return;
+    let cancelled=false;
+    setFetching(true);setLoaded(false);
+    api.get(`/listings/${id}`).then(({data})=> {
+      if (cancelled) return;
+      setFormData({title:data.title,category:data.category,description:data.description,condition:data.condition || 'Good',
+        price:String(data.price ?? ''),rentPrice:String(data.rent_price ?? ''),deposit:String(data.deposit ?? ''),
+        location:data.location || '',pickupLocationId:data.pickup_location_id || '',deliveryAvailable:Boolean(data.delivery_available),
+        deliveryCharge:String(data.delivery_charge ?? 0),pickupTime:data.pickup_time || '5 min'});
+      setImages([...new Set([data.image_url,...(data.image_urls || [])].filter(Boolean))]);setCoverIndex(0);setLoaded(true);
+    }).catch(()=>{if(!cancelled)setError('Could not load this listing. Reload to retry; existing details have not changed.');})
+      .finally(()=>{if(!cancelled)setFetching(false);});
+    return ()=>{cancelled=true;};
+  },[api,id,editing]);
 
+  const categories = [...new Set([...listingCategories,formData.category])];
   const conditions = ['Brand New', 'Like New', 'Excellent', 'Good', 'Fair'];
-  const availabilities = ['Available Now', 'Available Tomorrow', 'Available This Weekend', 'Custom Date'];
 
   const fallbackLocations = [
     { id: 'library-ground-floor-rental-counter-02', name: 'Central Library' },
@@ -283,11 +290,11 @@ const AddListing = () => {
     const rentPrice = parseFloat(formData.rentPrice) || 0;
     const deposit = parseFloat(formData.deposit) || 0;
 
-    if (sellPrice <= 0 && rentPrice <= 0) {
-      errors.push('You must specify either a Selling Price OR a Rental Price.');
+    if (rentPrice <= 0) {
+      errors.push('Daily rent must be greater than zero.');
     }
     if (sellPrice > 0 && deposit > sellPrice) {
-      errors.push('Security deposit cannot exceed the selling price.');
+      errors.push('Security deposit cannot exceed the item value.');
     }
 
     setFormValidationErrors(errors);
@@ -328,14 +335,15 @@ const AddListing = () => {
     };
 
     try {
-      await api.post('/listings', payload);
+      if (editing) await api.put(`/listings/${id}`,payload);
+      else await api.post('/listings', payload);
 
       setUploadProgress(100);
       setUploadStatus('Published successfully!');
-      localStorage.removeItem(DRAFT_STORAGE_KEY);
+      if (!editing) localStorage.removeItem(DRAFT_STORAGE_KEY);
 
-      alert('Your listing has been published successfully.');
-      navigate('/account/listings');
+      setPublishing(false);
+      setFeedback(editing ? 'Changes saved.' : 'Listing published.');
     } catch (err) {
       setPublishing(false);
       setError(err.response?.data?.error || 'Failed to publish listing. Please try again.');
@@ -353,7 +361,7 @@ const AddListing = () => {
 
     try {
       localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
-      alert('Draft saved successfully. You can continue it later.');
+      setFeedback('Draft saved.');
     } catch (storageError) {
       // Large base64 images can exceed the browser's localStorage quota. Keep
       // the form fields so the draft is still useful, even if images cannot be
@@ -364,7 +372,7 @@ const AddListing = () => {
           coverIndex,
           savedAt: new Date().toISOString()
         }));
-        alert('Draft details saved. The images were too large to save locally, so please select them again later.');
+        setFeedback('Draft saved without photos. Select your photos again before publishing.');
       } catch (fallbackError) {
         console.error('Unable to save listing draft:', storageError, fallbackError);
         setError('Unable to save the draft in this browser. Please try again or use smaller images.');
@@ -372,11 +380,7 @@ const AddListing = () => {
     }
   };
 
-  // Mock safety values
-  const sellerRating = user?.rating || 4.8;
-  const sellerMeshScore = user?.meshScore || 98;
-  const sellerDept = user?.department || 'Computer Science';
-  const sellerSem = user?.semester || 6;
+  const sellerDept = user?.department || 'Department not provided';
   const sellerInitials = user?.name ? user.name.charAt(0).toUpperCase() : 'U';
 
   return (
@@ -410,10 +414,10 @@ const AddListing = () => {
               <ArrowLeft size={14} /> Back to listing dashboard
             </button>
             <span className="flex items-center gap-1.5 text-[.68rem] font-semibold uppercase tracking-[.16em] text-mesh-600">
-              <Package size={14} /> Lend
+              <Package size={14} /> List
             </span>
             <h1 className="page-title mt-3">
-              List an item
+              {editing ? "Edit listing" : "List an item"}
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-ink/50">
               Add photos, a daily price, and a pickup location.
@@ -426,8 +430,11 @@ const AddListing = () => {
       </header>
 
       {/* Validation Errors Header Banner */}
+      <div role="status" className="mb-4 text-sm text-mesh-800">{fetching ? 'Loading listing…' : feedback}</div>
+      {feedback && <a href="/account/listings" className="mb-4 inline-block underline">View your listings</a>}
+      {preview && <section aria-label="Listing preview" className="mb-5 rounded-xl border p-4"><h2 className="font-bold">{formData.title}</h2><p>{formData.description}</p><p>Daily rent ₹{formData.rentPrice} · Deposit ₹{formData.deposit || 0}</p><p>{formData.location}</p></section>}
       {formValidationErrors.length > 0 && (
-        <div className="mx-auto mt-6 flex w-full max-w-[1240px] gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-red-800 sm:px-5">
+        <div role="alert" id="listing-errors" className="mx-auto mt-6 flex w-full max-w-[1240px] gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-red-800 sm:px-5">
           <AlertCircle className="mt-0.5 shrink-0" size={18} />
           <div>
             <h4 className="font-semibold">Please resolve the following:</h4>
@@ -441,7 +448,7 @@ const AddListing = () => {
       )}
 
       {error && (
-        <div className="mx-auto mt-6 flex w-full max-w-[1240px] items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm font-bold text-red-800 sm:px-5">
+        <div role="alert" className="mx-auto mt-6 flex w-full max-w-[1240px] items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm font-bold text-red-800 sm:px-5">
           <AlertCircle className="mt-0.5 shrink-0" size={18} />
           <span>{error}</span>
         </div>
@@ -461,8 +468,8 @@ const AddListing = () => {
           </div>
 
           <div className="space-y-5">
-            <label className="mb-1.5 block text-xs font-bold text-ink/60">Product Title *</label>
-            <input
+            <label htmlFor="listing-field-1" className="mb-1.5 block text-xs font-bold text-ink/60">Product Title *</label>
+            <input id="listing-field-1" aria-describedby={formValidationErrors.length ? "listing-errors" : undefined}
               type="text"
               className="h-11 w-full rounded-xl border border-ink/15 bg-white px-3 text-sm outline-none transition focus:border-mesh-500 focus:ring-4 focus:ring-mesh-100"
               placeholder="e.g. MacBook Air M1"
@@ -473,8 +480,8 @@ const AddListing = () => {
           </div>
 
           <div className="space-y-5">
-            <label className="mb-1.5 block text-xs font-bold text-ink/60">Category *</label>
-            <select
+            <label htmlFor="listing-field-2" className="mb-1.5 block text-xs font-bold text-ink/60">Category *</label>
+            <select id="listing-field-2" aria-describedby={formValidationErrors.length ? "listing-errors" : undefined}
               className="h-11 w-full rounded-xl border border-ink/15 bg-white px-3 text-sm outline-none transition focus:border-mesh-500 focus:ring-4 focus:ring-mesh-100"
               value={formData.category}
               onChange={(e) => setFormData({...formData, category: e.target.value})}
@@ -487,12 +494,12 @@ const AddListing = () => {
 
           <div className="space-y-5">
             <div className="mb-2 flex items-center justify-between">
-              <label className="block text-xs font-bold text-ink/60">Description *</label>
+              <label htmlFor="listing-field-3" className="block text-xs font-bold text-ink/60">Description *</label>
               <span className={`text-xs font-medium ${formData.description.length > 500 ? 'text-red-600' : formData.description.length > 450 ? 'text-amber-600' : 'text-ink/45'}`}>
                 {formData.description.length} / 500 characters
               </span>
             </div>
-            <textarea
+            <textarea id="listing-field-3" aria-describedby={formValidationErrors.length ? "listing-errors" : undefined}
               className="min-h-28 w-full resize-y rounded-xl border border-ink/15 bg-white px-3 py-3 text-sm leading-6 outline-none transition focus:border-mesh-500 focus:ring-4 focus:ring-mesh-100"
               placeholder="Condition and what is included"
               required
@@ -515,9 +522,9 @@ const AddListing = () => {
           </div>
 
           <div className="space-y-3">
-            <label className="mb-1.5 block text-xs font-bold text-ink/60">Item Condition *</label>
+            <label htmlFor="listing-field-4" className="mb-1.5 block text-xs font-bold text-ink/60">Item Condition *</label>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <select
+              <select id="listing-field-4" aria-describedby={formValidationErrors.length ? "listing-errors" : undefined}
                 className="h-11 w-full rounded-xl border border-ink/15 bg-white px-3 text-sm outline-none focus:border-mesh-500 focus:ring-4 focus:ring-mesh-100 sm:w-64"
                 value={formData.condition}
                 onChange={(e) => setFormData({...formData, condition: e.target.value})}
@@ -539,17 +546,17 @@ const AddListing = () => {
             <span className="grid size-10 place-items-center rounded-xl bg-emerald-50 text-emerald-700"><IndianRupee size={19} /></span>
             <div>
               <span className="text-[.68rem] font-semibold uppercase tracking-[.16em] text-mesh-600">Step 3</span>
-              <h2 className="mt-0.5 text-lg font-semibold">Pricing & availability</h2>
+              <h2 className="mt-0.5 text-lg font-semibold">Rental pricing</h2>
             </div>
           </div>
 
           <div className="grid gap-5 md:grid-cols-3">
             <div className="space-y-2">
-              <label className="mb-1.5 block text-xs font-bold text-ink/60">Selling Price (₹)</label>
+              <label htmlFor="listing-field-5" className="mb-1.5 block text-xs font-bold text-ink/60">Item value (₹)</label>
               <div className="relative">
                 <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-ink/40">₹</span>
-                <input
-                  type="number"
+                <input id="listing-field-5" aria-describedby={formValidationErrors.length ? "listing-errors" : undefined}
+                  type="number" step="0.01" max="1000000"
                   className="h-11 w-full rounded-xl border border-ink/15 bg-white px-3 pl-9 text-sm outline-none focus:border-mesh-500 focus:ring-4 focus:ring-mesh-100"
                   placeholder="0"
                   min="0"
@@ -560,11 +567,11 @@ const AddListing = () => {
             </div>
 
             <div className="space-y-2">
-              <label className="mb-1.5 block text-xs font-bold text-ink/60">Rental Price per Day (₹)</label>
+              <label htmlFor="listing-field-6" className="mb-1.5 block text-xs font-bold text-ink/60">Daily rent (₹)</label>
               <div className="relative">
                 <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-ink/40">₹</span>
-                <input
-                  type="number"
+                <input id="listing-field-6" aria-describedby={formValidationErrors.length ? "listing-errors" : undefined}
+                  type="number" step="0.01" max="1000000"
                   className="h-11 w-full rounded-xl border border-ink/15 bg-white px-3 pl-9 text-sm outline-none focus:border-mesh-500 focus:ring-4 focus:ring-mesh-100"
                   placeholder="0"
                   min="0"
@@ -575,11 +582,11 @@ const AddListing = () => {
             </div>
 
             <div className="space-y-2">
-              <label className="mb-1.5 block text-xs font-bold text-ink/60">Security Deposit (₹)</label>
+              <label htmlFor="listing-field-7" className="mb-1.5 block text-xs font-bold text-ink/60">Security Deposit (₹)</label>
               <div className="relative">
                 <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-ink/40">₹</span>
-                <input
-                  type="number"
+                <input id="listing-field-7" aria-describedby={formValidationErrors.length ? "listing-errors" : undefined}
+                  type="number" step="0.01" max="1000000"
                   className="h-11 w-full rounded-xl border border-ink/15 bg-white px-3 pl-9 text-sm outline-none focus:border-mesh-500 focus:ring-4 focus:ring-mesh-100"
                   placeholder="0"
                   min="0"
@@ -590,32 +597,6 @@ const AddListing = () => {
             </div>
           </div>
 
-          <div className="mt-6 grid gap-5 sm:grid-cols-2">
-            <div className="space-y-2">
-              <label className="mb-1.5 flex items-center gap-1.5 text-xs font-bold text-ink/60"><CalendarDays size={14} /> Availability timeframe</label>
-              <select
-                className="h-11 w-full rounded-xl border border-ink/15 bg-white px-3 text-sm outline-none transition focus:border-mesh-500 focus:ring-4 focus:ring-mesh-100"
-                value={formData.availability}
-                onChange={(e) => setFormData({...formData, availability: e.target.value})}
-              >
-                {availabilities.map(av => (
-                  <option key={av} value={av}>{av}</option>
-                ))}
-              </select>
-            </div>
-
-            {formData.availability === 'Custom Date' && (
-              <div className="space-y-2">
-                <label className="mb-1.5 block text-xs font-bold text-ink/60">Select Availability Date</label>
-                <input
-                  type="date"
-                  className="h-11 w-full rounded-xl border border-ink/15 bg-white px-3 text-sm outline-none transition focus:border-mesh-500 focus:ring-4 focus:ring-mesh-100"
-                  value={formData.customDate}
-                  onChange={(e) => setFormData({...formData, customDate: e.target.value})}
-                />
-              </div>
-            )}
-          </div>
         </section>
 
         {/* SECTION 4 - ITEM IMAGES */}
@@ -681,22 +662,22 @@ const AddListing = () => {
                     <span className="absolute bottom-2 left-2 z-10 inline-flex items-center gap-1 rounded-full bg-mesh-600 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white"><Check size={11} /> Cover</span>
                   )}
 
-                  <div className="absolute inset-0 z-20 flex items-center justify-center gap-2 bg-ink/55 opacity-0 transition group-hover:opacity-100">
+                  <div className="absolute inset-0 z-20 flex items-center justify-center gap-2 bg-ink/55 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
                     {idx !== coverIndex && (
                       <button
                         type="button"
-                        className="grid size-9 place-items-center rounded-xl border border-white/30 bg-white text-ink/60 transition hover:bg-mesh-50"
+                        className="grid size-11 place-items-center rounded-xl border border-white/30 bg-white text-ink/60 transition hover:bg-mesh-50"
                         onClick={() => makeCover(idx)}
-                        title="Make Cover Image"
+                        aria-label={`Make photo ${idx + 1} cover`} title="Make Cover Image"
                       >
                         <Star size={15} />
                       </button>
                     )}
                     <button
                       type="button"
-                      className="grid size-9 place-items-center rounded-xl border border-white/30 bg-white text-red-600 transition hover:bg-red-50"
+                      className="grid size-11 place-items-center rounded-xl border border-white/30 bg-white text-red-600 transition hover:bg-red-50"
                       onClick={() => handleDeleteImage(idx)}
-                      title="Delete Image"
+                      aria-label={`Delete photo ${idx + 1}`} title="Delete Image"
                     >
                       <Trash2 size={15} />
                     </button>
@@ -718,8 +699,8 @@ const AddListing = () => {
           </div>
 
           <div className="space-y-2">
-            <label className="mb-1.5 block text-xs font-bold text-ink/60">Select On-Campus Pickup Location *</label>
-            <select
+            <label htmlFor="listing-field-8" className="mb-1.5 block text-xs font-bold text-ink/60">Select On-Campus Pickup Location *</label>
+            <select id="listing-field-8" aria-describedby={formValidationErrors.length ? "listing-errors" : undefined}
               className="h-11 w-full rounded-xl border border-ink/15 bg-white px-3 text-sm outline-none transition focus:border-mesh-500 focus:ring-4 focus:ring-mesh-100"
               value={formData.pickupLocationId || selectedLocation?.id || ''}
               onChange={(e) => {
@@ -769,11 +750,11 @@ const AddListing = () => {
           {formData.deliveryAvailable && (
             <div className="mt-5 grid gap-5 sm:grid-cols-2">
               <div className="space-y-2">
-                <label className="mb-1.5 block text-xs font-bold text-ink/60">Delivery Charge (₹)</label>
+                <label htmlFor="listing-field-9" className="mb-1.5 block text-xs font-bold text-ink/60">Delivery Charge (₹)</label>
                 <div className="relative">
                   <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-ink/40">₹</span>
-                  <input
-                    type="number"
+                  <input id="listing-field-9" aria-describedby={formValidationErrors.length ? "listing-errors" : undefined}
+                    type="number" step="0.01" max="1000000"
                     className="h-11 w-full rounded-xl border border-ink/15 bg-white px-3 pl-9 text-sm outline-none focus:border-mesh-500 focus:ring-4 focus:ring-mesh-100"
                     placeholder="0"
                     min="0"
@@ -784,8 +765,8 @@ const AddListing = () => {
               </div>
 
               <div className="space-y-2">
-                <label className="mb-1.5 block text-xs font-bold text-ink/60">Estimated Courier Pickup Time</label>
-                <input
+                <label htmlFor="listing-field-10" className="mb-1.5 block text-xs font-bold text-ink/60">Estimated Courier Pickup Time</label>
+                <input id="listing-field-10" aria-describedby={formValidationErrors.length ? "listing-errors" : undefined}
                   type="text"
                   className="h-11 w-full rounded-xl border border-ink/15 bg-white px-3 text-sm outline-none transition focus:border-mesh-500 focus:ring-4 focus:ring-mesh-100"
                   placeholder="e.g. 10 - 20 mins"
@@ -803,7 +784,7 @@ const AddListing = () => {
             <span className="grid size-10 place-items-center rounded-xl bg-slate-100 text-slate-600"><UserRound size={19} /></span>
             <div>
               <span className="text-[.68rem] font-semibold uppercase tracking-[.16em] text-mesh-600">Step 7</span>
-              <h2 className="mt-0.5 text-lg font-semibold">Seller contact</h2>
+              <h2 className="mt-0.5 text-lg font-semibold">Your profile</h2>
             </div>
           </div>
 
@@ -815,13 +796,10 @@ const AddListing = () => {
               <h3 className="font-semibold text-ink">{user?.name || 'Anonymous Student'}</h3>
               <p>{user?.email}</p>
               <p className="text-ink/50">
-                {sellerDept} • Semester {sellerSem}
+                {sellerDept}
               </p>
 
-              <div className="mt-1 flex flex-wrap gap-4 text-xs font-bold">
-                <span className="flex items-center gap-1 text-amber-600"><Star size={13} fill="currentColor" /> Rating: {sellerRating}</span>
-                <span className="flex items-center gap-1 text-mesh-700"><ShieldCheck size={13} /> Trust score: {sellerMeshScore}</span>
-              </div>
+              <div className="mt-1 text-xs">No ratings yet</div>
             </div>
           </div>
         </section>
@@ -848,7 +826,7 @@ const AddListing = () => {
           </button>
           <button
             type="button"
-            onClick={handleSaveDraft}
+            onClick={handleSaveDraft} disabled={editing}
             className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-ink/15 bg-white px-5 text-sm font-bold text-ink transition hover:border-mesh-500 hover:bg-mesh-50"
           >
             <Save size={16} /> Save draft
@@ -857,7 +835,7 @@ const AddListing = () => {
             type="button"
             onClick={() => {
               if (validateForm()) {
-                alert(`--- PREVIEW DETAILS ---\n\nTitle: ${formData.title}\nCategory: ${formData.category}\nCondition: ${formData.condition}\nSell Price: ₹${formData.price || 0}\nRent Rate: ₹${formData.rentPrice || 0}/day\nPickup: ${formData.location}\n\nPress Publish to publish it!`);
+                setPreview(v=>!v);
               } else {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }
@@ -867,10 +845,10 @@ const AddListing = () => {
             Preview Listing
           </button>
           <button
-            type="submit"
+            type="submit" disabled={!loaded || publishing}
             className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-mesh-600 px-6 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-mesh-700 hover:shadow-lg active:translate-y-0"
           >
-            <Check size={16} /> Publish listing
+            <Check size={16} /> {editing ? "Save changes" : "Publish listing"}
           </button>
         </div>
 

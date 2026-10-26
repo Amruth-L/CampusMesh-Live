@@ -1,0 +1,8 @@
+
+/Users/amruth/CampusMesh-Live/frontend/src/pages/RentSummary.jsx
+  line 117: [layout-transition] transition: margin-bottom
+    → Animating width, height, padding, or margin causes layout thrash and janky performance. Use transform and opacity instead, or grid-template-rows for height animations.
+  line 129: [layout-transition] transition: margin-bottom
+    → Animating width, height, padding, or margin causes layout thrash and janky performance. Use transform and opacity instead, or grid-template-rows for height animations.
+
+2 anti-patterns found.

@@ -1,3 +1,5 @@
+import { campusToday } from '../../../shared/rental-dates.js';
+import { useRentalQuote } from '../hooks/useRentalQuote';
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Calendar, AlertTriangle, Lock, CheckCircle2, ClipboardList, MapPin, Info } from 'lucide-react';
@@ -10,7 +12,7 @@ const formatCurrency = (n) => {
   return `₹${parsed.toFixed(2)}`;
 };
 
-const today = () => new Date().toISOString().split('T')[0];
+const today = campusToday;
 const addDays = (dateStr, days) => {
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return dateStr;
@@ -36,82 +38,31 @@ export default function RentSummary() {
   const [endDate, setEndDate] = useState(paramEnd || addDays(today(), 1));
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
-  const [breakdown, setBreakdown] = useState(null);
+  const quoteState = useRentalQuote(id,startDate,endDate,Boolean(rentalConfiguration.delivery_requested));
+  const breakdown = quoteState.quote ? {...quoteState.quote,bookingAmount:quoteState.quote.totalAmount,depositAmount:quoteState.quote.securityDeposit} : null;
 
 
   useEffect(() => {
+    const controller = new AbortController();
     const fetchListing = async () => {
-      setLoading(true);
+      setLoading(true);setListing(null);setError('');
       try {
                   const token = localStorage.getItem('token');
           const res = await fetch(`${API_BASE_URL}/listings/${id}`, {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: { Authorization: `Bearer ${token}` }, signal: controller.signal,
           });
           if (!res.ok) throw new Error('Failed to load listing');
           const data = await res.json();
           setListing(data);
       } catch (e) {
-        setError(e.message);
+        if (!controller.signal.aborted) setError(e.message);
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
     fetchListing();
+    return () => controller.abort();
   }, [id]);
-
-  useEffect(() => {
-    if (!listing) return;
-    
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    
-    let days = 1;
-    if (startDate && endDate && !isNaN(start.getTime()) && !isNaN(end.getTime())) {
-      start.setHours(0, 0, 0, 0);
-      end.setHours(0, 0, 0, 0);
-      const diffTime = end.getTime() - start.getTime();
-      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-      days = Math.max(1, diffDays);
-    }
-
-    const fetchPricingBreakdown = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE_URL}/api/pricing/calculate`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            listing_id: listing.id,
-            daily_rent: listing.rent_price || listing.rentPrice || 0,
-            rental_days: days,
-            delivery_type: rentalConfiguration.delivery_requested ? 'STANDARD' : 'SELF_PICKUP',
-            owner_location: listing.location || '',
-            item_value: listing.price || 0,
-            custom_deposit: listing.deposit
-          })
-        });
-        const data = await res.json();
-        setBreakdown({
-          days,
-          rentalFee: data.rentalFee,
-          deliveryFee: data.deliveryFee,
-          platformFee: data.platformFee,
-          paymentMethod: data.paymentMethod,
-          bookingAmount: data.totalAmount,
-          depositAmount: data.securityDeposit,
-          distance: data.distance,
-          estimatedTime: data.estimatedTime
-        });
-      } catch (err) {
-        console.error('Failed to calculate pricing breakdown from API:', err);
-      }
-    };
-
-    fetchPricingBreakdown();
-  }, [startDate, endDate, listing, rentalConfiguration.delivery_requested]);
 
   const handleBook = async (e) => {
     e.preventDefault();
@@ -170,15 +121,15 @@ export default function RentSummary() {
     );
   }
 
-  const isBtnDisabled = !breakdown || submitting || breakdown.bookingAmount <= 0;
+  const isBtnDisabled = !breakdown || submitting || breakdown.bookingAmount <= 0 || Boolean(listing.demo_slug);
 
   return (
-    <div className="space-y-4">
-      <div className="[max-width:1100px] [margin:0_auto]">
+    <div className="mx-auto max-w-6xl px-4 py-6 sm:px-7 sm:py-10">
+      <div className="space-y-6">
         {/* Header */}
         <div className="[margin-bottom:32px]">
           <button className="[background-color:var(--surface-color,_#ffffff)] [border:1px_solid_var(--border-color,_#e5e7eb)] [color:var(--text-dark,_#1f2937)] [padding:8px_20px] [border-radius:99px] cursor-pointer [font-size:0.9rem] font-medium [transition:background-color_0.2s_ease,border-color_0.2s_ease,transform_0.2s_ease] [margin-bottom:16px] [box-shadow:var(--shadow-sm)] inline-flex items-center [gap:6px] hover:[background-color:#f3f4f6] hover:[border-color:#d1d5db] hover:[transform:translateX(-2px)]" onClick={() => navigate(-1)}>← Back</button>
-          <h1 className="font-display text-5xl font-semibold tracking-tight text-ink">Booking Summary</h1>
+          <h1 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight text-ink">Booking Summary</h1>
           <p className="[color:var(--text-muted,_#6b7280)] [font-size:0.95rem] m-0">Review your rental request and payment stages</p>
         </div>
 
@@ -201,7 +152,7 @@ export default function RentSummary() {
                 <span className="[background-color:rgba(16,_185,_129,_0.08)] [color:var(--primary-color,_#10b981)] [font-size:0.75rem] font-bold [padding:3px_10px] [border-radius:99px] [align-self:flex-start] uppercase [letter-spacing:0.05em] [border:1px_solid_rgba(16,_185,_129,_0.15)]">{listing.category}</span>
                 <h2 className="[font-size:1.25rem] font-bold [color:var(--text-dark,_#1f2937)] m-0 [line-height:1.3]">{listing.title}</h2>
                 <div className="flex [gap:12px] items-center">
-                  <span className="[font-size:0.8rem] [background-color:rgba(16,_185,_129,_0.08)] [color:var(--primary-color,_#10b981)] [padding:3px_10px] [border-radius:99px] font-semibold [border:1px_solid_rgba(16,_185,_129,_0.15)]">{listing.condition}</span>
+                  <span className="shrink-0 whitespace-nowrap [font-size:0.8rem] [background-color:rgba(16,_185,_129,_0.08)] [color:var(--primary-color,_#10b981)] [padding:3px_10px] [border-radius:99px] font-semibold [border:1px_solid_rgba(16,_185,_129,_0.15)]">{listing.condition}</span>
                   <span className="inline-flex items-center gap-1 text-sm font-medium text-ink/50">
                     <MapPin size={12} strokeWidth={2} /> {listing.location}
                   </span>
@@ -218,11 +169,11 @@ export default function RentSummary() {
                 <Calendar size={16} strokeWidth={2} /> Select Rental Period
               </h3>
               <form id="rental-form" onSubmit={handleBook} className="flex flex-col [gap:20px]">
-                <div className="grid [grid-template-columns:1fr_1fr] [gap:20px]">
+                <div className="grid gap-4 sm:grid-cols-2">
                   <div className="flex flex-col [gap:6px]">
                     <label htmlFor="start-date">Start Date</label>
                     <input
-                      id="start-date"
+                      id="start-date" className="min-h-11 w-full min-w-0 rounded-lg border border-ink/20 bg-white px-3" required
                       type="date"
                       min={today()}
                       value={startDate}
@@ -231,8 +182,8 @@ export default function RentSummary() {
                         setStartDate(newStart);
                         const sD = new Date(newStart);
                         const eD = new Date(endDate);
-                        if (eD <= sD) {
-                          setEndDate(addDays(newStart, 1));
+                        if (eD < sD) {
+                          setEndDate(newStart);
                         }
                       }}
                     />
@@ -240,9 +191,9 @@ export default function RentSummary() {
                   <div className="flex flex-col [gap:6px]">
                     <label htmlFor="end-date">End Date</label>
                     <input
-                      id="end-date"
+                      id="end-date" className="min-h-11 w-full min-w-0 rounded-lg border border-ink/20 bg-white px-3" required
                       type="date"
-                      min={addDays(startDate, 1)}
+                      min={startDate}
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
                     />
@@ -253,14 +204,14 @@ export default function RentSummary() {
                     <Calendar size={12} strokeWidth={2} /> {breakdown.days} Day{breakdown.days > 1 ? 's' : ''} Rental
                   </div>
                 )}
-                {error && <div className="flex items-center gap-1 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600"><AlertTriangle size={12} /> {error}</div>}
+                {error && <div role="alert" className="flex items-center gap-1 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600"><AlertTriangle size={12} /> {error}</div>}
                 
                 <button
                   type="submit"
                   className="mt-2 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-mesh-600 px-5 text-sm font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-mesh-700 hover:shadow-lg disabled:pointer-events-none disabled:bg-ink/15 disabled:text-ink/35 disabled:shadow-none"
                   disabled={isBtnDisabled}
                 >
-                  {submitting ? 'Processing…' : breakdown?.paymentMethod==='DIRECT_UPI' ? 'Send request — pay after acceptance' : `Pay rental fee · ${breakdown ? formatCurrency(breakdown.bookingAmount) : '₹0.00'}`}
+                  {!breakdown ? 'Quote unavailable' : submitting ? 'Processing…' : breakdown?.paymentMethod==='DIRECT_UPI' ? 'Send request — pay after acceptance' : `Pay rental fee · ${breakdown ? formatCurrency(breakdown.bookingAmount) : '₹0.00'}`}
                 </button>
               </form>
             </div>
@@ -304,7 +255,7 @@ export default function RentSummary() {
                 </div>
               ) : (
                 <div className="text-center [color:var(--text-muted,_#6b7280)] [padding:24px_0] [font-size:0.95rem]">
-                  <p>Select valid rental dates to see the breakdown</p>
+                  <p role="status">{quoteState.loading ? "Loading quote…" : quoteState.error}<button type="button" className="ml-2 underline" onClick={quoteState.retry}>Retry quote</button></p>
                 </div>
               )}
             </div>
@@ -316,10 +267,10 @@ export default function RentSummary() {
                   <Lock size={15} strokeWidth={2} /> Security Deposit
                 </h3>
                 <div className="[font-size:1.75rem] font-extrabold [color:var(--text-dark,_#1f2937)] [margin-bottom:12px]">{formatCurrency(breakdown.depositAmount)}</div>
-                <p className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-sm font-medium leading-6 text-amber-700">Collected only after owner accepts booking.</p>
+                <p className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-sm font-medium leading-6 text-amber-700">Pay the lender after acceptance.</p>
                 <p className="m-0 flex items-center gap-1.5 rounded-lg border border-mesh-100 bg-mesh-50 px-3 py-2 text-sm font-medium leading-6 text-mesh-700">
                   <CheckCircle2 size={14} className="shrink-0 text-green-500" />
-                  <span>Refunded after return approval.</span>
+                  <span>Refund follows the lender’s return inspection.</span>
                 </p>
               </div>
             )}
@@ -330,9 +281,9 @@ export default function RentSummary() {
               </h4>
               <ul>
                 <li>Owner must accept your booking request</li>
-                <li>Deposit due within 30 minutes</li>
-                <li>QR required at handover</li>
-                <li>Deposit refunded upon undamaged return</li>
+                {breakdown?.paymentMethod === 'DIRECT_UPI' ? <li>Pay rent and deposit after acceptance; the lender confirms receipt.</li> : <li>Check your accepted rental for its deposit deadline.</li>}
+                <li>Use the handover QR or supported OTP with the recipient.</li>
+                <li>{breakdown?.paymentMethod === 'DIRECT_UPI' ? 'Lender inspects the return and sends your refund; confirm receipt after checking your bank.' : 'Deposit refund follows return inspection.'}</li>
               </ul>
             </div>
           </div>

@@ -3,6 +3,7 @@ WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm ci --include=dev
 COPY frontend/ ./
+COPY shared/ /app/shared/
 ENV VITE_API_URL=/ VITE_API_BASE_URL=/
 RUN npm run build
 
@@ -12,6 +13,7 @@ ENV NODE_ENV=production SERVE_FRONTEND=true CALLS_MODE=preview CALLS_SCHEDULER_E
 COPY backend/package*.json ./backend/
 RUN npm ci --prefix backend --omit=dev && npm cache clean --force
 COPY backend/src ./backend/src
+COPY shared ./shared
 COPY --from=frontend /app/frontend/dist ./frontend/dist
 COPY package.json ./
 USER node

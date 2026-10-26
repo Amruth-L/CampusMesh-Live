@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Phone, Play, Volume2, ShieldCheck } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/auth-context";
 const field =
   "mt-2 w-full rounded-lg border border-ink/15 px-3 py-3 text-sm outline-none focus:border-mesh-600";
 export default function ReminderPage() {

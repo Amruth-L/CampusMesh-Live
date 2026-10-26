@@ -3,6 +3,8 @@ const router = express.Router();
 const listingController = require('./listings.controller');
 const authMiddleware = require('../../middleware/authMiddleware');
 
+router.param('id', (req,res,next,id) => require('../../shared/validation').isUuid(id) ? next() : res.status(400).json({ error: 'Invalid listing ID.' }));
+
 // Public routes
 router.get('/', listingController.getListings);
 router.get('/recommendations', authMiddleware, listingController.getRecommendations);

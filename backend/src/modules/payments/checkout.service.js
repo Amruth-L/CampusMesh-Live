@@ -71,6 +71,19 @@ class CheckoutService {
   async settle(client, record, payment, notifications) {
     const data = record.booking_data;
     if (data.completed) return data.result;
+    // Match single-booking locking and acquire multiple locks in stable order.
+    // A captured receipt remains recoverable if availability needs human review.
+    const listings = await client.query('SELECT id,is_active,owner_id FROM listings WHERE id=ANY($1::uuid[]) ORDER BY id FOR UPDATE',
+      [data.items.map(item => item.listing_id)]);
+    for (const item of data.items) {
+      const listing = listings.rows.find(row => row.id === item.listing_id);
+      const conflict = await client.query(`SELECT id FROM rentals r WHERE listing_id=$1
+        AND status NOT IN ('CANCELLED','COMPLETED','DEPOSIT_REFUNDED') AND ${submittedRentalSql('r')}
+        AND NOT(end_date<$2 OR start_date>$3) LIMIT 1`, [item.listing_id,item.start_date,item.end_date]);
+      if (!listing?.is_active || listing.owner_id !== item.owner_id || conflict.rowCount) {
+        throw fail('Payment received, but an item is no longer available. Contact support for booking or refund review. Do not pay again.');
+      }
+    }
     const rentals = [];
     for (const item of data.items) {
       const rental = (await client.query(
@@ -131,7 +144,7 @@ class CheckoutService {
       || selectedIds.some(id => typeof id !== 'string')) throw fail('Select the cart items to pay for.',400);
     return this.transaction(userId, async (client,notifications) => {
       const rows = (await client.query(`SELECT c.*,c.start_date::text AS start_date,c.end_date::text AS end_date,
-        l.owner_id,l.deposit,l.is_active,l.delivery_available,l.rent_price,l.delivery_charge AS current_delivery_charge
+        l.owner_id,l.price,l.deposit,l.is_active,l.delivery_available,l.rent_price,l.delivery_charge AS current_delivery_charge
         FROM cart c JOIN listings l ON l.id=c.item_id
         WHERE c.user_id=$1 AND (c.id::text=ANY($2) OR c.item_id::text=ANY($2)) ORDER BY c.id FOR UPDATE OF c`, [userId,selectedIds])).rows;
       if (!rows.length || selectedIds.some(id => !rows.some(row => row.id === id || row.item_id === id))) throw fail('Your cart changed. Return to the cart and select your items again.',409);
@@ -164,10 +177,9 @@ class CheckoutService {
           AND status NOT IN ('CANCELLED','COMPLETED','DEPOSIT_REFUNDED') AND ${submittedRentalSql('r')}
           AND NOT(end_date<$2 OR start_date>$3) LIMIT 1`, [row.item_id,row.start_date,row.end_date]);
         if (conflict.rowCount) throw fail('A selected item already has a booking for these dates. Update your cart.');
-        const days = Math.round((new Date(row.end_date)-new Date(row.start_date))/86400000)+1;
-        const rent = paise(row.price_per_day)*days;
-        const platform = paise(Math.max(5,Math.round(rent/100*0.05)));
-        const delivery = row.delivery_requested ? paise(row.current_delivery_charge) : 0;
+        const days = require('../../../../shared/rental-dates.js').rentalDays(row.start_date,row.end_date);
+        const quote = require('../../shared/rental-quote').rentalQuote({...row,delivery_charge:row.current_delivery_charge},days,row.delivery_requested,false);
+        const rent = paise(quote.rentalFee), platform = paise(quote.platformFee), delivery = paise(quote.deliveryFee);
         items.push({ listing_id:row.item_id, owner_id:row.owner_id, start_date:row.start_date,end_date:row.end_date,
           rental_days:days,rental_fee:rent/100,platform_fee:platform/100,delivery_fee:delivery/100,
           booking_amount:(rent+platform+delivery)/100,deposit_amount:Number(row.deposit),

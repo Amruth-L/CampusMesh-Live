@@ -19,9 +19,19 @@ const xeroxRoutes = require('./modules/xerox/xerox.routes');
 
 const app = express();
 app.disable('x-powered-by');
+// Explicit trusted proxy hops; never trust arbitrary client X-Forwarded-For.
+const proxyHops = Number(process.env.TRUST_PROXY_HOPS || 0);
+if (!Number.isInteger(proxyHops) || proxyHops < 0 || proxyHops > 5) throw new Error('Invalid TRUST_PROXY_HOPS');
+app.set('trust proxy', proxyHops);
 app.use(cors({ origin: process.env.FRONTEND_ORIGIN?.split(',') || true, credentials: true }));
 app.post('/api/payment/webhook', express.raw({ type: 'application/json', limit: '1mb' }), require('./modules/payments/payment-webhook').createWebhook());
 app.use(express.json({ limit: '50mb' }));
+app.use((req,res,next) => {
+  if (req.body === undefined) req.body = {};
+  if (['POST','PUT','PATCH'].includes(req.method) && (req.body === null || typeof req.body !== 'object' || Array.isArray(req.body)))
+    return res.status(400).json({ error: 'Send a JSON object with the requested fields.' });
+  next();
+});
 app.get('/health', async (req, res) => {
   try {
     await pool.query('SELECT 1');
@@ -75,6 +85,7 @@ app.use((error, req, res, next) => {
   void next;
   console.error('[request]', error);
   if (error.type === 'entity.too.large') return res.status(413).json({ error: 'The upload is too large.' });
-  return res.status(error.status || 500).json({ error: error.message || 'Internal Server Error' });
+  if (error.type === 'entity.parse.failed') return res.status(400).json({ error: 'Send valid JSON.' });
+  return res.status(error.status || 500).json({ error: error.status && error.status < 500 ? error.message : 'Internal Server Error' });
 });
 module.exports = app;

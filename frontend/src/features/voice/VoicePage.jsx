@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Headphones, Mic, MicOff, PhoneOff, Send } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/auth-context";
 import { VoiceSession, voiceCapabilities } from "./voice-session";
 
 const phaseLabels = {

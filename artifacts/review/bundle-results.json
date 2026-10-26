@@ -1,0 +1,25 @@
+{
+  "baselineEntry": {
+    "bytes": 938068,
+    "gzip": 270545
+  },
+  "entry": {
+    "file": "index-i5LBAkjB.js",
+    "bytes": 337968,
+    "gzip": 108193
+  },
+  "entryStaticDependencies": {
+    "files": [
+      "index-i5LBAkjB.js",
+      "jsx-runtime-MZURdZre.js",
+      "hooks-1n3xXFUw.js",
+      "createLucideIcon-C2MHhu5n.js"
+    ],
+    "bytes": 368619,
+    "gzip": 120176
+  },
+  "allLazyAndSharedChunks": {
+    "bytes": 963576,
+    "gzip": 316827
+  }
+}

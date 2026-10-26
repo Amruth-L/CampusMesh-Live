@@ -27,7 +27,7 @@ import {
   X,
 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/auth-context";
 import { API_BASE_URL } from "../lib/api";
 import QRCode from "qrcode";
 import HandoverCredential from "../components/HandoverCredential";

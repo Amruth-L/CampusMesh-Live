@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { MessageCircle, Send, LifeBuoy, Headphones } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/auth-context";
 const field =
   "w-full rounded-lg border border-ink/15 bg-white px-3 py-3 text-sm outline-none focus:border-mesh-600";
 export default function SupportPage() {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "../../../context/AuthContext";
+import { useAuth } from "../../../context/auth-context";
 import { normalizeCampusLocations } from "../../../lib/campus";
 
 export default function ReturnDestination({

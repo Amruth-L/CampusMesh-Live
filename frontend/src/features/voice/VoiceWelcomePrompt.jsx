@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Volume2, VolumeX, X } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/auth-context";
 import { AnnouncementPlayer } from "./announcement-player";
 
 const read = (storage, key, fallback) => {
@@ -168,7 +168,7 @@ export default function VoiceWelcomePrompt() {
     await player.current.prime();
     player.current.retry();
   };
-  if (!user || conversation) return null;
+  if (!user || conversation || availability === "unavailable") return null;
   const pending = Boolean(state.item);
   const label = state.muted
     ? "Voice updates off"

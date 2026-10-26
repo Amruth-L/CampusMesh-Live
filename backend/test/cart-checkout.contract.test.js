@@ -32,7 +32,7 @@ test('cart payment retry and recovery in an isolated schema', { skip: process.en
     await t.test('concurrent clicks reuse one provider order and exact per-item totals',async()=>{
       const results = await Promise.all([service.create(borrower,ids),service.create(borrower,ids)]);
       assert.equal(creates,1); assert.equal(results[0].order_id,results[1].order_id);
-      order = results[0]; assert.equal(order.amount,945); assert.equal(order.platformFee,45);
+      order = results[0]; assert.equal(order.amount,940); assert.equal(order.platformFee,40);
     });
     await t.test('another account cannot recover this cart and no unpaid order becomes a rental',async()=>{
       await assert.rejects(service.reconcile(order.order_id,outsider),e=>e.status===404);
@@ -40,7 +40,7 @@ test('cart payment retry and recovery in an isolated schema', { skip: process.en
       assert.equal((await pool.query('SELECT COUNT(*)::int n FROM rentals')).rows[0].n,0);
     });
     await t.test('authorized payment blocks a second checkout',async()=>{
-      payments.set('pay_Cart1',{id:'pay_Cart1',order_id:order.order_id,amount:94500,currency:'INR',status:'authorized',captured:false});
+      payments.set('pay_Cart1',{id:'pay_Cart1',order_id:order.order_id,amount:94000,currency:'INR',status:'authorized',captured:false});
       orders.get(order.order_id).status='attempted';
       await assert.rejects(service.create(borrower,ids),/still processing/);
       assert.equal(creates,1);
@@ -49,7 +49,7 @@ test('cart payment retry and recovery in an isolated schema', { skip: process.en
       Object.assign(payments.get('pay_Cart1'),{status:'captured',captured:true,amount:1});
       await assert.rejects(service.reconcile(order.order_id,borrower),/do not pay again/);
       assert.equal((await pool.query('SELECT COUNT(*)::int n FROM rentals')).rows[0].n,0);
-      payments.get('pay_Cart1').amount=94500; orders.get(order.order_id).status='paid';
+      payments.get('pay_Cart1').amount=94000; orders.get(order.order_id).status='paid';
     });
     let result;
     await t.test('lost callback recovers two paid rentals exactly once without handover QR',async()=>{
@@ -59,7 +59,7 @@ test('cart payment retry and recovery in an isolated schema', { skip: process.en
       assert.equal(rentals.length,2);
       for(const rental of rentals) assert.deepEqual(rental,{status:'RENTAL_PAYMENT_COMPLETED',payment_status:'RENTAL_PAID',deposit_status:'PENDING',qr_code_hash:null});
       assert.equal((await pool.query('SELECT COUNT(*)::int n FROM cart')).rows[0].n,0);
-      assert.equal((await pool.query('SELECT SUM(amount)::numeric total FROM payments')).rows[0].total,'945.00');
+      assert.equal((await pool.query('SELECT SUM(amount)::numeric total FROM payments')).rows[0].total,'940.00');
     });
     await t.test('completed checkout survives repeated confirmation but rejects a different receipt',async()=>{
       assert.deepEqual(await service.reconcile(order.order_id,borrower),result);
@@ -69,6 +69,8 @@ test('cart payment retry and recovery in an isolated schema', { skip: process.en
     await t.test('legacy pending checkout also recovers without requiring a fingerprint',async()=>{
       const listing=await fixture(10); const newOrder=await service.create(borrower,[listing]);
       await pool.query("UPDATE pending_orders SET booking_data=booking_data-'fingerprint'-'type' WHERE id=$1",[newOrder.order_id]);
+      await pool.query("UPDATE pending_orders SET booking_data=jsonb_set(booking_data,'{items,0,booking_amount}','35'::jsonb) WHERE id=$1",[newOrder.order_id]);
+      orders.get(newOrder.order_id).amount=3500;
       payments.set('pay_Legacy',{id:'pay_Legacy',order_id:newOrder.order_id,amount:3500,currency:'INR',status:'captured',captured:true});
       orders.get(newOrder.order_id).status='paid';
       assert.equal((await service.reconcile(newOrder.order_id,borrower)).rentals.length,1);
@@ -79,6 +81,19 @@ test('cart payment retry and recovery in an isolated schema', { skip: process.en
       await assert.rejects(unavailable.create(borrower,[listing]),e=>e.status===503);
       assert.equal(creates,before);
       assert((await service.create(borrower,[listing])).order_id);
+    });
+    await t.test('availability changes after capture do not double-book or lose the recoverable receipt',async()=>{
+      const listing=await fixture(20); const pending=await service.create(borrower,[listing]);
+      payments.set('pay_Race',{id:'pay_Race',order_id:pending.order_id,amount:Math.round(pending.amount*100),currency:'INR',status:'captured',captured:true});
+      orders.get(pending.order_id).status='paid';
+      await pool.query('UPDATE listings SET is_active=false WHERE id=$1',[listing]);
+      const before=creates;
+      await assert.rejects(service.reconcile(pending.order_id,borrower),/Payment received.*Do not pay again/);
+      await assert.rejects(service.create(borrower,[listing]),/Payment received.*Do not pay again/);
+      assert.equal(creates,before);
+      assert.equal((await pool.query('SELECT COUNT(*)::int n FROM rentals WHERE listing_id=$1',[listing])).rows[0].n,0);
+      await pool.query('UPDATE listings SET is_active=true WHERE id=$1',[listing]);
+      assert.equal((await service.reconcile(pending.order_id,borrower)).rentals.length,1);
     });
   } finally {
     process.env.RAZORPAY_KEY_ID=key;process.env.RAZORPAY_KEY_SECRET=secret;

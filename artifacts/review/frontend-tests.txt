@@ -1,0 +1,214 @@
+
+> frontend@0.0.0 test
+> node --test test/*.test.js
+
+TAP version 13
+# Subtest: autoplay fallback retains update, then plays once after a gesture and deduplicates polling
+ok 1 - autoplay fallback retains update, then plays once after a gesture and deduplicates polling
+  ---
+  duration_ms: 6.262625
+  ...
+# Subtest: logout/account switch or hidden tab aborts pending audio without late playback
+ok 2 - logout/account switch or hidden tab aborts pending audio without late playback
+  ---
+  duration_ms: 1.9245
+  ...
+# Subtest: mute stops audio and suppresses replay, but other accounts have independent history
+ok 3 - mute stops audio and suppresses replay, but other accounts have independent history
+  ---
+  duration_ms: 4.162542
+  ...
+# Subtest: network failure waits for explicit retry, never marks an unheard update delivered
+ok 4 - network failure waits for explicit retry, never marks an unheard update delivered
+  ---
+  duration_ms: 1.647709
+  ...
+# Subtest: expired offers and superseded payment updates cannot block later announcements
+ok 5 - expired offers and superseded payment updates cannot block later announcements
+  ---
+  duration_ms: 2.0615
+  ...
+# Subtest: outward checkpoints advance one step at a time from actual confirmations
+ok 6 - outward checkpoints advance one step at a time from actual confirmations
+  ---
+  duration_ms: 0.84725
+  ...
+# Subtest: active rental or completed label cannot fabricate pickup, handover or fee receipt
+ok 7 - active rental or completed label cannot fabricate pickup, handover or fee receipt
+  ---
+  duration_ms: 0.128458
+  ...
+# Subtest: return uses its own pickup, handover and payment instead of reusing outward ticks
+ok 8 - return uses its own pickup, handover and payment instead of reusing outward ticks
+  ---
+  duration_ms: 0.747125
+  ...
+# Subtest: zero-fee delivery has no fee step, and gateway booking precedes approval and deposit
+ok 9 - zero-fee delivery has no fee step, and gateway booking precedes approval and deposit
+  ---
+  duration_ms: 0.294083
+  ...
+# Subtest: cancelled or failed deliveries do not suggest a next actionable step
+ok 10 - cancelled or failed deliveries do not suggest a next actionable step
+  ---
+  duration_ms: 0.343667
+  ...
+# Subtest: delivery availability round-trips local time across offsets and midnight
+ok 11 - delivery availability round-trips local time across offsets and midnight
+  ---
+  duration_ms: 5.137667
+  ...
+# Subtest: accepted direct UPI requests remain ongoing before payment, despite legacy HISTORY phase
+ok 12 - accepted direct UPI requests remain ongoing before payment, despite legacy HISTORY phase
+  ---
+  duration_ms: 0.468792
+  ...
+# Subtest: acceptance moves a new request into accepted rentals
+ok 13 - acceptance moves a new request into accepted rentals
+  ---
+  duration_ms: 0.07175
+  ...
+# Subtest: completed delivery does not mark an active rental completed
+ok 14 - completed delivery does not mark an active rental completed
+  ---
+  duration_ms: 0.059084
+  ...
+# Subtest: return approval, inspection, refund and remaining return settlement stay visible
+ok 15 - return approval, inspection, refund and remaining return settlement stay visible
+  ---
+  duration_ms: 0.124167
+  ...
+# Subtest: closed rentals go to history even when their last delivery was a return
+ok 16 - closed rentals go to history even when their last delivery was a return
+  ---
+  duration_ms: 0.067292
+  ...
+# Subtest: unpaid requests offer Pay only to the payer
+ok 17 - unpaid requests offer Pay only to the payer
+  ---
+  duration_ms: 0.417292
+  ...
+# Subtest: reported transfers ask the recipient to confirm, never the sender to pay twice
+ok 18 - reported transfers ask the recipient to confirm, never the sender to pay twice
+  ---
+  duration_ms: 0.064291
+  ...
+# Subtest: deposit refunds reverse payer and recipient roles
+ok 19 - deposit refunds reverse payer and recipient roles
+  ---
+  duration_ms: 0.058834
+  ...
+# Subtest: confirmed receipts go to history and actionable payments precede waiting entries
+ok 20 - confirmed receipts go to history and actionable payments precede waiting entries
+  ---
+  duration_ms: 0.436667
+  ...
+# Subtest: disputed payments never offer another payment action
+ok 21 - disputed payments never offer another payment action
+  ---
+  duration_ms: 0.067292
+  ...
+# Subtest: only unpaid booking drafts can launch rental checkout
+ok 22 - only unpaid booking drafts can launch rental checkout
+  ---
+  duration_ms: 0.424458
+  ...
+# Subtest: recorded rental payment blocks another payment even with stale draft status
+ok 23 - recorded rental payment blocks another payment even with stale draft status
+  ---
+  duration_ms: 0.136916
+  ...
+# Subtest: real checkout requires a server-issued order, key and positive INR amount
+ok 24 - real checkout requires a server-issued order, key and positive INR amount
+  ---
+  duration_ms: 0.3745
+  ...
+# Subtest: simulation never opens real checkout or invents a payment confirmation
+ok 25 - simulation never opens real checkout or invents a payment confirmation
+  ---
+  duration_ms: 0.131084
+  ...
+# Subtest: confirmation retries reuse the signed receipt for the same provider order
+ok 26 - confirmation retries reuse the signed receipt for the same provider order
+  ---
+  duration_ms: 1.3265
+  ...
+# Subtest: incomplete, mismatched or fake receipts cannot verify a payment
+ok 27 - incomplete, mismatched or fake receipts cannot verify a payment
+  ---
+  duration_ms: 0.108
+  ...
+# Subtest: active rentals and pending handovers stay visible in Active
+ok 28 - active rentals and pending handovers stay visible in Active
+  ---
+  duration_ms: 0.466333
+  ...
+# Subtest: Requested includes booking and owner approval states
+ok 29 - Requested includes booking and owner approval states
+  ---
+  duration_ms: 0.0695
+  ...
+# Subtest: rental fee payment completes only Payment and waits for owner approval
+ok 30 - rental fee payment completes only Payment and waits for owner approval
+  ---
+  duration_ms: 0.55
+  ...
+# Subtest: owner approval and fully paid bookings do not complete physical handover
+ok 31 - owner approval and fully paid bookings do not complete physical handover
+  ---
+  duration_ms: 1.052291
+  ...
+# Subtest: confirmed delivery completes Handover and return remains pending until confirmed
+ok 32 - confirmed delivery completes Handover and return remains pending until confirmed
+  ---
+  duration_ms: 0.253333
+  ...
+# Subtest: unpaid, stopped, unknown or refunded bookings never invent physical handover
+ok 33 - unpaid, stopped, unknown or refunded bookings never invent physical handover
+  ---
+  duration_ms: 0.114458
+  ...
+# Subtest: refund receipt gates rental closure after owner inspection and refund report
+ok 34 - refund receipt gates rental closure after owner inspection and refund report
+  ---
+  duration_ms: 0.293667
+  ...
+# Subtest: courier return acceptance, physical receipt, inspection and fee stay separate
+ok 35 - courier return acceptance, physical receipt, inspection and fee stay separate
+  ---
+  duration_ms: 0.201458
+  ...
+# Subtest: streams only after provider readiness, mutes mic, plays provider PCM and interrupts
+ok 36 - streams only after provider readiness, mutes mic, plays provider PCM and interrupts
+  ---
+  duration_ms: 1.4045
+  ...
+# Subtest: permission denial never connects provider and closes audio resources
+ok 37 - permission denial never connects provider and closes audio resources
+  ---
+  duration_ms: 0.213875
+  ...
+# Subtest: ending while permission is pending stops late microphone stream and never connects
+ok 38 - ending while permission is pending stops late microphone stream and never connects
+  ---
+  duration_ms: 0.143709
+  ...
+# Subtest: network failure and expiry stop mic and prevent late speech
+ok 39 - network failure and expiry stop mic and prevent late speech
+  ---
+  duration_ms: 0.281042
+  ...
+# Subtest: unsupported browsers do not request audio; playback can be muted separately
+ok 40 - unsupported browsers do not request audio; playback can be muted separately
+  ---
+  duration_ms: 0.223375
+  ...
+1..40
+# tests 40
+# suites 0
+# pass 40
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 189.576167

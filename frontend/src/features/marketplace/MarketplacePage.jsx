@@ -1,3 +1,4 @@
+import listingCategories from '../../../../shared/listing-options.json';
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
 import {
@@ -8,21 +9,13 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/auth-context";
 import { listingImage } from "../../lib/assets";
 import RecommendationStrip from "../intelligence/RecommendationStrip";
 import RentalDialog from "./RentalDialog";
 import { rentalCategories } from "../../lib/categories";
 
-const categories = [
-  "All",
-  "Books",
-  "Electronics",
-  "Stationery",
-  "Lab Equipment",
-  "Sports",
-  "Hostel Essentials",
-];
+const categories = ['All',...listingCategories];
 const price = (listing) =>
   Number(listing.rent_price ?? listing.rentPrice ?? listing.price ?? 0);
 
@@ -100,11 +93,6 @@ export default function MarketplacePage() {
     <main className="min-h-screen bg-paper pb-20">
       <div className="page-shell">
         <header className="mb-7 flex flex-wrap items-start justify-between gap-4"><div><h1 className="page-title">Rent on campus</h1><p className="page-copy">Find what you need, choose your dates, and request a rental.</p></div><Link to="/account/rentals" className="secondary-button">My rentals <ArrowRight size={16}/></Link></header>
-        <RecommendationStrip />
-        <p className="mb-5 text-xs leading-5 text-ink/60">Demand is shown on each item: paid bookings in the last 30 days and distinct viewers this week. Sample listings are excluded.</p>
-        <div className="mb-7 grid grid-cols-3 gap-3 sm:grid-cols-6">
-          {rentalCategories.map(([name, Icon]) => <button key={name} onClick={() => setCategory(category === name ? "All" : name)} aria-pressed={category === name} className={`flex flex-col items-center gap-3 rounded-xl border p-4 text-center transition ${category === name ? 'border-mesh-600 bg-mesh-50 text-mesh-800' : 'border-ink/10 bg-white text-ink/65 hover:border-mesh-300'}`}><Icon size={26} strokeWidth={1.5}/><span className="text-xs font-medium">{name}</span></button>)}
-        </div>
         <div className="rounded-xl border border-mesh-900/10 bg-white  mb-7 grid gap-3 p-3 md:grid-cols-[1fr_auto_auto]">
           <label className="relative">
             <Search
@@ -125,7 +113,7 @@ export default function MarketplacePage() {
             value={category}
             onChange={(e) => setCategory(e.target.value)}
           >
-            {categories.map((item) => (
+            {[...new Set([...categories,...listings.map(item=>item.category).filter(Boolean)])].map((item) => (
               <option key={item}>{item}</option>
             ))}
           </select>
@@ -248,6 +236,11 @@ export default function MarketplacePage() {
             ))}
           </div>
         )}
+        <RecommendationStrip />
+        <p className="mb-5 text-xs leading-5 text-ink/60">Demand is shown on each item: paid bookings in the last 30 days and distinct viewers this week. Sample listings are excluded.</p>
+        <div className="mb-7 grid grid-cols-3 gap-3 sm:grid-cols-6">
+          {rentalCategories.map(([name, Icon]) => <button key={name} onClick={() => setCategory(category === name ? "All" : name)} aria-pressed={category === name} className={`flex flex-col items-center gap-3 rounded-xl border p-4 text-center transition ${category === name ? 'border-mesh-600 bg-mesh-50 text-mesh-800' : 'border-ink/10 bg-white text-ink/65 hover:border-mesh-300'}`}><Icon size={26} strokeWidth={1.5}/><span className="text-xs font-medium">{name}</span></button>)}
+        </div>
       </div>
       {notice && (
         <motion.div

@@ -1,12 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/auth-context";
 export default function DirectCheckout() {
   const { api } = useAuth(),
     { state } = useLocation();
   const [results, setResults] = useState({}),
     [busy, setBusy] = useState(false);
-  const items = state?.cartItems || [];
+  const [items,setItems] = useState([]), [loading,setLoading]=useState(true), [error,setError]=useState('');
+  useEffect(()=>{let cancelled=false;api.get('/api/cart').then(({data})=>{
+    if(!cancelled)setItems(data.filter(item=>state?.cartItems?.some(selected=>selected.id===item.id)));
+  }).catch(()=>{if(!cancelled)setError('Could not refresh prices. Return to cart and retry.');}).finally(()=>{if(!cancelled)setLoading(false);});return()=>{cancelled=true;};},[api,state]);
   async function submit() {
     if (busy) return;
     setBusy(true);
@@ -44,6 +47,8 @@ export default function DirectCheckout() {
         deposits directly after acceptance. Delivery fees are paid separately
         after handover. There is no combined cart charge or platform fee.
       </p>
+      {loading && <p role="status">Refreshing quotes…</p>}
+      {error && <p role="alert">{error}</p>}
       {items.map((item) => (
         <article key={item.id} className="border-b border-ink/15 py-4">
           <h2 className="font-bold">{item.title}</h2>

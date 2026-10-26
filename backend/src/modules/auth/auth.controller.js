@@ -1,3 +1,4 @@
+const { passwordError } = require('../../shared/validation');
 const pool = require('../../config/database');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -27,10 +28,10 @@ exports.signup = async (req, res) => {
     return res.status(400).json({ error: 'Choose whether you want calls after successful sign-ins.' });
   if (req.body.rental_calls_enabled !== undefined && typeof req.body.rental_calls_enabled !== 'boolean')
     return res.status(400).json({ error: 'Choose whether you want rental calls.' });
-  if (typeof name !== 'string' || !name.trim() || typeof username !== 'string' || !/^[a-zA-Z0-9_]{3,20}$/.test(username.trim()))
+  if (typeof name !== 'string' || !name.trim() || name.length > 200 || typeof username !== 'string' || !/^[a-zA-Z0-9_]{3,20}$/.test(username.trim()))
     return res.status(400).json({ error: 'Enter your name and a username of 3–20 letters, numbers, or underscores.' });
-  if (!validEmail(email)) return res.status(400).json({ error: 'Use your DBIT email (@dbit.co.in).' });
-  if (typeof password !== 'string' || password.length < 6 || Buffer.byteLength(password) > 72)
+  if (!validEmail(email)) return res.status(400).json({ error: 'Use your DBIT campus email (@dbit.co.in).' });
+  if (passwordError(password))
     return res.status(400).json({ error: 'Use a password of at least 6 characters and at most 72 bytes.' });
   if (!phone) return res.status(400).json({ error: 'Enter your mobile number with country code, or a 10-digit Indian mobile number.' });
   if (req.body.welcome_enabled !== undefined && typeof req.body.welcome_enabled !== 'boolean')
@@ -70,7 +71,7 @@ exports.signup = async (req, res) => {
 
 exports.verifyEmail = async (req, res) => {
   const email = emailOf(req.body.email);
-  if (!validEmail(email)) return res.status(400).json({ error: 'Enter your DBIT email.' });
+  if (!validEmail(email)) return res.status(400).json({ error: 'Enter your DBIT campus email.' });
   try {
     const result = await consumeCode(email, 'verify', req.body.otp, client =>
       client.query('UPDATE users SET email_verified=TRUE,otp=NULL,otp_expiry=NULL WHERE email=$1', [email]));
@@ -81,7 +82,7 @@ exports.verifyEmail = async (req, res) => {
 
 exports.resendOtp = async (req, res) => {
   const email = emailOf(req.body.email);
-  if (!validEmail(email)) return res.status(400).json({ error: 'Enter your DBIT email.' });
+  if (!validEmail(email)) return res.status(400).json({ error: 'Enter your DBIT campus email.' });
   try {
     const { rows } = await pool.query('SELECT name,email_verified FROM users WHERE email=$1', [email]);
     if (!rows[0]) return res.status(404).json({ error: 'Create an account before requesting a verification code.' });
@@ -94,7 +95,7 @@ exports.resendOtp = async (req, res) => {
 
 exports.forgotPassword = async (req, res) => {
   const email = emailOf(req.body.email);
-  if (!validEmail(email)) return res.status(400).json({ error: 'Enter your DBIT email.' });
+  if (!validEmail(email)) return res.status(400).json({ error: 'Enter your DBIT campus email.' });
   try {
     const { rows } = await pool.query('SELECT name FROM users WHERE email=$1', [email]);
     if (rows[0]) {
@@ -108,8 +109,8 @@ exports.forgotPassword = async (req, res) => {
 exports.resetPassword = async (req, res) => {
   const email = emailOf(req.body.email);
   const { newPassword } = req.body;
-  if (!validEmail(email)) return res.status(400).json({ error: 'Enter your DBIT email.' });
-  if (typeof newPassword !== 'string' || newPassword.length < 6 || Buffer.byteLength(newPassword) > 72)
+  if (!validEmail(email)) return res.status(400).json({ error: 'Enter your DBIT campus email.' });
+  if (passwordError(newPassword))
     return res.status(400).json({ error: 'Use a password of at least 6 characters and at most 72 bytes.' });
   try {
     const result = await consumeCode(email, 'reset', req.body.otp, async client => {
@@ -138,7 +139,7 @@ exports.login = async (req, res) => {
     const userResult = await pool.query('SELECT * FROM users WHERE LOWER(email) = LOWER($1)', [normalizedEmail]);
     const user = userResult.rows[0];
 
-    if (!user) {
+    if (!user?.password) {
       return res.status(400).json({ error: 'Invalid credentials' });
     }
 
@@ -151,6 +152,7 @@ exports.login = async (req, res) => {
       return res.status(403).json({ message: 'Please verify your email first.' });
     }
 
+    await req.clearLoginAttempts?.();
     const token = jwt.sign(
       { id: user.id, email: user.email, name: user.name },
       process.env.JWT_SECRET,
@@ -195,7 +197,8 @@ exports.setMode = async (req, res) => {
 };
 
 exports.setDeliveryAvailability = async (req, res) => {
-  const available = Boolean(req.body.available);
+  if (typeof req.body.available !== 'boolean') return res.status(400).json({ error: 'available must be true or false.' });
+  const available = req.body.available;
   if (available) {
     const route = await pool.query(
       'SELECT id FROM courier_route_availability WHERE courier_id=$1 AND is_active AND available_until > NOW() LIMIT 1',

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/auth-context';
 import { API_BASE_URL } from '../lib/api';
 import { canPayRental, rentalVerificationPayload, validateRentalOrder } from '../lib/rental-checkout';
 import { openRazorpayCheckout } from '../utils/RazorpayService';

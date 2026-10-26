@@ -1,6 +1,6 @@
 import { ShoppingBag, Store, Truck, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/auth-context';
 export default function ChooseMode() {
   const { user } = useAuth();
   return <main className="page-shell min-h-[80vh]">

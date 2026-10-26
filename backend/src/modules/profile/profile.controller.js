@@ -1,3 +1,4 @@
+const { text, passwordError } = require('../../shared/validation');
 const pool = require('../../config/database');
 const bcrypt = require('bcrypt');
 
@@ -54,6 +55,13 @@ class ProfileController {
         new_password,
       } = req.body;
 
+      for (const field of ['name','username','phone_number','avatar_url','bio','department','hostel','old_password','new_password']) {
+        if (req.body[field] !== undefined) text(req.body[field], field, { required: ['name','username'].includes(field), max: field === 'bio' ? 300 : field === 'avatar_url' ? 2048 : 200 });
+      }
+      if (new_password !== undefined && new_password !== '' && passwordError(new_password))
+        return res.status(400).json({ success: false, message: passwordError(new_password) });
+      if (phone_number && !require('../auth/onboarding.service').normalizePhone(phone_number))
+        return res.status(400).json({success:false,message:'Enter a valid mobile number with country code.'});
       // 1. Fetch current user from database
       const userRes = await pool.query('SELECT * FROM users WHERE id = $1', [userId]);
       if (userRes.rows.length === 0) {
@@ -186,9 +194,9 @@ class ProfileController {
       });
     } catch (error) {
       console.error('Error in updateProfile:', error.message || error);
-      return res.status(500).json({
+      return res.status(error.status || 500).json({
         success: false,
-        message: 'Internal Server Error',
+        message: error.status === 400 ? error.message : 'Internal Server Error',
       });
     }
   }

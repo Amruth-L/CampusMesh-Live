@@ -1,3 +1,5 @@
+import { lazy, Suspense, Component, useLayoutEffect } from 'react';
+import { useNavigationType } from 'react-router-dom';
 import {
   Navigate,
   Route,
@@ -8,36 +10,36 @@ import {
 } from "react-router-dom";
 import AppNavbar from "./components/layout/AppNavbar";
 import PrivateRoute from "./components/PrivateRoute";
-import { useAuth } from "./context/AuthContext";
-import PayoutsPage from "./features/payouts/PayoutsPage";
-import AccountPage from "./features/account/AccountPage";
-import LandingPage from "./features/landing/LandingPage";
-import ListingDetailsPage from "./features/marketplace/ListingDetailsPage";
-import MarketplacePage from "./features/marketplace/MarketplacePage";
-import AddListing from "./pages/AddListing";
-import Cart from "./features/cart/CartPage";
-import Checkout from "./features/cart/CheckoutPage";
-import ChooseMode from "./features/auth/ChooseModePage";
-import DeliveryPage from "./features/delivery/DeliveryPage";
-import DeliveryTracking from "./features/delivery/DeliveryTrackingPage";
-import DepositPayment from "./pages/DepositPayment";
-import EditListing from "./pages/EditListing";
-import ForgotPassword from "./features/auth/ForgotPasswordPage";
-import Login from "./features/auth/LoginPage";
-import PaymentFailed from "./pages/PaymentFailed";
-import PaymentSuccess from "./pages/PaymentSuccess";
-import RentalPayment from "./pages/RentalPayment";
-import RentalReturn from "./pages/RentalReturn";
-import RentDetails from "./pages/RentDetails";
-import RentSummary from "./pages/RentSummary";
-import Signup from "./features/auth/SignupPage";
-import VerifyEmail from "./features/auth/VerifyEmailPage";
-import WishBoxPage from "./features/wishes/WishBoxPage";
-import InsightsPage from "./features/intelligence/InsightsPage";
-import SupportPage from "./features/support/SupportPage";
-import ReminderPage from "./features/support/ReminderPage";
-import PrintSoon from "./features/wishes/PrintSoon";
-import VoicePage from "./features/voice/VoicePage";
+import { useAuth } from "./context/auth-context";
+const PayoutsPage = lazy(() => import("./features/payouts/PayoutsPage"));
+const AccountPage = lazy(() => import("./features/account/AccountPage"));
+const LandingPage = lazy(() => import("./features/landing/LandingPage"));
+const ListingDetailsPage = lazy(() => import("./features/marketplace/ListingDetailsPage"));
+const MarketplacePage = lazy(() => import("./features/marketplace/MarketplacePage"));
+const AddListing = lazy(() => import("./pages/AddListing"));
+const Cart = lazy(() => import("./features/cart/CartPage"));
+const Checkout = lazy(() => import("./features/cart/CheckoutPage"));
+const ChooseMode = lazy(() => import("./features/auth/ChooseModePage"));
+const DeliveryPage = lazy(() => import("./features/delivery/DeliveryPage"));
+const DeliveryTracking = lazy(() => import("./features/delivery/DeliveryTrackingPage"));
+const DepositPayment = lazy(() => import("./pages/DepositPayment"));
+const EditListing = lazy(() => import("./pages/EditListing"));
+const ForgotPassword = lazy(() => import("./features/auth/ForgotPasswordPage"));
+const Login = lazy(() => import("./features/auth/LoginPage"));
+const PaymentFailed = lazy(() => import("./pages/PaymentFailed"));
+const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
+const RentalPayment = lazy(() => import("./pages/RentalPayment"));
+const RentalReturn = lazy(() => import("./pages/RentalReturn"));
+const RentDetails = lazy(() => import("./pages/RentDetails"));
+const RentSummary = lazy(() => import("./pages/RentSummary"));
+const Signup = lazy(() => import("./features/auth/SignupPage"));
+const VerifyEmail = lazy(() => import("./features/auth/VerifyEmailPage"));
+const WishBoxPage = lazy(() => import("./features/wishes/WishBoxPage"));
+const InsightsPage = lazy(() => import("./features/intelligence/InsightsPage"));
+const SupportPage = lazy(() => import("./features/support/SupportPage"));
+const ReminderPage = lazy(() => import("./features/support/ReminderPage"));
+const PrintSoon = lazy(() => import("./features/wishes/PrintSoon"));
+const VoicePage = lazy(() => import("./features/voice/VoicePage"));
 import VoiceWelcomePrompt from "./features/voice/VoiceWelcomePrompt";
 
 const Protected = ({ children }) => <PrivateRoute>{children}</PrivateRoute>;
@@ -46,22 +48,43 @@ const LegacyListingRedirect = () => {
   return <Navigate to={`/item/${id}`} replace />;
 };
 
+class RouteError extends Component {
+  state = {failed:false};
+  static getDerivedStateFromError() { return {failed:true}; }
+  render() { return this.state.failed ? <section role="alert" className="page-shell"><h1 className="page-title">This page could not load</h1><p>Reload to retry. Your saved activity is unchanged.</p><button className="brand-button mt-4" onClick={()=>window.location.reload()}>Reload page</button></section> : this.props.children; }
+}
+const scrollPositions = new Map();
+function RouteScroll() {
+  const location = useLocation(), navigation = useNavigationType();
+  useLayoutEffect(()=> {
+    const previous=history.scrollRestoration;history.scrollRestoration='manual';
+    const position=navigation==='POP' ? scrollPositions.get(location.key) || [0,0] : [0,0];
+    window.scrollTo(...position);
+    const save=()=>scrollPositions.set(location.key,[window.scrollX,window.scrollY]);
+    window.addEventListener('scroll',save,{passive:true});
+    return ()=>{window.removeEventListener('scroll',save);history.scrollRestoration=previous;};
+  },[location.key,navigation]);
+  return null;
+}
+
 export default function App() {
   const { user } = useAuth();
   const { pathname } = useLocation();
   return (
     <>
       <AppNavbar />
+      <RouteScroll />
       <VoiceWelcomePrompt />
       {user && pathname !== "/voice" && (
         <Link
           to="/voice"
           aria-label="Need help? Open voice assistant"
-          className="fixed bottom-22 right-4 z-30 rounded-full border border-mesh-200 bg-white px-4 py-3 text-xs font-semibold text-mesh-700 shadow-md lg:bottom-5"
+          className="hidden lg:block fixed bottom-22 right-4 z-30 rounded-full border border-mesh-200 bg-white px-4 py-3 text-xs font-semibold text-mesh-700 shadow-md lg:bottom-5"
         >
           Need help?
         </Link>
       )}
+      <div className="route-content"><RouteError key={pathname}><Suspense fallback={<div role="status" className="page-shell">Loading page…</div>}>
       <Routes>
         <Route path="/voice" element={<Protected><VoicePage /></Protected>} />
         <Route path="/payouts" element={<Protected><PayoutsPage /></Protected>} />
@@ -325,6 +348,9 @@ export default function App() {
           element={<Navigate to={user ? "/choose-mode" : "/"} replace />}
         />
       </Routes>
+      </Suspense></RouteError>
+      {user && pathname !== "/voice" && <div className="px-5 py-6 lg:hidden"><Link className="secondary-button" to="/voice">Need help? Voice assistant</Link></div>}
+      </div>
     </>
   );
 }

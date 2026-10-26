@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/auth-context";
 export default function TrustDetails({ rentalId }) {
   const { api } = useAuth();
   const [data, setData] = useState(null),

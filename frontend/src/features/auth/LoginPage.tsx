@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { ArrowRight, Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/auth-context';
 import { getApiError, loginUser } from './auth.service';
 import type { AuthLoadingState, LoginFormData } from './auth.types';
 
@@ -101,15 +101,15 @@ export default function LoginPage() {
 
           <form className="mt-8 space-y-5" onSubmit={submit} noValidate>
             <label className="block">
-              <span className="text-xs font-medium text-ink/65 mb-2 block">University email</span>
+              <span className="text-xs font-medium text-ink/65 mb-2 block">DBIT campus email</span>
               <span className="relative block">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-ink/32" size={18} />
                 <input id="login-email" type="email" className="h-11 w-full rounded-xl border border-mesh-900/15 bg-white px-3 text-sm outline-none transition focus:border-mesh-500 focus:ring-4 focus:ring-mesh-100 h-13 rounded-2xl pl-12" placeholder="student@dbit.co.in" autoComplete="email" required disabled={loadingState === 'loading'} value={form.email} onChange={event => update('email', event.target.value)} />
               </span>
             </label>
-            <label className="block">
+            <div className="block">
               <span className="mb-2 flex items-center justify-between">
-                <span className="text-xs font-medium text-ink/65">Password</span>
+                <label htmlFor="login-password" className="text-xs font-medium text-ink/65">Password</label>
                 <Link to="/forgot-password" className="text-xs font-bold text-mesh-700 hover:text-mesh-900">Forgot password?</Link>
               </span>
               <span className="relative block">
@@ -119,7 +119,7 @@ export default function LoginPage() {
                   {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
                 </button>
               </span>
-            </label>
+            </div>
             <label className="flex w-fit items-center gap-2 text-xs font-semibold text-ink/52">
               <input type="checkbox" className="size-4 accent-emerald-700" checked={form.remember} onChange={event => update('remember', event.target.checked)} /> Remember this email
             </label>

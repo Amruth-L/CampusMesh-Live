@@ -2,7 +2,7 @@ import MeshScore from "./components/MeshScore";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import { CheckCircle2, Bell, Wallet, Truck } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/auth-context";
 import { normalizeCampusLocations } from "../../lib/campus";
 import { API_BASE_URL } from "../../lib/api";
 import QrScanner from "../../components/QrScanner";

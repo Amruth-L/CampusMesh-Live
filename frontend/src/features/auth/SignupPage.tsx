@@ -3,7 +3,7 @@ import { useCallback, useState } from 'react';
 import { motion } from 'motion/react';
 import { ArrowRight, AtSign, Eye, EyeOff, Lock, Mail, Phone, User } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/auth-context';
 import { getApiError, signupUser } from './auth.service';
 import type { AuthLoadingState, SignupFieldErrors, SignupFormData } from './auth.types';
 
@@ -87,7 +87,7 @@ const Signup: React.FC = () => {
     }
 
     if (!/^[^\s@]+@dbit\.co\.in$/i.test(form.email.trim())) {
-      errors.email = 'Please use your DBIT university email (@dbit.co.in).';
+      errors.email = 'Please use your DBIT campus email (@dbit.co.in).';
     }
 
     if (form.password.length < 6) {
@@ -170,7 +170,7 @@ const Signup: React.FC = () => {
         >
           <span className="text-xs font-medium text-ink/65">New here?</span>
           <h2 className="mt-3 font-display text-3xl font-semibold leading-tight tracking-tight">Create your account</h2>
-          <p className="mt-4 text-sm text-ink/48">Use your DBIT email. We’ll send a code to verify it.</p>
+          <p className="mt-4 text-sm text-ink/48">Use your DBIT campus email. We’ll send a code to verify it.</p>
 
           {globalError && (
             <motion.div
@@ -221,7 +221,7 @@ const Signup: React.FC = () => {
             </label>
 
             <label className="block" htmlFor="signup-email">
-              <span className="mb-2 block text-xs font-medium text-ink/65">University email</span>
+              <span className="mb-2 block text-xs font-medium text-ink/65">DBIT campus email</span>
               <span className="relative block">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-ink/32" size={18} />
                 <input

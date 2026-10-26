@@ -1,65 +1,19 @@
 const pool = require('../../config/database');
-const { calculatePricing } = require('../../shared/pricing-engine');
-
-exports.calculatePricingHandler = async (req, res) => {
+const { isUuid } = require('../../shared/validation');
+const { dateError, rentalDays } = require('../../../../shared/rental-dates.js');
+const { rentalQuote } = require('../../shared/rental-quote');
+exports.calculatePricingHandler = async (req,res) => {
+  const { listing_id, start_date, end_date, rental_days, delivery_type = 'SELF_PICKUP' } = req.body;
+  if (!isUuid(listing_id)) return res.status(400).json({ error:'Choose a valid listing.' });
+  if (!['STANDARD','DELIVERY','SELF_PICKUP','NONE'].includes(delivery_type)) return res.status(400).json({error:'Choose pickup or delivery.'});
+  const days = start_date !== undefined || end_date !== undefined ? rentalDays(start_date,end_date) : rental_days;
+  const error = start_date !== undefined || end_date !== undefined ? dateError(start_date,end_date) : '';
+  if (error || !Number.isInteger(days) || days<1 || days>366) return res.status(400).json({error:error || 'Choose between 1 and 366 rental days.'});
   try {
-    const {
-      listing_id,
-      daily_rent,
-      rental_days,
-      start_date,
-      end_date,
-      delivery_type,
-      owner_location,
-      renter_location,
-      distance_km,
-      item_value,
-      custom_deposit
-    } = req.body;
-
-    let rent = parseFloat(daily_rent);
-    let itemPrice = parseFloat(item_value);
-    let ownerLoc = owner_location || '';
-    let itemDeposit = custom_deposit;
-
-    // Calculate days if dates are passed
-    let days = parseInt(rental_days, 10);
-    if ((!days || isNaN(days)) && start_date && end_date) {
-      const s = new Date(start_date);
-      const e = new Date(end_date);
-      const diff = e.getTime() - s.getTime();
-      days = Math.max(1, Math.ceil(diff / (1000 * 3600 * 24)));
-    }
-    if (!days || isNaN(days)) days = 1;
-
-    // If listing_id is provided, look up listing from DB for default rates
-    if (listing_id) {
-      const listingRes = await pool.query('SELECT * FROM listings WHERE id = $1', [listing_id]);
-      if (listingRes.rows.length > 0) {
-        const listing = listingRes.rows[0];
-        if (isNaN(rent)) rent = parseFloat(listing.rent_price || listing.price || 0);
-        if (isNaN(itemPrice)) itemPrice = parseFloat(listing.price || 0);
-        if (!ownerLoc) ownerLoc = listing.location || '';
-        if (itemDeposit === undefined || itemDeposit === null) itemDeposit = parseFloat(listing.deposit || 0);
-      }
-    }
-
-    const breakdown = calculatePricing({
-      dailyRent: rent || 0,
-      days,
-      deliveryType: delivery_type,
-      ownerLocation: ownerLoc,
-      renterLocation: renter_location || '',
-      distance: distance_km,
-      itemValue: itemPrice || 0,
-      customDeposit: itemDeposit
-    });
-
-    if (require('../direct-upi/service').enabled()) { breakdown.platformFee=0; breakdown.totalAmount=breakdown.rentalFee; breakdown.paymentMethod='DIRECT_UPI'; }
-    return res.status(200).json(breakdown);
-  } catch (error) {
-    console.error('[PricingController] Calculation Error:', error.message);
-    return res.status(500).json({ error: 'Failed to calculate pricing breakdown.' });
-  }
+    const { rows } = await pool.query('SELECT * FROM listings WHERE id=$1 AND deleted_at IS NULL AND COALESCE(is_active,true)',[listing_id]);
+    if (!rows[0]) return res.status(404).json({error:'Listing unavailable.'});
+    const delivery = ['STANDARD','DELIVERY'].includes(delivery_type);
+    if (delivery && !rows[0].delivery_available) return res.status(400).json({error:'This item is available for pickup only.'});
+    res.json(rentalQuote(rows[0],days,delivery,require('../direct-upi/service').enabled()));
+  } catch { res.status(503).json({error:'Could not load your quote. Please retry.'}); }
 };
-

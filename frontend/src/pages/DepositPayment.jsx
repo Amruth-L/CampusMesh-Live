@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/auth-context';
 import { API_BASE_URL } from '../lib/api';
 import { openRazorpayCheckout } from '../utils/RazorpayService';
 import PaymentSummary from '../components/PaymentSummary';

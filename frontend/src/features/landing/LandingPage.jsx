@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, ShoppingBag, Store, Truck, MapPin } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/auth-context';
 import Brand from '../../components/Brand';
 import { rentalCategories } from '../../lib/categories';
 export default function LandingPage() {

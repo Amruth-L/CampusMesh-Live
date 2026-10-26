@@ -1,0 +1,8 @@
+PASS edit, 32 width checks
+PASS settings, text scale, payments
+PASS local sign-in and recovery validation
+PASS browser journeys 36 viewport checks
+PASS create/photo/failure/retry/edit/reload with simulated touch
+PASS short viewport action reachability { top: 158, bottom: 202, height: 360 }
+SCROLL { before: 400, forward: 0, after: 400 }
+PASS cart partial failure, retry skips successful item (3 requests, 2 rentals)

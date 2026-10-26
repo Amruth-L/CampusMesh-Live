@@ -12,14 +12,14 @@ exports.bookRental = async (req, res) => {
   if (!listing_id || !start_date || !end_date) {
     return res.status(400).json({ error: 'listing_id, start_date, and end_date are required.' });
   }
-  const validDate = (value) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
-    && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
-  if (!validDate(start_date) || !validDate(end_date)) {
-    return res.status(400).json({ error: 'Choose valid rental dates in YYYY-MM-DD format.' });
-  }
+  const { isUuid } = require('../../shared/validation');
+  const { dateError, rentalDays } = require('../../../../shared/rental-dates.js');
+  const invalidDates = dateError(start_date,end_date);
+  if (!isUuid(listing_id) || invalidDates || rentalDays(start_date,end_date)>366) return res.status(400).json({error: invalidDates || 'Choose a valid listing and up to 366 days.'});
   if (typeof delivery_requested !== 'boolean') {
     return res.status(400).json({ error: 'delivery_requested must be true or false.' });
   }
+  if (drop_location_id !== null && typeof drop_location_id !== 'string') return res.status(400).json({error:'Choose a valid campus drop location.'});
   const destination = delivery_requested ? drop_location_id : null;
   let client;
   try {
@@ -38,16 +38,6 @@ exports.bookRental = async (req, res) => {
       return res.status(400).json({ error: 'You cannot rent your own listing.' });
     }
 
-    const start = new Date(start_date);
-    const end = new Date(end_date);
-    start.setHours(0, 0, 0, 0);
-    end.setHours(0, 0, 0, 0);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (start < today || end < start) {
-      await client.query('ROLLBACK');
-      return res.status(400).json({ error: start < today ? 'start_date cannot be in the past.' : 'end_date cannot be before start_date.' });
-    }
     if (delivery_requested && (!listing.delivery_available || !destination)) {
       await client.query('ROLLBACK');
       return res.status(400).json({ error: 'Choose an available campus drop location for delivery.' });
@@ -65,7 +55,7 @@ exports.bookRental = async (req, res) => {
         AND NOT(r.end_date<$3 OR r.start_date>$4) AND p.status IN ('PENDING','PAID') LIMIT 1`, [borrower_id,listing_id,start_date,end_date]);
       if (priorPayment.rowCount) throw Object.assign(new Error('Open your existing Razorpay rental and check payment confirmation before starting another payment for these dates.'), {status:409});
     }
-    if (direct && !listing.is_active) throw Object.assign(new Error('This listing is no longer available.'), {status:409});
+    if (listing.is_active === false) throw Object.assign(new Error('This listing is no longer available.'), {status:409});
     if (direct && delivery_requested) {
       const locations = await client.query('SELECT id FROM campus_locations WHERE id=ANY($1::text[])', [[listing.pickup_location_id, destination]]);
       const known = new Set(locations.rows.map(row=>row.id));
@@ -106,16 +96,8 @@ exports.bookRental = async (req, res) => {
     let rental = existing.rows[0];
     const reused = Boolean(rental);
     if (!rental) {
-      const rental_days = Math.ceil((end - start) / 86400000) + 1;
-      const { calculatePricing } = require('../../shared/pricing-engine');
-      const pricing = calculatePricing({
-        dailyRent: listing.rent_price || listing.price || 0,
-        days: rental_days,
-        deliveryType: delivery_requested ? 'STANDARD' : 'SELF_PICKUP',
-        ownerLocation: listing.location || '',
-        itemValue: listing.price || 0,
-        customDeposit: listing.deposit,
-      });
+      const rental_days = rentalDays(start_date,end_date);
+      const pricing = require('../../shared/rental-quote').rentalQuote(listing,rental_days,delivery_requested,direct);
       const result = await client.query(
         `INSERT INTO rentals (
           listing_id, borrower_id, owner_id, start_date, end_date, rental_days,

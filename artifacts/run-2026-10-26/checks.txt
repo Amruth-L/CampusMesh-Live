@@ -1,0 +1,1112 @@
+
+> student-marketplace-backend@1.0.0 lint
+> eslint .
+
+
+> frontend@0.0.0 lint
+> oxlint
+
+
+> frontend@0.0.0 typecheck
+> tsc --noEmit
+
+
+> student-marketplace-backend@1.0.0 test
+> node --test
+
+TAP version 13
+# Subtest: sends one normalized college OTP with fixed sender and escaped content over bounded TLS SMTP
+ok 1 - sends one normalized college OTP with fixed sender and escaped content over bounded TLS SMTP
+  ---
+  duration_ms: 4.101709
+  ...
+# Subtest: reset purpose creates a fixed reset message and supports an omitted name
+ok 2 - reset purpose creates a fixed reset message and supports an omitted name
+  ---
+  duration_ms: 1.124125
+  ...
+# Subtest: rejects non-college recipients, arbitrary mail content and malformed requests before SMTP
+ok 3 - rejects non-college recipients, arbitrary mail content and malformed requests before SMTP
+  ---
+  duration_ms: 2.832458
+  ...
+# Subtest: missing or unsafe sender configuration fails closed before SMTP
+ok 4 - missing or unsafe sender configuration fails closed before SMTP
+  ---
+  duration_ms: 1.086958
+  ...
+# Subtest: requires acknowledgement for the exact intended recipient and a valid message identifier
+ok 5 - requires acknowledgement for the exact intended recipient and a valid message identifier
+  ---
+  duration_ms: 1.617667
+  ...
+# Subtest: classifies SMTP failures without leaking raw errors or retrying delivery
+ok 6 - classifies SMTP failures without leaking raw errors or retrying delivery
+  ---
+  duration_ms: 1.516291
+  ...
+# Subtest: a stalled SMTP send reaches the total deadline, closes once, and does not retry
+ok 7 - a stalled SMTP send reaches the total deadline, closes once, and does not retry
+  ---
+  duration_ms: 20.285375
+  ...
+# Subtest: the deadline destroys the owned TLS socket even before the handshake finishes
+ok 8 - the deadline destroys the owned TLS socket even before the handshake finishes
+  ---
+  duration_ms: 13.603666
+  ...
+# Subtest: the relay hands Nodemailer an authenticated TLS socket and destroys it after acceptance
+ok 9 - the relay hands Nodemailer an authenticated TLS socket and destroys it after acceptance
+  ---
+  duration_ms: 0.743875
+  ...
+# Subtest: hard-coded 123456 cannot verify or reset an unrelated code
+ok 10 - hard-coded 123456 cannot verify or reset an unrelated code
+  ---
+  duration_ms: 23.369083
+  ...
+# Subtest: missing, expired, invalid-expiry and exhausted codes fail closed
+ok 11 - missing, expired, invalid-expiry and exhausted codes fail closed
+  ---
+  duration_ms: 0.541542
+  ...
+# Subtest: verification code cannot reset a password; successful codes are single-use
+ok 12 - verification code cannot reset a password; successful codes are single-use
+  ---
+  duration_ms: 0.469417
+  ...
+# Subtest: five incorrect entries lock the code even if the next entry is correct
+ok 13 - five incorrect entries lock the code even if the next entry is correct
+  ---
+  duration_ms: 0.404208
+  ...
+# Subtest: resend cooldown is enforced on the server
+ok 14 - resend cooldown is enforced on the server
+  ---
+  duration_ms: 0.373083
+  ...
+# Subtest: email failure rolls back and never reports that the code was sent
+ok 15 - email failure rolls back and never reports that the code was sent
+  ---
+  duration_ms: 0.828875
+  ...
+# Subtest: successful send produces a six digit code and a resend deadline
+ok 16 - successful send produces a six digit code and a resend deadline
+  ---
+  duration_ms: 0.483833
+  ...
+# Subtest: malformed code rejected before database access
+ok 17 - malformed code rejected before database access
+  ---
+  duration_ms: 4.600917
+  ...
+# Subtest: failed signup delivery can resume, verify, sign in and reset with uppercase college email
+ok 18 - failed signup delivery can resume, verify, sign in and reset with uppercase college email
+  ---
+  duration_ms: 538.313292
+  ...
+# Subtest: non-college emails and malformed login payloads fail before database access
+ok 19 - non-college emails and malformed login payloads fail before database access
+  ---
+  duration_ms: 1.592709
+  ...
+# Subtest: profile editing cannot transfer verified email ownership
+ok 20 - profile editing cannot transfer verified email ownership
+  ---
+  duration_ms: 0.865666
+  ...
+# Subtest: Authkey ownership verification and automatic calls stay isolated, consented and deduplicated
+ok 21 - Authkey ownership verification and automatic calls stay isolated, consented and deduplicated # SKIP
+  ---
+  duration_ms: 1.604709
+  ...
+# Subtest: only canonical Indian mobile numbers are accepted
+ok 22 - only canonical Indian mobile numbers are accepted
+  ---
+  duration_ms: 2.006416
+  ...
+# Subtest: voice submission encodes text as one parameter and acknowledges submission only
+ok 23 - voice submission encodes text as one parameter and acknowledges submission only
+  ---
+  duration_ms: 6.833083
+  ...
+# Subtest: approved message template does not add SMS, fallback, events or billing actions
+ok 24 - approved message template does not add SMS, fallback, events or billing actions
+  ---
+  duration_ms: 0.581125
+  ...
+# Subtest: voice OTP sends approved 2FA template by POST and checks the server-held session
+ok 25 - voice OTP sends approved 2FA template by POST and checks the server-held session
+  ---
+  duration_ms: 18.584125
+  ...
+# Subtest: phone verification accepts only literal boolean success, not truthy strings
+ok 26 - phone verification accepts only literal boolean success, not truthy strings
+  ---
+  duration_ms: 3.570292
+  ...
+# Subtest: missing key, invalid recipient, bad template or invalid code never contact a provider
+ok 27 - missing key, invalid recipient, bad template or invalid code never contact a provider
+  ---
+  duration_ms: 0.965708
+  ...
+# Subtest: submission needs acknowledgement and a safe ID, not just HTTP 200
+ok 28 - submission needs acknowledgement and a safe ID, not just HTTP 200
+  ---
+  duration_ms: 2.41975
+  ...
+# Subtest: explicit rejection is distinguished from an unknown provider outcome
+ok 29 - explicit rejection is distinguished from an unknown provider outcome
+  ---
+  duration_ms: 0.811291
+  ...
+# Subtest: transport failure or timeout never retries or exposes a URL, key, phone or OTP
+ok 30 - transport failure or timeout never retries or exposes a URL, key, phone or OTP
+  ---
+  duration_ms: 3.808667
+  ...
+# Subtest: malformed or oversized responses stay unknown without leaking provider content
+ok 31 - malformed or oversized responses stay unknown without leaking provider content
+  ---
+  duration_ms: 3.804459
+  ...
+# Subtest: Authkey needs explicit voice approval, valid credentials and live mode
+ok 32 - Authkey needs explicit voice approval, valid credentials and live mode
+  ---
+  duration_ms: 1.141042
+  ...
+# Subtest: pending Authkey activation is visible and cannot enqueue or dispatch calls
+ok 33 - pending Authkey activation is visible and cannot enqueue or dispatch calls
+  ---
+  duration_ms: 28.616666
+  ...
+# Subtest: Authkey status separates voice readiness from OTP-template readiness and Twilio features
+ok 34 - Authkey status separates voice readiness from OTP-template readiness and Twilio features
+  ---
+  duration_ms: 1.6465
+  ...
+# Subtest: unknown provider fails closed even when usable Twilio credentials remain configured
+ok 35 - unknown provider fails closed even when usable Twilio credentials remain configured
+  ---
+  duration_ms: 0.818667
+  ...
+# Subtest: phone readiness asks for self-service voice verification and rejects unsupported destinations
+ok 36 - phone readiness asks for self-service voice verification and rejects unsupported destinations
+  ---
+  duration_ms: 0.911209
+  ...
+# Subtest: Authkey cannot accept or dispatch promotional recommendation consent
+ok 37 - Authkey cannot accept or dispatch promotional recommendation consent
+  ---
+  duration_ms: 1.525208
+  ...
+# Subtest: Authkey speech keeps rental identities private and promises no unsupported keypad or voice features
+ok 38 - Authkey speech keeps rental identities private and promises no unsupported keypad or voice features
+  ---
+  duration_ms: 2.502
+  ...
+# Subtest: booking calls deduplicate, preserve preferences, expire, and recheck four-day reminders
+ok 39 - booking calls deduplicate, preserve preferences, expire, and recheck four-day reminders # SKIP
+  ---
+  duration_ms: 3.1725
+  ...
+# Subtest: browser voice uses real authenticated account context without saving transcripts
+ok 40 - browser voice uses real authenticated account context without saving transcripts # SKIP
+  ---
+  duration_ms: 1.176958
+  ...
+# Subtest: HTTP and streaming authenticate verified users; tickets cannot cross accounts
+ok 41 - HTTP and streaming authenticate verified users; tickets cannot cross accounts
+  ---
+  duration_ms: 105.767042
+  ...
+# Subtest: Deepgram bridge waits for handshake, carries PCM and text, sanitizes events and closes resources
+ok 42 - Deepgram bridge waits for handshake, carries PCM and text, sanitizes events and closes resources
+  ---
+  duration_ms: 123.831333
+  ...
+# [voice] Deepgram session error INVALID_SETTINGS
+# Subtest: provider failure ends the session without exposing its description
+ok 43 - provider failure ends the session without exposing its description
+  ---
+  duration_ms: 41.898541
+  ...
+# Subtest: tickets expire, cannot be replayed, replace prior sessions and limit starts
+ok 44 - tickets expire, cannot be replayed, replace prior sessions and limit starts
+  ---
+  duration_ms: 1.953333
+  ...
+# Subtest: Deepgram settings use managed AI and expose only minimal owned records
+ok 45 - Deepgram settings use managed AI and expose only minimal owned records
+  ---
+  duration_ms: 1.354417
+  ...
+# Subtest: call window opens at 9 am and closes at 7 pm in India
+ok 46 - call window opens at 9 am and closes at 7 pm in India
+  ---
+  duration_ms: 77.308708
+  ...
+# Subtest: due stages use calendar days across months and years
+ok 47 - due stages use calendar days across months and years
+  ---
+  duration_ms: 0.118958
+  ...
+# [calls] webhook {
+#   method: 'POST',
+#   kind: 'status',
+#   status: 403,
+#   durationMs: 20,
+#   signaturePresent: false,
+#   callSidPresent: true
+# }
+# [calls] webhook {
+#   method: 'POST',
+#   kind: 'status',
+#   status: 403,
+#   durationMs: 4,
+#   signaturePresent: true,
+#   callSidPresent: true
+# }
+# [calls] webhook {
+#   method: 'POST',
+#   kind: 'status',
+#   status: 204,
+#   durationMs: 1,
+#   signaturePresent: true,
+#   callSidPresent: true
+# }
+# [calls] webhook {
+#   method: 'POST',
+#   kind: 'status',
+#   status: 204,
+#   durationMs: 0,
+#   signaturePresent: true,
+#   callSidPresent: true
+# }
+# [calls] webhook {
+#   method: 'POST',
+#   kind: 'voice',
+#   status: 200,
+#   durationMs: 3,
+#   signaturePresent: true,
+#   callSidPresent: true
+# }
+# Subtest: accepted Twilio callbacks remain authenticated after selecting Authkey or pausing new calls
+ok 48 - accepted Twilio callbacks remain authenticated after selecting Authkey or pausing new calls
+  ---
+  duration_ms: 108.000166
+  ...
+# Subtest: paid sample rental explains all blockers without suggesting a call was placed
+ok 49 - paid sample rental explains all blockers without suggesting a call was placed
+  ---
+  duration_ms: 1.8925
+  ...
+# Subtest: eligible fully paid real booking waits through quiet hours without claiming it is queued
+ok 50 - eligible fully paid real booking waits through quiet hours without claiming it is queued
+  ---
+  duration_ms: 0.116542
+  ...
+# Subtest: failed or completed call attempt remains visible alongside current blockers
+ok 51 - failed or completed call attempt remains visible alongside current blockers
+  ---
+  duration_ms: 0.095
+  ...
+# Subtest: consent, booking expiry, provider and phone remain independent requirements
+ok 52 - consent, booking expiry, provider and phone remain independent requirements
+  ---
+  duration_ms: 0.421167
+  ...
+# Subtest: account readiness does not confuse a connected provider with a verified recipient
+ok 53 - account readiness does not confuse a connected provider with a verified recipient
+  ---
+  duration_ms: 0.088625
+  ...
+# Subtest: rental call status is scoped to its borrower and does not read or create their preferences for nonowners
+ok 54 - rental call status is scoped to its borrower and does not read or create their preferences for nonowners
+  ---
+  duration_ms: 1.157416
+  ...
+# Subtest: external scheduler fails closed and invokes the worker only with its own secret
+ok 55 - external scheduler fails closed and invokes the worker only with its own secret
+  ---
+  duration_ms: 37.532458
+  ...
+# Subtest: trial URL authenticates only its own speech job before expiry
+ok 56 - trial URL authenticates only its own speech job before expiry
+  ---
+  duration_ms: 1.849583
+  ...
+# Subtest: normal provider signatures remain required for status callbacks
+ok 57 - normal provider signatures remain required for status callbacks
+  ---
+  duration_ms: 0.41825
+  ...
+# Subtest: probe URLs are scoped and cannot authorize a rental call
+ok 58 - probe URLs are scoped and cannot authorize a rental call
+  ---
+  duration_ms: 0.22975
+  ...
+# Subtest: login wake never starts a provider or queue while calling is unavailable
+ok 59 - login wake never starts a provider or queue while calling is unavailable
+  ---
+  duration_ms: 14.310459
+  ...
+# Subtest: concurrent login wakes return immediately and coalesce into one worker pass
+ok 60 - concurrent login wakes return immediately and coalesce into one worker pass
+  ---
+  duration_ms: 21.91825
+  ...
+# Subtest: sign-ins arriving during an active pass cause one additional pass
+ok 61 - sign-ins arriving during an active pass cause one additional pass
+  ---
+  duration_ms: 23.921125
+  ...
+# Subtest: call consent, deduplication, concurrency, cancellation and private support
+ok 62 - call consent, deduplication, concurrency, cancellation and private support # SKIP
+  ---
+  duration_ms: 1.128625
+  ...
+# Subtest: cart payment retry and recovery in an isolated schema
+ok 63 - cart payment retry and recovery in an isolated schema # SKIP
+  ---
+  duration_ms: 0.5065
+  ...
+# Subtest: isolated booking, paid rental details, delivery handovers and extension history
+ok 64 - isolated booking, paid rental details, delivery handovers and extension history # SKIP
+  ---
+  duration_ms: 0.404875
+  ...
+# Subtest: scores a courier route that covers the delivery
+ok 65 - scores a courier route that covers the delivery
+  ---
+  duration_ms: 1.571917
+  ...
+# Subtest: rejects a route with no meaningful delivery overlap
+ok 66 - rejects a route with no meaningful delivery overlap
+  ---
+  duration_ms: 0.7865
+  ...
+# Subtest: rejects a courier route that expires before handover completion
+ok 67 - rejects a courier route that expires before handover completion
+  ---
+  duration_ms: 0.440417
+  ...
+# Subtest: delivery offer lifecycle, acceptance races, and earnings
+ok 68 - delivery offer lifecycle, acceptance races, and earnings # SKIP
+  ---
+  duration_ms: 1.665
+  ...
+# Subtest: direct delivery completes only after courier receipt, for both rental legs
+ok 69 - direct delivery completes only after courier receipt, for both rental legs # SKIP
+  ---
+  duration_ms: 0.669167
+  ...
+# Subtest: UPI details require ownership acknowledgement and reject injected URI parameters
+ok 70 - UPI details require ownership acknowledgement and reject injected URI parameters
+  ---
+  duration_ms: 77.890833
+  ...
+# Subtest: direct rental lifecycle with manual receipt, privacy and no gateway money records
+ok 71 - direct rental lifecycle with manual receipt, privacy and no gateway money records # SKIP
+  ---
+  duration_ms: 0.171459
+  ...
+# Subtest: SES sends one UTF-8 OTP email over its API with a bounded request
+ok 72 - SES sends one UTF-8 OTP email over its API with a bounded request
+  ---
+  duration_ms: 2.748208
+  ...
+# Subtest: SES rejection propagates, logs no recipient/code/secrets and never falls back
+ok 73 - SES rejection propagates, logs no recipient/code/secrets and never falls back
+  ---
+  duration_ms: 0.510791
+  ...
+# Subtest: missing SES acknowledgement is a delivery failure
+ok 74 - missing SES acknowledgement is a delivery failure
+  ---
+  duration_ms: 0.223417
+  ...
+# Subtest: misconfigured email fails before any provider connection
+ok 75 - misconfigured email fails before any provider connection
+  ---
+  duration_ms: 0.254167
+  ...
+# Subtest: existing SMTP configuration is preserved and requires an accepted recipient
+ok 76 - existing SMTP configuration is preserved and requires an accepted recipient
+  ---
+  duration_ms: 0.416667
+  ...
+# Subtest: private mail function uses synchronous IAM invocation and reports only acknowledged sends
+ok 77 - private mail function uses synchronous IAM invocation and reports only acknowledged sends
+  ---
+  duration_ms: 0.637958
+  ...
+# Subtest: handover evidence works with the deployed listings-only S3 permission and stays outside public photo URLs
+ok 78 - handover evidence works with the deployed listings-only S3 permission and stays outside public photo URLs
+  ---
+  duration_ms: 1.313334
+  ...
+# Subtest: new and legacy evidence keys retain private five-minute downloads
+ok 79 - new and legacy evidence keys retain private five-minute downloads
+  ---
+  duration_ms: 0.183083
+  ...
+# Subtest: failed upload is cleaned up and logs diagnostics without provider messages or photo content
+ok 80 - failed upload is cleaned up and logs diagnostics without provider messages or photo content
+  ---
+  duration_ms: 2.47325
+  ...
+# Subtest: isolated courier eligibility and private handover evidence
+ok 81 - isolated courier eligibility and private handover evidence # SKIP
+  ---
+  duration_ms: 0.486541
+  ...
+# Subtest: demand forecasts abstain on sparse histories and respond to recent demand
+ok 82 - demand forecasts abstain on sparse histories and respond to recent demand
+  ---
+  duration_ms: 0.938708
+  ...
+# Subtest: new users remain neutral; reliability is bounded and evidence based
+ok 83 - new users remain neutral; reliability is bounded and evidence based
+  ---
+  duration_ms: 0.159
+  ...
+# Subtest: ETA regression uses holdout accuracy and falls back outside its range
+ok 84 - ETA regression uses holdout accuracy and falls back outside its range
+  ---
+  duration_ms: 0.444333
+  ...
+# Subtest: route matching does not count reverse-direction overlap
+ok 85 - route matching does not count reverse-direction overlap
+  ---
+  duration_ms: 2.507625
+  ...
+# Subtest: calling windows and due stages use India dates across UTC midnight
+ok 86 - calling windows and due stages use India dates across UTC midnight
+  ---
+  duration_ms: 19.182959
+  ...
+# Subtest: preview mode cannot reach provider or create call jobs
+ok 87 - preview mode cannot reach provider or create call jobs
+  ---
+  duration_ms: 1.281625
+  ...
+# Subtest: support retrieves policy and redacts obvious credentials/contact details
+ok 88 - support retrieves policy and redacts obvious credentials/contact details
+  ---
+  duration_ms: 0.899667
+  ...
+# Subtest: unavailable AI falls back to grounded help without claiming a model response
+ok 89 - unavailable AI falls back to grounded help without claiming a model response
+  ---
+  duration_ms: 0.472958
+  ...
+# Subtest: listing deletion preserves rental history and prevents new bookings
+ok 90 - listing deletion preserves rental history and prevents new bookings # SKIP
+  ---
+  duration_ms: 0.57375
+  ...
+# Subtest: live payment lifecycle with isolated database and fake gateway
+ok 91 - live payment lifecycle with isolated database and fake gateway # SKIP
+  ---
+  duration_ms: 0.473
+  ...
+# Subtest: new verified couriers are eligible without an invented perfect score
+ok 92 - new verified couriers are eligible without an invented perfect score
+  ---
+  duration_ms: 0.608084
+  ...
+# Subtest: established delivery history gates new assignments at the documented threshold
+ok 93 - established delivery history gates new assignments at the documented threshold
+  ---
+  duration_ms: 0.085917
+  ...
+# Subtest: condition evidence follows outbound and return custody stages
+ok 94 - condition evidence follows outbound and return custody stages
+  ---
+  duration_ms: 0.127
+  ...
+# Subtest: open availability, return destinations and marketplace demand
+ok 95 - open availability, return destinations and marketplace demand # SKIP
+  ---
+  duration_ms: 1.046084
+  ...
+# [Payment] Warning: Razorpay credentials are not fully configured in .env. Payment creation will remain unavailable.
+# [PaymentController] verifyDeposit error: Payment not verified
+# [PaymentController] Call worker wake deferred to scheduler.
+# Subtest: confirmed deposit responds before a nonblocking call-worker wake
+ok 96 - confirmed deposit responds before a nonblocking call-worker wake
+  ---
+  duration_ms: 116.085542
+  ...
+# Subtest: unverified deposit never wakes the call worker
+ok 97 - unverified deposit never wakes the call worker
+  ---
+  duration_ms: 0.7115
+  ...
+# Subtest: a worker error cannot change a committed payment or send a second response
+ok 98 - a worker error cannot change a committed payment or send a second response
+  ---
+  duration_ms: 0.706541
+  ...
+# [Payment] Warning: Razorpay credentials are not fully configured in .env. Payment creation will remain unavailable.
+# Subtest: payments reject simulation, tampered signatures, uncaptured and mismatched amounts
+ok 99 - payments reject simulation, tampered signatures, uncaptured and mismatched amounts
+  ---
+  duration_ms: 1.56875
+  ...
+# Subtest: recipient onboarding is durable, private and retry-safe in an isolated schema
+ok 100 - recipient onboarding is durable, private and retry-safe in an isolated schema # SKIP
+  ---
+  duration_ms: 0.792625
+  ...
+# Subtest: recipient onboarding, funded payouts and safe bank settlement in isolated schema
+ok 101 - recipient onboarding, funded payouts and safe bank settlement in isolated schema # SKIP
+  ---
+  duration_ms: 0.761166
+  ...
+# Subtest: real S3 listing photos: publish, gallery, ownership, replace and delete
+ok 102 - real S3 listing photos: publish, gallery, ownership, replace and delete # SKIP
+  ---
+  duration_ms: 0.760584
+  ...
+# Subtest: photos are decoded, resized and stripped of metadata before storage
+ok 103 - photos are decoded, resized and stripped of metadata before storage
+  ---
+  duration_ms: 14.220291
+  ...
+# Subtest: gallery uses stable URLs, preserves cover order and uploads a duplicate only once
+ok 104 - gallery uses stable URLs, preserves cover order and uploads a duplicate only once
+  ---
+  duration_ms: 15.087042
+  ...
+# Subtest: partial S3 failures clean up all attempted keys and do not return a gallery
+ok 105 - partial S3 failures clean up all attempted keys and do not return a gallery
+  ---
+  duration_ms: 11.593416
+  ...
+# Subtest: only existing listing photos can be retained, new external URLs and oversized galleries fail
+ok 106 - only existing listing photos can be retained, new external URLs and oversized galleries fail
+  ---
+  duration_ms: 1.778042
+  ...
+# Subtest: download signing only accepts canonical app photo URLs and expires in five minutes
+ok 107 - download signing only accepts canonical app photo URLs and expires in five minutes
+  ---
+  duration_ms: 1.344125
+  ...
+# Subtest: activated Route product is not a verified bank; pending, failed, missing and non-default destinations fail closed
+ok 108 - activated Route product is not a verified bank; pending, failed, missing and non-default destinations fail closed
+  ---
+  duration_ms: 3.31075
+  ...
+# Subtest: legacy product requires actual bank configuration and is never a fallback for composite onboarding
+ok 109 - legacy product requires actual bank configuration and is never a fallback for composite onboarding
+  ---
+  duration_ms: 0.44775
+  ...
+# Subtest: onboarding transport forwards the persisted idempotency key and never leaks provider error details
+ok 110 - onboarding transport forwards the persisted idempotency key and never leaks provider error details
+  ---
+  duration_ms: 1.300125
+  ...
+# Subtest: onboarding uses the authenticated email and validates consent, matching bank numbers and individual PAN
+ok 111 - onboarding uses the authenticated email and validates consent, matching bank numbers and individual PAN
+  ---
+  duration_ms: 0.494125
+  ...
+# Subtest: Route access denial is a platform activation error, not invalid bank details
+ok 112 - Route access denial is a platform activation error, not invalid bank details
+  ---
+  duration_ms: 0.238125
+  ...
+# Subtest: live collection credentials do not establish marketplace payout approval
+ok 113 - live collection credentials do not establish marketplace payout approval
+  ---
+  duration_ms: 0.292042
+  ...
+# Subtest: booking retries preserve one draft and only paid requests reach the lender
+ok 114 - booking retries preserve one draft and only paid requests reach the lender # SKIP
+  ---
+  duration_ms: 0.461209
+  ...
+# Subtest: captured rental payments recover once and become actionable lender requests
+ok 115 - captured rental payments recover once and become actionable lender requests # SKIP
+  ---
+  duration_ms: 1.108958
+  ...
+# [Payment] Warning: Razorpay credentials are not fully configured in .env. Payment creation will remain unavailable.
+# Subtest: simultaneous checkout retries create one payable order and reuse it
+ok 116 - simultaneous checkout retries create one payable order and reuse it
+  ---
+  duration_ms: 6.672958
+  ...
+# Subtest: paid provider order recovers a lost callback without a new charge
+ok 117 - paid provider order recovers a lost callback without a new charge
+  ---
+  duration_ms: 0.779958
+  ...
+# Subtest: callback and recovery racing settle once and preserve later booking state
+ok 118 - callback and recovery racing settle once and preserve later booking state
+  ---
+  duration_ms: 0.669917
+  ...
+# Subtest: reconciliation rejects another user before reading the provider
+ok 119 - reconciliation rejects another user before reading the provider
+  ---
+  duration_ms: 1.361583
+  ...
+# Subtest: recovery rejects mismatched local/provider amounts, currency and booking binding
+ok 120 - recovery rejects mismatched local/provider amounts, currency and booking binding
+  ---
+  duration_ms: 1.746709
+  ...
+# Subtest: authorized payment or paid order awaiting capture proof blocks another checkout
+ok 121 - authorized payment or paid order awaiting capture proof blocks another checkout
+  ---
+  duration_ms: 0.969583
+  ...
+# Subtest: provider uncertainty never produces a replacement charge
+ok 122 - provider uncertainty never produces a replacement charge
+  ---
+  duration_ms: 0.405166
+  ...
+# Subtest: provider timeout releases the rental lock and fails closed
+ok 123 - provider timeout releases the rental lock and fails closed
+  ---
+  duration_ms: 11.322541
+  ...
+# Subtest: simulation records never recover as paid or become a real checkout order
+ok 124 - simulation records never recover as paid or become a real checkout order
+  ---
+  duration_ms: 1.204542
+  ...
+# Subtest: unpaid reconciliation is read-only and callback cannot overwrite cancelled or mismatched rentals
+ok 125 - unpaid reconciliation is read-only and callback cannot overwrite cancelled or mismatched rentals
+  ---
+  duration_ms: 0.600208
+  ...
+# Subtest: reconciliation refuses multiple captured orders without making another charge
+ok 126 - reconciliation refuses multiple captured orders without making another charge
+  ---
+  duration_ms: 0.357542
+  ...
+# Subtest: reconciliation endpoint authenticates requests and ignores arbitrary provider IDs
+ok 127 - reconciliation endpoint authenticates requests and ignores arbitrary provider IDs
+  ---
+  duration_ms: 427.536833
+  ...
+# (node:35208) ExperimentalWarning: CommonJS module /Users/amruth/CampusMesh-Live/backend/test/review-regressions.test.js is loading ES Module /Users/amruth/CampusMesh-Live/shared/rental-dates.js using require().
+# Support for loading ES Module in require() is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: inclusive dates are calendar-based, including same day, leap/month boundary and invalid dates
+ok 128 - inclusive dates are calendar-based, including same day, leap/month boundary and invalid dates
+  ---
+  duration_ms: 24.820709
+  ...
+# Subtest: public listing contract cannot expose private or newly added database fields
+ok 129 - public listing contract cannot expose private or newly added database fields
+  ---
+  duration_ms: 0.478125
+  ...
+# Subtest: create/edit share field validation and preserve precise amounts
+ok 130 - create/edit share field validation and preserve precise amounts
+  ---
+  duration_ms: 0.981958
+  ...
+# Subtest: payment modes share authoritative price amounts and explicit due stages
+ok 131 - payment modes share authoritative price amounts and explicit due stages
+  ---
+  duration_ms: 0.277125
+  ...
+# Subtest: isolated API regression journeys
+ok 132 - isolated API regression journeys # SKIP
+  ---
+  duration_ms: 0.172334
+  ...
+# Subtest: successful sign-ins create consented, verified and deduplicated greeting calls
+ok 133 - successful sign-ins create consented, verified and deduplicated greeting calls # SKIP
+  ---
+  duration_ms: 0.464833
+  ...
+# Subtest: a newer login supersedes a queued greeting but does not silence an already ringing greeting
+ok 134 - a newer login supersedes a queued greeting but does not silence an already ringing greeting
+  ---
+  duration_ms: 5.497875
+  ...
+# Subtest: an authenticated callback before provider acknowledgment uses the stricter latest-login check
+ok 135 - an authenticated callback before provider acknowledgment uses the stricter latest-login check
+  ---
+  duration_ms: 1.001125
+  ...
+# Subtest: accepted sign-in speech still requires current consent, verified ownership and a fresh original event
+    # Subtest: opted out
+    ok 1 - opted out
+      ---
+      duration_ms: 0.38075
+      ...
+    # Subtest: phone unverified
+    ok 2 - phone unverified
+      ---
+      duration_ms: 1.104
+      ...
+    # Subtest: phone changed
+    ok 3 - phone changed
+      ---
+      duration_ms: 0.921667
+      ...
+    # Subtest: event missing
+    ok 4 - event missing
+      ---
+      duration_ms: 109.038167
+      ...
+    # Subtest: event expired
+    ok 5 - event expired
+      ---
+      duration_ms: 0.27675
+      ...
+    # Subtest: future event
+    ok 6 - future event
+      ---
+      duration_ms: 0.338542
+      ...
+    # Subtest: event phone differs
+    ok 7 - event phone differs
+      ---
+      duration_ms: 0.783417
+      ...
+    # Subtest: email unverified
+    ok 8 - email unverified
+      ---
+      duration_ms: 0.301792
+      ...
+    1..8
+ok 136 - accepted sign-in speech still requires current consent, verified ownership and a fresh original event
+  ---
+  duration_ms: 115.364084
+  ...
+# Subtest: the accepted-call exception requires recorded provider acceptance and the matching callback SID
+    # Subtest: not started
+    ok 1 - not started
+      ---
+      duration_ms: 0.449083
+      ...
+    # Subtest: no provider SID
+    ok 2 - no provider SID
+      ---
+      duration_ms: 0.088166
+      ...
+    # Subtest: invalid provider SID
+    ok 3 - invalid provider SID
+      ---
+      duration_ms: 0.066833
+      ...
+    # Subtest: dispatch pending
+    ok 4 - dispatch pending
+      ---
+      duration_ms: 0.41375
+      ...
+    # Subtest: queued
+    ok 5 - queued
+      ---
+      duration_ms: 0.350709
+      ...
+    # Subtest: completed
+    ok 6 - completed
+      ---
+      duration_ms: 0.223375
+      ...
+    # Subtest: other provider
+    ok 7 - other provider
+      ---
+      duration_ms: 0.262875
+      ...
+    # Subtest: wrong callback SID
+    ok 8 - wrong callback SID
+      ---
+      duration_ms: 0.184667
+      ...
+    1..8
+ok 137 - the accepted-call exception requires recorded provider acceptance and the matching callback SID
+  ---
+  duration_ms: 4.633625
+  ...
+# Subtest: announcements authorize each booking before using the shared audio cache
+ok 138 - announcements authorize each booking before using the shared audio cache
+  ---
+  duration_ms: 28.210125
+  ...
+# Subtest: bounded catch-up, provider failures, concurrency cache and replay limits
+ok 139 - bounded catch-up, provider failures, concurrency cache and replay limits
+  ---
+  duration_ms: 1.583458
+  ...
+# Subtest: HTTP audio authenticates and returns bytes, not credentials; unverified users cannot spend credits
+ok 140 - HTTP audio authenticates and returns bytes, not credentials; unverified users cannot spend credits
+  ---
+  duration_ms: 198.695917
+  ...
+# Subtest: voice events follow committed rental, delivery and payment evidence for the right participants
+ok 141 - voice events follow committed rental, delivery and payment evidence for the right participants # SKIP
+  ---
+  duration_ms: 1.132
+  ...
+# Subtest: trial speech survives removal of nested SSML and escapes item titles
+ok 142 - trial speech survives removal of nested SSML and escapes item titles
+  ---
+  duration_ms: 39.261875
+  ...
+# Subtest: full accounts retain the soft voice controls
+ok 143 - full accounts retain the soft voice controls
+  ---
+  duration_ms: 0.517167
+  ...
+# Subtest: signup, verified first sign-in, welcome consent and exactly one provider attempt
+ok 144 - signup, verified first sign-in, welcome consent and exactly one provider attempt # SKIP
+  ---
+  duration_ms: 0.4805
+  ...
+# Subtest: signup phone normalization accepts Indian numbers and explicit country codes
+ok 145 - signup phone normalization accepts Indian numbers and explicit country codes
+  ---
+  duration_ms: 0.717584
+  ...
+# Subtest: welcome speech is generic and preview mode never queues or dispatches a call
+ok 146 - welcome speech is generic and preview mode never queues or dispatches a call
+  ---
+  duration_ms: 1.079125
+  ...
+# [Payment] Warning: Razorpay credentials are not fully configured in .env. Payment creation will remain unavailable.
+# Subtest: Wish prices use exact paise and signatures fail closed
+ok 147 - Wish prices use exact paise and signatures fail closed
+  ---
+  duration_ms: 0.96525
+  ...
+# Subtest: Wish claim, quote, verified payment and recipient handover lifecycle
+ok 148 - Wish claim, quote, verified payment and recipient handover lifecycle # SKIP
+  ---
+  duration_ms: 0.05875
+  ...
+1..148
+# tests 164
+# suites 0
+# pass 141
+# fail 0
+# cancelled 0
+# skipped 23
+# todo 0
+# duration_ms 2429.261667
+
+> frontend@0.0.0 test
+> node --test test/*.test.js
+
+TAP version 13
+# Subtest: autoplay fallback retains update, then plays once after a gesture and deduplicates polling
+ok 1 - autoplay fallback retains update, then plays once after a gesture and deduplicates polling
+  ---
+  duration_ms: 6.500333
+  ...
+# Subtest: logout/account switch or hidden tab aborts pending audio without late playback
+ok 2 - logout/account switch or hidden tab aborts pending audio without late playback
+  ---
+  duration_ms: 1.923708
+  ...
+# Subtest: mute stops audio and suppresses replay, but other accounts have independent history
+ok 3 - mute stops audio and suppresses replay, but other accounts have independent history
+  ---
+  duration_ms: 3.2425
+  ...
+# Subtest: network failure waits for explicit retry, never marks an unheard update delivered
+ok 4 - network failure waits for explicit retry, never marks an unheard update delivered
+  ---
+  duration_ms: 3.010834
+  ...
+# Subtest: expired offers and superseded payment updates cannot block later announcements
+ok 5 - expired offers and superseded payment updates cannot block later announcements
+  ---
+  duration_ms: 2.147958
+  ...
+# Subtest: outward checkpoints advance one step at a time from actual confirmations
+ok 6 - outward checkpoints advance one step at a time from actual confirmations
+  ---
+  duration_ms: 0.953292
+  ...
+# Subtest: active rental or completed label cannot fabricate pickup, handover or fee receipt
+ok 7 - active rental or completed label cannot fabricate pickup, handover or fee receipt
+  ---
+  duration_ms: 0.18775
+  ...
+# Subtest: return uses its own pickup, handover and payment instead of reusing outward ticks
+ok 8 - return uses its own pickup, handover and payment instead of reusing outward ticks
+  ---
+  duration_ms: 1.455375
+  ...
+# Subtest: zero-fee delivery has no fee step, and gateway booking precedes approval and deposit
+ok 9 - zero-fee delivery has no fee step, and gateway booking precedes approval and deposit
+  ---
+  duration_ms: 0.146208
+  ...
+# Subtest: cancelled or failed deliveries do not suggest a next actionable step
+ok 10 - cancelled or failed deliveries do not suggest a next actionable step
+  ---
+  duration_ms: 0.094208
+  ...
+# Subtest: delivery availability round-trips local time across offsets and midnight
+ok 11 - delivery availability round-trips local time across offsets and midnight
+  ---
+  duration_ms: 6.5295
+  ...
+# Subtest: accepted direct UPI requests remain ongoing before payment, despite legacy HISTORY phase
+ok 12 - accepted direct UPI requests remain ongoing before payment, despite legacy HISTORY phase
+  ---
+  duration_ms: 0.511917
+  ...
+# Subtest: acceptance moves a new request into accepted rentals
+ok 13 - acceptance moves a new request into accepted rentals
+  ---
+  duration_ms: 0.0865
+  ...
+# Subtest: completed delivery does not mark an active rental completed
+ok 14 - completed delivery does not mark an active rental completed
+  ---
+  duration_ms: 0.0655
+  ...
+# Subtest: return approval, inspection, refund and remaining return settlement stay visible
+ok 15 - return approval, inspection, refund and remaining return settlement stay visible
+  ---
+  duration_ms: 0.139292
+  ...
+# Subtest: closed rentals go to history even when their last delivery was a return
+ok 16 - closed rentals go to history even when their last delivery was a return
+  ---
+  duration_ms: 0.076542
+  ...
+# Subtest: unpaid requests offer Pay only to the payer
+ok 17 - unpaid requests offer Pay only to the payer
+  ---
+  duration_ms: 0.469625
+  ...
+# Subtest: reported transfers ask the recipient to confirm, never the sender to pay twice
+ok 18 - reported transfers ask the recipient to confirm, never the sender to pay twice
+  ---
+  duration_ms: 0.071542
+  ...
+# Subtest: deposit refunds reverse payer and recipient roles
+ok 19 - deposit refunds reverse payer and recipient roles
+  ---
+  duration_ms: 0.060917
+  ...
+# Subtest: confirmed receipts go to history and actionable payments precede waiting entries
+ok 20 - confirmed receipts go to history and actionable payments precede waiting entries
+  ---
+  duration_ms: 0.516
+  ...
+# Subtest: disputed payments never offer another payment action
+ok 21 - disputed payments never offer another payment action
+  ---
+  duration_ms: 0.0725
+  ...
+# Subtest: only unpaid booking drafts can launch rental checkout
+ok 22 - only unpaid booking drafts can launch rental checkout
+  ---
+  duration_ms: 0.509542
+  ...
+# Subtest: recorded rental payment blocks another payment even with stale draft status
+ok 23 - recorded rental payment blocks another payment even with stale draft status
+  ---
+  duration_ms: 0.18375
+  ...
+# Subtest: real checkout requires a server-issued order, key and positive INR amount
+ok 24 - real checkout requires a server-issued order, key and positive INR amount
+  ---
+  duration_ms: 0.552625
+  ...
+# Subtest: simulation never opens real checkout or invents a payment confirmation
+ok 25 - simulation never opens real checkout or invents a payment confirmation
+  ---
+  duration_ms: 0.159292
+  ...
+# Subtest: confirmation retries reuse the signed receipt for the same provider order
+ok 26 - confirmation retries reuse the signed receipt for the same provider order
+  ---
+  duration_ms: 1.882125
+  ...
+# Subtest: incomplete, mismatched or fake receipts cannot verify a payment
+ok 27 - incomplete, mismatched or fake receipts cannot verify a payment
+  ---
+  duration_ms: 0.27
+  ...
+# Subtest: active rentals and pending handovers stay visible in Active
+ok 28 - active rentals and pending handovers stay visible in Active
+  ---
+  duration_ms: 1.010916
+  ...
+# Subtest: Requested includes booking and owner approval states
+ok 29 - Requested includes booking and owner approval states
+  ---
+  duration_ms: 0.089041
+  ...
+# Subtest: rental fee payment completes only Payment and waits for owner approval
+ok 30 - rental fee payment completes only Payment and waits for owner approval
+  ---
+  duration_ms: 0.626125
+  ...
+# Subtest: owner approval and fully paid bookings do not complete physical handover
+ok 31 - owner approval and fully paid bookings do not complete physical handover
+  ---
+  duration_ms: 1.786458
+  ...
+# Subtest: confirmed delivery completes Handover and return remains pending until confirmed
+ok 32 - confirmed delivery completes Handover and return remains pending until confirmed
+  ---
+  duration_ms: 0.229792
+  ...
+# Subtest: unpaid, stopped, unknown or refunded bookings never invent physical handover
+ok 33 - unpaid, stopped, unknown or refunded bookings never invent physical handover
+  ---
+  duration_ms: 0.114375
+  ...
+# Subtest: refund receipt gates rental closure after owner inspection and refund report
+ok 34 - refund receipt gates rental closure after owner inspection and refund report
+  ---
+  duration_ms: 0.304292
+  ...
+# Subtest: courier return acceptance, physical receipt, inspection and fee stay separate
+ok 35 - courier return acceptance, physical receipt, inspection and fee stay separate
+  ---
+  duration_ms: 0.216958
+  ...
+# Subtest: streams only after provider readiness, mutes mic, plays provider PCM and interrupts
+ok 36 - streams only after provider readiness, mutes mic, plays provider PCM and interrupts
+  ---
+  duration_ms: 1.429834
+  ...
+# Subtest: permission denial never connects provider and closes audio resources
+ok 37 - permission denial never connects provider and closes audio resources
+  ---
+  duration_ms: 0.290583
+  ...
+# Subtest: ending while permission is pending stops late microphone stream and never connects
+ok 38 - ending while permission is pending stops late microphone stream and never connects
+  ---
+  duration_ms: 0.175958
+  ...
+# Subtest: network failure and expiry stop mic and prevent late speech
+ok 39 - network failure and expiry stop mic and prevent late speech
+  ---
+  duration_ms: 0.313292
+  ...
+# Subtest: unsupported browsers do not request audio; playback can be muted separately
+ok 40 - unsupported browsers do not request audio; playback can be muted separately
+  ---
+  duration_ms: 0.235667
+  ...
+1..40
+# tests 40
+# suites 0
+# pass 40
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 228.287791

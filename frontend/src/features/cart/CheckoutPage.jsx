@@ -3,7 +3,7 @@ import useDirectMode from '../direct-upi/useDirectMode';
 import { useState, useRef } from 'react';
 import { CalendarDays, ChevronLeft, LockKeyhole, MapPin, ShieldCheck } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/auth-context';
 import { listingFallback } from '../../lib/assets';
 import TestPaymentNotice from '../../components/TestPaymentNotice';
 import { validateRentalOrder } from '../../lib/rental-checkout';

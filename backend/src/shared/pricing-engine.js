@@ -96,7 +96,7 @@ function calculatePlatformFee(rentalFee) {
  * Above ₹10000: 15%
  */
 function calculateSuggestedDeposit(itemValue, customDepositOverride = null) {
-  if (customDepositOverride !== null && customDepositOverride !== undefined && !isNaN(parseFloat(customDepositOverride)) && parseFloat(customDepositOverride) > 0) {
+  if (customDepositOverride !== null && customDepositOverride !== undefined && !isNaN(parseFloat(customDepositOverride)) && parseFloat(customDepositOverride) >= 0) {
     return Number(parseFloat(customDepositOverride).toFixed(2));
   }
 

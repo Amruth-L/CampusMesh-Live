@@ -1,3 +1,5 @@
+const { publicListing } = require('./public-listing');
+const { listingInput } = require('./listing-input');
 const pool = require('../../config/database');
 const photos = require('./photo-storage');
 const { submittedRentalSql, bookingPaymentReceivedSql } = require('../rentals/booking-state');
@@ -32,41 +34,12 @@ exports.createListing = async (req, res) => {
       pickup_time,
       image_urls,
       pickup_location_id,
-    } = req.body;
+    } = listingInput(req.body);
 
     const owner_id = req.user.id;
 
-    // Validation
-    if (!title || !title.trim()) {
-      return res.status(400).json({ error: 'Product Title is required.' });
-    }
-    if (!category || !category.trim()) {
-      return res.status(400).json({ error: 'Category is required.' });
-    }
-    if (!description || !description.trim()) {
-      return res.status(400).json({ error: 'Description is required.' });
-    }
-    if (description.length > 500) {
-      return res.status(400).json({ error: 'Description cannot exceed 500 characters.' });
-    }
-    if (!image_url && (!image_urls || image_urls.length === 0)) {
-      return res.status(400).json({ error: 'At least one image is required.' });
-    }
-    if (!location || !location.trim()) {
-      return res.status(400).json({ error: 'Pickup location is required.' });
-    }
-
-    const sellPrice = parseFloat(price) || 0;
-    const rentPrice = parseFloat(rent_price) || 0;
-    const securityDeposit = parseFloat(deposit) || 0;
-
-    if (sellPrice <= 0 && rentPrice <= 0) {
-      return res.status(400).json({ error: 'Either Selling Price or Rental Price must be provided.' });
-    }
-    if (sellPrice > 0 && securityDeposit > sellPrice) {
-      return res.status(400).json({ error: 'Security deposit cannot exceed the selling price.' });
-    }
-
+    const sellPrice = price, rentPrice = rent_price, securityDeposit = deposit;
+    if (!image_url && !image_urls?.length) return res.status(400).json({ error: 'At least one image is required.' });
     prepared = await photos.prepare({ ownerId: owner_id,
       images: image_urls?.length ? image_urls : [image_url], cover: image_url || image_urls?.[0] });
 
@@ -103,7 +76,7 @@ exports.createListing = async (req, res) => {
     // Check references before deleting: a lost DB response may follow a commit.
     if (prepared) await removeUnusedPhotos(prepared.images);
     console.error('[listing] create failed', error.name);
-    res.status(error.photoError ? error.status : 500).json({ error: error.photoError ? error.message : 'Could not publish your listing. Please try again.' });
+    res.status(error.photoError || error.status === 400 ? error.status : 500).json({ error: error.photoError || error.status === 400 ? error.message : 'Could not publish your listing. Please try again.' });
   }
 };
 
@@ -127,7 +100,7 @@ exports.getListings = async (req, res) => {
           AND i.user_id <> item.owner_id AND viewer.email NOT LIKE 'qa-%' AND item.demo_slug IS NULL
         GROUP BY i.listing_id
       )
-      SELECT l.*, u.name as owner_name, u.email as owner_email,
+      SELECT l.*, u.name as owner_name,
         COALESCE(d.paid_rentals_30d,0) AS paid_rentals_30d, COALESCE(i.viewers_7d,0) AS viewers_7d
       FROM listings l
       JOIN users u ON l.owner_id = u.id
@@ -135,7 +108,7 @@ exports.getListings = async (req, res) => {
       WHERE COALESCE(l.is_active, TRUE) = TRUE AND l.deleted_at IS NULL
       ORDER BY l.created_at DESC
     `);
-    res.json(listings.rows);
+    res.json(listings.rows.map(publicListing));
   } catch (error) {
     console.error(error.message);
     res.status(500).json({ error: 'Server Error' });
@@ -164,7 +137,7 @@ exports.getAvailability = async (req, res) => {
     const exists = await pool.query('SELECT id FROM listings WHERE id=$1 AND deleted_at IS NULL', [req.params.id]);
     if (!exists.rowCount) return res.status(404).json({ error: 'Listing not found.' });
     const { rows } = await pool.query(
-      `SELECT start_date,end_date FROM rentals r
+      `SELECT start_date::text,end_date::text FROM rentals r
       WHERE r.listing_id=$1 AND r.status NOT IN ('COMPLETED','CANCELLED','REJECTED','DEPOSIT_REFUNDED')
       AND ${submittedRentalSql('r')}
       AND r.end_date >= CURRENT_DATE ORDER BY r.start_date`,
@@ -213,9 +186,9 @@ exports.getListingById = async (req, res) => {
     console.log(`[Backend Debug] Executing database query for listing ID: "${id}"`);
     const listing = await pool.query(
       `
-      SELECT l.*, u.name as owner_name, u.email as owner_email 
-      FROM listings l 
-      JOIN users u ON l.owner_id = u.id 
+      SELECT l.*, u.name as owner_name
+      FROM listings l
+      JOIN users u ON l.owner_id = u.id
       WHERE l.id = $1 AND l.deleted_at IS NULL
     `,
       [id],
@@ -227,7 +200,7 @@ exports.getListingById = async (req, res) => {
     }
 
     console.log(`[Backend Debug] Listing found:`, listing.rows[0].title);
-    res.json(listing.rows[0]);
+    res.json(publicListing(listing.rows[0]));
   } catch (error) {
     console.error(`[Backend Debug] Database query failed:`, error.message || error);
     res.status(500).json({ error: 'Database query execution error.' });
@@ -238,7 +211,7 @@ exports.updateListing = async (req, res) => {
   let prepared;
   try {
     const { id } = req.params;
-    const { title, description, price, category, image_url, image_urls, is_active } = req.body;
+    const { image_url, image_urls } = req.body;
     const owner_id = req.user.id;
 
     // Check if listing exists and belongs to user
@@ -252,6 +225,7 @@ exports.updateListing = async (req, res) => {
     }
 
     const current = listingCheck.rows[0];
+    const value = listingInput(req.body, current);
     const previousPhotos = galleryOf(current);
     if (image_url !== undefined || image_urls !== undefined) {
       const images = image_urls !== undefined ? image_urls :
@@ -260,19 +234,12 @@ exports.updateListing = async (req, res) => {
         cover: image_url ?? images[0], existing: previousPhotos });
     }
     const updatedListing = await pool.query(
-      `UPDATE listings SET title=$1,description=$2,price=$3,category=$4,image_url=$5,is_active=$6,image_urls=$7,updated_at=NOW()
-       WHERE id=$8 AND owner_id=$9 AND deleted_at IS NULL RETURNING *`,
-      [
-        title ?? current.title,
-        description ?? current.description,
-        price ?? current.price,
-        category ?? current.category,
-        prepared?.cover ?? current.image_url,
-        is_active ?? current.is_active,
-        prepared?.images ?? current.image_urls,
-        id,
-        owner_id,
-      ],
+      `UPDATE listings SET title=$1,description=$2,price=$3,category=$4,image_url=$5,is_active=$6,image_urls=$7,
+       rent_price=$8,deposit=$9,condition=$10,location=$11,pickup_location_id=$12,delivery_available=$13,delivery_charge=$14,pickup_time=$15,updated_at=NOW()
+       WHERE id=$16 AND owner_id=$17 AND deleted_at IS NULL RETURNING *`,
+      [value.title,value.description,value.price,value.category,prepared?.cover ?? current.image_url,value.is_active,
+        prepared?.images ?? current.image_urls,value.rent_price,value.deposit,value.condition,value.location,
+        value.pickup_location_id || null,value.delivery_available,value.delivery_charge,value.pickup_time,id,owner_id],
     );
 
     if (!updatedListing.rowCount) {
@@ -284,7 +251,7 @@ exports.updateListing = async (req, res) => {
   } catch (error) {
     if (prepared) await removeUnusedPhotos(prepared.images);
     console.error('[listing] update failed', error.name);
-    res.status(error.photoError ? error.status : 500).json({ error: error.photoError ? error.message : 'Could not update your listing.' });
+    res.status(error.photoError || error.status === 400 ? error.status : 500).json({ error: error.photoError || error.status === 400 ? error.message : 'Could not update your listing.' });
   }
 };
 

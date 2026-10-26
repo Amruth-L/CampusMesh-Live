@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, Mail, Pencil, ShieldCheck } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/auth-context';
 import Brand from '../../components/Brand';
 import OtpInput from '../../components/OtpInput';
 import useOtpCooldown from './useOtpCooldown';
@@ -35,7 +35,7 @@ export default function VerifyEmailPage() {
   };
   const handleResend = async () => {
     if (busy || remaining || verified) return;
-    if (!validEmail) { setError('Enter your DBIT email (@dbit.co.in).'); return; }
+    if (!validEmail) { setError('Enter your DBIT campus email (@dbit.co.in).'); return; }
     setBusy('resend'); setError(''); setSuccess('');
     try {
       const result = await resendOtp(api, { email: email.trim().toLowerCase() });
@@ -57,14 +57,14 @@ export default function VerifyEmailPage() {
           <p className="eyebrow mt-7">{verified ? 'ALL SET' : 'EMAIL VERIFICATION'}</p>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight">{verified ? 'Email verified' : 'Verify your email'}</h2>
           {!verified && <>
-            <p className="mt-3 text-sm leading-6 text-ink/65">{codeSent ? 'Enter the code sent to' : 'Enter your email code, or request a new one for'}<br /><strong className="break-all text-ink">{email || 'your DBIT email'}</strong></p>
+            <p className="mt-3 text-sm leading-6 text-ink/65">{codeSent ? 'Enter the code sent to' : 'Enter your email code, or request a new one for'}<br /><strong className="break-all text-ink">{email || 'your DBIT campus email'}</strong></p>
             {!editing && <button onClick={() => { setEditing(true); setOtp(''); setError(''); setSuccess(''); }} className="mt-2 inline-flex items-center gap-1 text-sm font-bold text-mesh-600" disabled={!!busy}><Pencil size={13} /> Change email</button>}
           </>}
           {error && <p role="alert" className="mt-5 rounded-xl bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</p>}
           {success && <p role="status" className="mt-5 rounded-xl bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">{success}</p>}
           {verified ? <button onClick={() => navigate('/login')} className="brand-button mt-7 w-full">Continue to sign in <ArrowRight size={18} /></button> : <>
             <form onSubmit={handleVerify} className="mt-7 space-y-6">
-              {editing && <label className="block text-sm font-bold">University email<input type="email" required value={email} disabled={!!busy} onChange={event => { setEmail(event.target.value); setOtp(''); setError(''); setSuccess(''); setCodeSent(false); }} placeholder="you@dbit.co.in" autoComplete="email" className="mt-2 h-12 w-full rounded-xl border border-ink/20 px-4" /></label>}
+              {editing && <label className="block text-sm font-bold">DBIT campus email<input type="email" required value={email} disabled={!!busy} onChange={event => { setEmail(event.target.value); setOtp(''); setError(''); setSuccess(''); setCodeSent(false); }} placeholder="you@dbit.co.in" autoComplete="email" className="mt-2 h-12 w-full rounded-xl border border-ink/20 px-4" /></label>}
               <OtpInput value={otp} onChange={(code: string) => { setOtp(code); setError(''); }} disabled={!!busy} invalid={!!error} autoFocus={!!email} />
               <button type="submit" disabled={!!busy || otp.length !== 6 || !validEmail} className="brand-button w-full">{busy === 'verify' ? 'Verifying…' : <>Verify & continue <ArrowRight size={18} /></>}</button>
             </form>

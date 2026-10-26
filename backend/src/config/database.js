@@ -1,6 +1,9 @@
 const pg = require('pg');
 const { Pool } = pg;
 
+// SQL DATE is a campus calendar date, not a midnight instant in the host timezone.
+pg.types.setTypeParser(1082, value => value);
+
 // The schema stores timestamps without a timezone while the database session
 // runs in UTC. node-postgres otherwise interprets them in the host timezone,
 // which can make a valid courier route look expired to the matcher.

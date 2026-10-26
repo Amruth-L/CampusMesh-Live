@@ -238,3 +238,11 @@ manual confirmation, deposit gating, verified courier fees, refund confirmation,
 and exclusion from Razorpay payout records. Never use a production schema for
 these integration tests. A real UPI transfer must additionally be checked in both
 participants' bank histories; passing application tests does not prove bank credit.
+
+## Current-code review and isolated QA
+
+See the [25 October review checklist and evidence](docs/CURRENT_REVIEW.md) and
+[isolated regression/browser testing instructions](docs/REVIEW_TESTING.md).
+The review adds migration `022_login_throttle.sql` and shared helpers under
+`shared/`; deploy the repository root. Configure `TRUST_PROXY_HOPS` for your
+verified ingress topology before relying on client-IP throttling behind a proxy.

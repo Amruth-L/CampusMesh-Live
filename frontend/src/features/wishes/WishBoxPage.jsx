@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Sparkles, MapPin, ArrowRight, Bell, CheckCircle2 } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/auth-context";
 import {
   normalizeCampusLocations,
   campusLocationLabel,

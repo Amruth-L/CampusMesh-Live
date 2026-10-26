@@ -11,7 +11,7 @@ import {
   Truck,
   UploadCloud,
 } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/auth-context";
 import { openRazorpayCheckout } from "../../utils/RazorpayService";
 import { campusLocationLabel, normalizeCampusLocations } from "../../lib/campus";
 

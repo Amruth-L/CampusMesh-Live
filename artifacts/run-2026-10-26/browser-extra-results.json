@@ -1,0 +1,23 @@
+{
+  "createEdit": "passed",
+  "recoverableFailure": "passed",
+  "shortViewport": {
+    "top": 158,
+    "bottom": 202,
+    "height": 360
+  },
+  "scroll": {
+    "before": 400,
+    "forward": 0,
+    "after": 400
+  },
+  "renderedColors": {
+    "button": "rgb(255, 255, 255)",
+    "buttonBackground": "rgb(35, 116, 66)",
+    "muted": "#59665e",
+    "width": 390,
+    "height": 720,
+    "touch": 1
+  },
+  "physicalDevice": false
+}

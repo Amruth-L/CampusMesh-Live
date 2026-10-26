@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, Heart, MapPin, ShieldCheck, Truck } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/auth-context";
 import { listingImage } from "../../lib/assets";
 import RentalDialog from "./RentalDialog";
 
