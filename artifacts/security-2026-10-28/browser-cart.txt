@@ -1,0 +1,1 @@
+PASS cart partial failure, retry skips successful item (3 requests, 2 rentals)

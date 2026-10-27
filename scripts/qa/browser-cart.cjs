@@ -1,3 +1,4 @@
+const browserToken = require("./browser-auth.cjs");
 const { chromium } = require("playwright-core");
 const fs = require("fs"),
   assert = require("assert/strict");
@@ -27,6 +28,7 @@ const f = JSON.parse(
   }).format(new Date(Date.now() + 14 * 86400000));
   const p = await c.newPage();
   p.setDefaultTimeout(10000);
+  f.users[1].token = await browserToken(p.request, base, f.users[1]);
   await p.goto(base);
   await p.evaluate((t) => localStorage.setItem("token", t), f.users[1].token);
   const headers = { Authorization: "Bearer " + f.users[1].token };

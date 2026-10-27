@@ -1,0 +1,47 @@
+TAP version 13
+# [Payment] Warning: Razorpay credentials are not fully configured in .env. Payment creation will remain unavailable.
+# Subtest: captured rental payments recover once and become actionable lender requests
+    # Subtest: unverified drafts are hidden and another user cannot recover their payments
+    ok 1 - unverified drafts are hidden and another user cannot recover their payments
+      ---
+      duration_ms: 9.647
+      ...
+    # Subtest: captured gateway payment recovers the missed callback and exposes exactly one Accept request
+    ok 2 - captured gateway payment recovers the missed callback and exposes exactly one Accept request
+      ---
+      duration_ms: 7.308958
+      ...
+    # Subtest: repeat reconciliation and checkout reopening never duplicate settlement or create orders
+    ok 3 - repeat reconciliation and checkout reopening never duplicate settlement or create orders
+      ---
+      duration_ms: 16.452375
+      ...
+    # Subtest: an unpaid abandoned checkout stays hidden and reuses its existing order
+    ok 4 - an unpaid abandoned checkout stays hidden and reuses its existing order
+      ---
+      duration_ms: 17.170042
+      ...
+    # Subtest: authorization without capture cannot become paid or reopen the gateway
+    ok 5 - authorization without capture cannot become paid or reopen the gateway
+      ---
+      duration_ms: 9.388291
+      ...
+    # Subtest: concurrent verified callback and reconciliation serialize into one settlement
+    ok 6 - concurrent verified callback and reconciliation serialize into one settlement
+      ---
+      duration_ms: 26.792416
+      ...
+    1..6
+ok 1 - captured rental payments recover once and become actionable lender requests
+  ---
+  duration_ms: 168.431917
+  ...
+1..1
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 235.920833

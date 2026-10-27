@@ -1,0 +1,41 @@
+TAP version 13
+# Subtest: isolated courier eligibility and private handover evidence
+    # Subtest: new partner score and authorization
+    ok 1 - new partner score and authorization
+      ---
+      duration_ms: 8.541292
+      ...
+    # Subtest: a valid OTP cannot bypass missing pickup photos
+    ok 2 - a valid OTP cannot bypass missing pickup photos
+      ---
+      duration_ms: 119.900167
+      ...
+    # Subtest: drop-off requires its own photo and participant verification
+    ok 3 - drop-off requires its own photo and participant verification
+      ---
+      duration_ms: 16.824459
+      ...
+    # Subtest: return pickup and return receipt each require separate evidence
+    ok 4 - return pickup and return receipt each require separate evidence
+      ---
+      duration_ms: 21.928875
+      ...
+    # Subtest: failures affect established eligibility; declines and cancellations do not
+    ok 5 - failures affect established eligibility; declines and cancellations do not
+      ---
+      duration_ms: 10.139917
+      ...
+    1..5
+ok 1 - isolated courier eligibility and private handover evidence
+  ---
+  duration_ms: 300.072417
+  ...
+1..1
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 374.619208

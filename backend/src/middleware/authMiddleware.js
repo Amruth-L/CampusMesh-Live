@@ -1,6 +1,6 @@
-const jwt = require('jsonwebtoken');
+const { authenticateToken } = require('../security/session');
 
-const authMiddleware = (req, res, next) => {
+const createAuthMiddleware = (db) => async (req, res, next) => {
   const authHeader = req.header('Authorization');
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -10,12 +10,15 @@ const authMiddleware = (req, res, next) => {
   const token = authHeader.split(' ')[1];
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // add user to request, sets req.user.id
+    req.user = await authenticateToken(token, db);
+    res.set('Cache-Control', 'no-store');
     next();
-  } catch {
-    res.status(403).json({ error: 'Invalid token.' });
+  } catch (error) {
+    res
+      .status(error.status || 503)
+      .json({ error: error.status ? error.message : 'We could not check your session. Please retry.' });
   }
 };
 
-module.exports = authMiddleware;
+module.exports = createAuthMiddleware();
+module.exports.withDatabase = createAuthMiddleware;

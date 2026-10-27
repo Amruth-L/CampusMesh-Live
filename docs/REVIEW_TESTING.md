@@ -41,10 +41,13 @@ In a second terminal with the same `NODE_PATH` and browser executable:
 node scripts/qa/browser.cjs
 node scripts/qa/browser-extra.cjs
 node scripts/qa/browser-cart.cjs
+node scripts/qa/browser-security.cjs
 ```
 
 Use a fresh browser-server fixture/schema for each complete run. The scripts perform real local mutations and should run in that order. They block browser requests to external services. The server clears inherited service configuration before startup, leaves calls in preview and uses fake photo persistence. Do not run a frontend rebuild during browser tests: hashed chunks can change underneath an open page.
 
 Browser evidence is written into `artifacts/review/`. The first script covers 36 layout checks and keyboard/auth/request/edit behavior. The second covers touch, image preparation, publishing failures/retry, create/edit/reload, short viewport and scroll restoration. The third checks that partial cart retries do not resubmit successful requests.
+
+The fourth checks failed logout/retry, another open tab, and rejection of a copied token after successful logout. Independent journeys obtain fresh local QA login tokens because logout now revokes existing tokens. Run `node --test backend/test/security-controls.test.js` with the same `REVIEW_DATABASE_URL` for the guarded security HTTP/socket regression suite; it creates and drops its own `qa_security_` schema.
 
 A successful test run does not certify real Razorpay settlement, direct UPI receipt, AWS delivery, email, voice, physical camera capture or mobile keyboard behavior. See [the review report](CURRENT_REVIEW.md) for measured scope and remaining deployment requirements.

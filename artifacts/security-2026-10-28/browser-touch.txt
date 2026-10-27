@@ -1,0 +1,3 @@
+PASS create/photo/failure/retry/edit/reload with simulated touch
+PASS short viewport action reachability { top: 158, bottom: 202, height: 360 }
+SCROLL { before: 400, forward: 0, after: 400 }

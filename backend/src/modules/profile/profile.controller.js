@@ -125,6 +125,7 @@ class ProfileController {
         const hashedPassword = await bcrypt.hash(new_password, salt);
         updateFields.push(`password = $${valIdx++}`);
         queryValues.push(hashedPassword);
+        updateFields.push('auth_version = auth_version + 1');
       }
 
       // 5. Build other fields
@@ -186,6 +187,7 @@ class ProfileController {
         RETURNING id, name, username, email, phone_number, avatar_url, bio, department, hostel, active_mode, delivery_available, account_type, created_at
       `;
       const updateRes = await pool.query(updateQuery, queryValues);
+      if (new_password) require('../../shared/realtime').disconnectUser(userId);
 
       return res.status(200).json({
         success: true,

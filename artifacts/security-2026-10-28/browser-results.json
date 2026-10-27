@@ -1,0 +1,534 @@
+{
+  "measurements": [
+    {
+      "screen": "marketplace",
+      "width": 320,
+      "height": 800,
+      "scrollWidth": 320,
+      "logout": {
+        "x": 264,
+        "right": 308,
+        "width": 44,
+        "height": 44,
+        "visible": true
+      },
+      "unlabelled": []
+    },
+    {
+      "screen": "marketplace",
+      "width": 360,
+      "height": 800,
+      "scrollWidth": 360,
+      "logout": {
+        "x": 304,
+        "right": 348,
+        "width": 44,
+        "height": 44,
+        "visible": true
+      },
+      "unlabelled": []
+    },
+    {
+      "screen": "marketplace",
+      "width": 375,
+      "height": 800,
+      "scrollWidth": 375,
+      "logout": {
+        "x": 319,
+        "right": 363,
+        "width": 44,
+        "height": 44,
+        "visible": true
+      },
+      "unlabelled": []
+    },
+    {
+      "screen": "marketplace",
+      "width": 390,
+      "height": 800,
+      "scrollWidth": 390,
+      "logout": {
+        "x": 334,
+        "right": 378,
+        "width": 44,
+        "height": 44,
+        "visible": true
+      },
+      "unlabelled": []
+    },
+    {
+      "screen": "marketplace",
+      "width": 414,
+      "height": 800,
+      "scrollWidth": 414,
+      "logout": {
+        "x": 358,
+        "right": 402,
+        "width": 44,
+        "height": 44,
+        "visible": true
+      },
+      "unlabelled": []
+    },
+    {
+      "screen": "marketplace",
+      "width": 768,
+      "height": 800,
+      "scrollWidth": 768,
+      "logout": {
+        "x": 712,
+        "right": 756,
+        "width": 44,
+        "height": 44,
+        "visible": true
+      },
+      "unlabelled": []
+    },
+    {
+      "screen": "marketplace",
+      "width": 1024,
+      "height": 800,
+      "scrollWidth": 1024,
+      "logout": {
+        "x": 948,
+        "right": 992,
+        "width": 44,
+        "height": 44,
+        "visible": true
+      },
+      "unlabelled": []
+    },
+    {
+      "screen": "marketplace",
+      "width": 1440,
+      "height": 800,
+      "scrollWidth": 1440,
+      "logout": {
+        "x": 1264,
+        "right": 1308,
+        "width": 44,
+        "height": 44,
+        "visible": true
+      },
+      "unlabelled": []
+    },
+    {
+      "screen": "rental-dialog",
+      "width": 320,
+      "height": 800,
+      "scrollWidth": 320,
+      "logout": {
+        "x": 264,
+        "right": 308,
+        "width": 44,
+        "height": 44,
+        "visible": true
+      },
+      "unlabelled": []
+    },
+    {
+      "screen": "rental-dialog",
+      "width": 360,
+      "height": 800,
+      "scrollWidth": 360,
+      "logout": {
+        "x": 304,
+        "right": 348,
+        "width": 44,
+        "height": 44,
+        "visible": true
+      },
+      "unlabelled": []
+    },
+    {
+      "screen": "rental-dialog",
+      "width": 375,
+      "height": 800,
+      "scrollWidth": 375,
+      "logout": {
+        "x": 319,
+        "right": 363,
+        "width": 44,
+        "height": 44,
+        "visible": true
+      },
+      "unlabelled": []
+    },
+    {
+      "screen": "rental-dialog",
+      "width": 390,
+      "height": 800,
+      "scrollWidth": 390,
+      "logout": {
+        "x": 334,
+        "right": 378,
+        "width": 44,
+        "height": 44,
+        "visible": true
+      },
+      "unlabelled": []
+    },
+    {
+      "screen": "rental-dialog",
+      "width": 414,
+      "height": 800,
+      "scrollWidth": 414,
+      "logout": {
+        "x": 358,
+        "right": 402,
+        "width": 44,
+        "height": 44,
+        "visible": true
+      },
+      "unlabelled": []
+    },
+    {
+      "screen": "rental-dialog",
+      "width": 768,
+      "height": 800,
+      "scrollWidth": 768,
+      "logout": {
+        "x": 712,
+        "right": 756,
+        "width": 44,
+        "height": 44,
+        "visible": true
+      },
+      "unlabelled": []
+    },
+    {
+      "screen": "rental-dialog",
+      "width": 1024,
+      "height": 800,
+      "scrollWidth": 1024,
+      "logout": {
+        "x": 948,
+        "right": 992,
+        "width": 44,
+        "height": 44,
+        "visible": true
+      },
+      "unlabelled": []
+    },
+    {
+      "screen": "rental-dialog",
+      "width": 1440,
+      "height": 800,
+      "scrollWidth": 1440,
+      "logout": {
+        "x": 1264,
+        "right": 1308,
+        "width": 44,
+        "height": 44,
+        "visible": true
+      },
+      "unlabelled": []
+    },
+    {
+      "screen": "booking-summary",
+      "width": 320,
+      "height": 800,
+      "scrollWidth": 320,
+      "logout": {
+        "x": 264,
+        "right": 308,
+        "width": 44,
+        "height": 44,
+        "visible": true
+      },
+      "unlabelled": []
+    },
+    {
+      "screen": "booking-summary",
+      "width": 360,
+      "height": 800,
+      "scrollWidth": 360,
+      "logout": {
+        "x": 304,
+        "right": 348,
+        "width": 44,
+        "height": 44,
+        "visible": true
+      },
+      "unlabelled": []
+    },
+    {
+      "screen": "booking-summary",
+      "width": 375,
+      "height": 800,
+      "scrollWidth": 375,
+      "logout": {
+        "x": 319,
+        "right": 363,
+        "width": 44,
+        "height": 44,
+        "visible": true
+      },
+      "unlabelled": []
+    },
+    {
+      "screen": "booking-summary",
+      "width": 390,
+      "height": 800,
+      "scrollWidth": 390,
+      "logout": {
+        "x": 334,
+        "right": 378,
+        "width": 44,
+        "height": 44,
+        "visible": true
+      },
+      "unlabelled": []
+    },
+    {
+      "screen": "booking-summary",
+      "width": 414,
+      "height": 800,
+      "scrollWidth": 414,
+      "logout": {
+        "x": 358,
+        "right": 402,
+        "width": 44,
+        "height": 44,
+        "visible": true
+      },
+      "unlabelled": []
+    },
+    {
+      "screen": "booking-summary",
+      "width": 768,
+      "height": 800,
+      "scrollWidth": 768,
+      "logout": {
+        "x": 712,
+        "right": 756,
+        "width": 44,
+        "height": 44,
+        "visible": true
+      },
+      "unlabelled": []
+    },
+    {
+      "screen": "booking-summary",
+      "width": 1024,
+      "height": 800,
+      "scrollWidth": 1024,
+      "logout": {
+        "x": 948,
+        "right": 992,
+        "width": 44,
+        "height": 44,
+        "visible": true
+      },
+      "unlabelled": []
+    },
+    {
+      "screen": "booking-summary",
+      "width": 1440,
+      "height": 800,
+      "scrollWidth": 1440,
+      "logout": {
+        "x": 1264,
+        "right": 1308,
+        "width": 44,
+        "height": 44,
+        "visible": true
+      },
+      "unlabelled": []
+    },
+    {
+      "screen": "edit-listing",
+      "width": 320,
+      "height": 800,
+      "scrollWidth": 320,
+      "logout": {
+        "x": 264,
+        "right": 308,
+        "width": 44,
+        "height": 44,
+        "visible": true
+      },
+      "unlabelled": [
+        "<input multiple=\"\" accept=\"image/jpeg,image/png,image/webp,image/heic,image/heif\" class=\"hidden\" type=\"file\">",
+        "<input accept=\"image/*\" capture=\"environment\" class=\"hidden\" type=\"file\">"
+      ]
+    },
+    {
+      "screen": "edit-listing",
+      "width": 360,
+      "height": 800,
+      "scrollWidth": 360,
+      "logout": {
+        "x": 304,
+        "right": 348,
+        "width": 44,
+        "height": 44,
+        "visible": true
+      },
+      "unlabelled": [
+        "<input multiple=\"\" accept=\"image/jpeg,image/png,image/webp,image/heic,image/heif\" class=\"hidden\" type=\"file\">",
+        "<input accept=\"image/*\" capture=\"environment\" class=\"hidden\" type=\"file\">"
+      ]
+    },
+    {
+      "screen": "edit-listing",
+      "width": 375,
+      "height": 800,
+      "scrollWidth": 375,
+      "logout": {
+        "x": 319,
+        "right": 363,
+        "width": 44,
+        "height": 44,
+        "visible": true
+      },
+      "unlabelled": [
+        "<input multiple=\"\" accept=\"image/jpeg,image/png,image/webp,image/heic,image/heif\" class=\"hidden\" type=\"file\">",
+        "<input accept=\"image/*\" capture=\"environment\" class=\"hidden\" type=\"file\">"
+      ]
+    },
+    {
+      "screen": "edit-listing",
+      "width": 390,
+      "height": 800,
+      "scrollWidth": 390,
+      "logout": {
+        "x": 334,
+        "right": 378,
+        "width": 44,
+        "height": 44,
+        "visible": true
+      },
+      "unlabelled": [
+        "<input multiple=\"\" accept=\"image/jpeg,image/png,image/webp,image/heic,image/heif\" class=\"hidden\" type=\"file\">",
+        "<input accept=\"image/*\" capture=\"environment\" class=\"hidden\" type=\"file\">"
+      ]
+    },
+    {
+      "screen": "edit-listing",
+      "width": 414,
+      "height": 800,
+      "scrollWidth": 414,
+      "logout": {
+        "x": 358,
+        "right": 402,
+        "width": 44,
+        "height": 44,
+        "visible": true
+      },
+      "unlabelled": [
+        "<input multiple=\"\" accept=\"image/jpeg,image/png,image/webp,image/heic,image/heif\" class=\"hidden\" type=\"file\">",
+        "<input accept=\"image/*\" capture=\"environment\" class=\"hidden\" type=\"file\">"
+      ]
+    },
+    {
+      "screen": "edit-listing",
+      "width": 768,
+      "height": 800,
+      "scrollWidth": 768,
+      "logout": {
+        "x": 712,
+        "right": 756,
+        "width": 44,
+        "height": 44,
+        "visible": true
+      },
+      "unlabelled": [
+        "<input multiple=\"\" accept=\"image/jpeg,image/png,image/webp,image/heic,image/heif\" class=\"hidden\" type=\"file\">",
+        "<input accept=\"image/*\" capture=\"environment\" class=\"hidden\" type=\"file\">"
+      ]
+    },
+    {
+      "screen": "edit-listing",
+      "width": 1024,
+      "height": 800,
+      "scrollWidth": 1024,
+      "logout": {
+        "x": 948,
+        "right": 992,
+        "width": 44,
+        "height": 44,
+        "visible": true
+      },
+      "unlabelled": [
+        "<input multiple=\"\" accept=\"image/jpeg,image/png,image/webp,image/heic,image/heif\" class=\"hidden\" type=\"file\">",
+        "<input accept=\"image/*\" capture=\"environment\" class=\"hidden\" type=\"file\">"
+      ]
+    },
+    {
+      "screen": "edit-listing",
+      "width": 1440,
+      "height": 800,
+      "scrollWidth": 1440,
+      "logout": {
+        "x": 1264,
+        "right": 1308,
+        "width": 44,
+        "height": 44,
+        "visible": true
+      },
+      "unlabelled": [
+        "<input multiple=\"\" accept=\"image/jpeg,image/png,image/webp,image/heic,image/heif\" class=\"hidden\" type=\"file\">",
+        "<input accept=\"image/*\" capture=\"environment\" class=\"hidden\" type=\"file\">"
+      ]
+    },
+    {
+      "screen": "settings",
+      "width": 375,
+      "height": 720,
+      "scrollWidth": 375,
+      "logout": {
+        "x": 319,
+        "right": 363,
+        "width": 44,
+        "height": 44,
+        "visible": true
+      },
+      "unlabelled": []
+    },
+    {
+      "screen": "settings-landscape",
+      "width": 768,
+      "height": 320,
+      "scrollWidth": 768,
+      "logout": {
+        "x": 712,
+        "right": 756,
+        "width": 44,
+        "height": 44,
+        "visible": true
+      },
+      "unlabelled": []
+    },
+    {
+      "screen": "settings-200-percent-text",
+      "width": 768,
+      "height": 320,
+      "scrollWidth": 768,
+      "logout": {
+        "x": 712,
+        "right": 756,
+        "width": 44,
+        "height": 44,
+        "visible": true
+      },
+      "unlabelled": []
+    },
+    {
+      "screen": "payments",
+      "width": 768,
+      "height": 320,
+      "scrollWidth": 768,
+      "logout": {
+        "x": 692,
+        "right": 736,
+        "width": 44,
+        "height": 44,
+        "visible": true
+      },
+      "unlabelled": []
+    }
+  ],
+  "journeys": "passed",
+  "pageErrors": []
+}

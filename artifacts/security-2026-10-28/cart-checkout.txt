@@ -1,0 +1,65 @@
+TAP version 13
+# [Payment] Warning: Razorpay credentials are not fully configured in .env. Payment creation will remain unavailable.
+# (node:71025) ExperimentalWarning: CommonJS module /Users/amruth/CampusMesh-Live/backend/src/modules/payments/checkout.service.js is loading ES Module /Users/amruth/CampusMesh-Live/shared/rental-dates.js using require().
+# Support for loading ES Module in require() is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: cart payment retry and recovery in an isolated schema
+    # Subtest: concurrent clicks reuse one provider order and exact per-item totals
+    ok 1 - concurrent clicks reuse one provider order and exact per-item totals
+      ---
+      duration_ms: 33.815334
+      ...
+    # Subtest: another account cannot recover this cart and no unpaid order becomes a rental
+    ok 2 - another account cannot recover this cart and no unpaid order becomes a rental
+      ---
+      duration_ms: 4.588875
+      ...
+    # Subtest: authorized payment blocks a second checkout
+    ok 3 - authorized payment blocks a second checkout
+      ---
+      duration_ms: 2.418417
+      ...
+    # Subtest: wrong amount cannot settle; retry succeeds after provider reports valid captured amount
+    ok 4 - wrong amount cannot settle; retry succeeds after provider reports valid captured amount
+      ---
+      duration_ms: 1.962125
+      ...
+    # Subtest: lost callback recovers two paid rentals exactly once without handover QR
+    ok 5 - lost callback recovers two paid rentals exactly once without handover QR
+      ---
+      duration_ms: 12.167959
+      ...
+    # Subtest: completed checkout survives repeated confirmation but rejects a different receipt
+    ok 6 - completed checkout survives repeated confirmation but rejects a different receipt
+      ---
+      duration_ms: 4.186208
+      ...
+    # Subtest: legacy pending checkout also recovers without requiring a fingerprint
+    ok 7 - legacy pending checkout also recovers without requiring a fingerprint
+      ---
+      duration_ms: 11.402167
+      ...
+    # Subtest: provider downtime releases locks and never creates another order
+    ok 8 - provider downtime releases locks and never creates another order
+      ---
+      duration_ms: 9.934708
+      ...
+    # Subtest: availability changes after capture do not double-book or lose the recoverable receipt
+    ok 9 - availability changes after capture do not double-book or lose the recoverable receipt
+      ---
+      duration_ms: 18.494208
+      ...
+    1..9
+ok 1 - cart payment retry and recovery in an isolated schema
+  ---
+  duration_ms: 176.979708
+  ...
+1..1
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 251.414125

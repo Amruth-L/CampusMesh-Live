@@ -115,9 +115,12 @@ exports.resetPassword = async (req, res) => {
   try {
     const result = await consumeCode(email, 'reset', req.body.otp, async client => {
       const password = await bcrypt.hash(newPassword, 10);
-      await client.query('UPDATE users SET password=$1,otp=NULL,otp_expiry=NULL,email_verified=TRUE WHERE email=$2', [password, email]);
+      const changed = await client.query('UPDATE users SET password=$1,otp=NULL,otp_expiry=NULL,email_verified=TRUE,auth_version=auth_version+1 WHERE email=$2 RETURNING id', [password, email]);
+      // Disconnect only after consumeCode commits successfully (below).
+      req.passwordResetUser = changed.rows[0]?.id;
     });
     if (result.error) return respondError(res, result);
+    if (req.passwordResetUser) require('../../shared/realtime').disconnectUser(req.passwordResetUser);
     return res.json({ message: 'Password reset. You can now sign in.' });
   } catch (error) { return serverError(res, error); }
 };
@@ -154,7 +157,7 @@ exports.login = async (req, res) => {
 
     await req.clearLoginAttempts?.();
     const token = jwt.sign(
-      { id: user.id, email: user.email, name: user.name },
+      { id: user.id, email: user.email, name: user.name, session_version: user.auth_version || 0 },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -210,8 +213,10 @@ exports.setDeliveryAvailability = async (req, res) => {
   res.json(rows[0]);
 };
 
-exports.logout = (req, res) => {
-  res.json({
-    message: 'Logout successful. Delete the JWT from the client.'
-  });
+exports.logout = async (req, res) => {
+  try {
+    await pool.query('UPDATE users SET auth_version=auth_version+1 WHERE id=$1', [req.user.id]);
+    require('../../shared/realtime').disconnectUser(req.user.id);
+    res.json({ message: 'Signed out on all devices.' });
+  } catch (error) { return serverError(res, error); }
 };

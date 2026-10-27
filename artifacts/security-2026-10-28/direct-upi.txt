@@ -1,0 +1,75 @@
+TAP version 13
+# Subtest: UPI details require ownership acknowledgement and reject injected URI parameters
+ok 1 - UPI details require ownership acknowledgement and reject injected URI parameters
+  ---
+  duration_ms: 0.9795
+  ...
+# [Payment] Warning: Razorpay credentials are not fully configured in .env. Payment creation will remain unavailable.
+# (node:71021) ExperimentalWarning: CommonJS module /Users/amruth/CampusMesh-Live/backend/src/modules/rentals/rentals.controller.js is loading ES Module /Users/amruth/CampusMesh-Live/shared/rental-dates.js using require().
+# Support for loading ES Module in require() is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: direct rental lifecycle with manual receipt, privacy and no gateway money records
+    # Subtest: booking retries reuse one request and accepted unpaid requests stay visible
+    ok 1 - booking retries reuse one request and accepted unpaid requests stay visible
+      ---
+      duration_ms: 87.125
+      ...
+    # Subtest: acceptance requires recipient setup and no stranger can act
+    ok 2 - acceptance requires recipient setup and no stranger can act
+      ---
+      duration_ms: 17.479417
+      ...
+    # Subtest: owner edits refresh the renter QR, while an already paid former account can still be reported
+    ok 3 - owner edits refresh the renter QR, while an already paid former account can still be reported
+      ---
+      duration_ms: 47.109875
+      ...
+    # Subtest: receipt confirmation is idempotent and deposit gates pickup
+    ok 4 - receipt confirmation is idempotent and deposit gates pickup
+      ---
+      duration_ms: 48.608958
+      ...
+    # Subtest: courier earns separately only after verified handover; never creates Route payouts
+    ok 5 - courier earns separately only after verified handover; never creates Route payouts
+      ---
+      duration_ms: 26.769625
+      ...
+    # Subtest: zero-deposit delivery unlocks only after receipt and preserves the full courier fee
+    ok 6 - zero-deposit delivery unlocks only after receipt and preserves the full courier fee
+      ---
+      duration_ms: 29.835166
+      ...
+    # Subtest: return does not claim a refund; renter must confirm actual receipt
+    ok 7 - return does not claim a refund; renter must confirm actual receipt
+      ---
+      duration_ms: 75.533625
+      ...
+    # Subtest: return approval prepares the refund when UPI exists; zero deposits close without payment
+    ok 8 - return approval prepares the refund when UPI exists; zero deposits close without payment
+      ---
+      duration_ms: 24.696333
+      ...
+    # Subtest: unreported rental and deposit requests refresh for current-account payment
+    ok 9 - unreported rental and deposit requests refresh for current-account payment
+      ---
+      duration_ms: 37.177958
+      ...
+    # Subtest: migration reopens only unsettled direct refunds and is repeatable
+    ok 10 - migration reopens only unsettled direct refunds and is repeatable
+      ---
+      duration_ms: 3.933208
+      ...
+    1..10
+ok 2 - direct rental lifecycle with manual receipt, privacy and no gateway money records
+  ---
+  duration_ms: 420.784583
+  ...
+1..2
+# tests 12
+# suites 0
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 532.462542

@@ -11,9 +11,15 @@ const { createVoiceService } = require('../src/modules/voice/voice.service');
 const { createVoiceRouter } = require('../src/modules/voice/voice.routes');
 const { attachVoice } = require('../src/modules/voice/voice.socket');
 const { agentSettings } = require('../src/modules/voice/deepgram.settings');
+const ALICE = '00000000-0000-4000-8000-000000000011',
+  BOB = '00000000-0000-4000-8000-000000000012',
+  UNVERIFIED = '00000000-0000-4000-8000-000000000013',
+  DELETED = '00000000-0000-4000-8000-000000000014';
 const configured = () => ({ enabled: true, aiConfigured: true, key: 'never-expose' });
 const fakeDB = {
-  query: async (_sql, [id]) => ({ rows: id === 'deleted' ? [] : [{ email_verified: id !== 'unverified' }] }),
+  query: async (_sql, [id]) => ({
+    rows: id === DELETED ? [] : [{ auth_version: 0, email_verified: id !== UNVERIFIED }],
+  }),
 };
 
 async function fixture(t) {
@@ -96,29 +102,29 @@ test(
   async (t) => {
     const f = await fixture(t);
     assert.equal((await f.request(null, '/sessions', 'POST')).status, 401);
-    assert.equal((await f.request('unverified', '/sessions', 'POST')).status, 403);
-    assert.equal((await f.request('deleted', '/capabilities')).status, 403);
-    const result = await f.request('alice', '/sessions', 'POST');
+    assert.equal((await f.request(UNVERIFIED, '/sessions', 'POST')).status, 403);
+    assert.equal((await f.request(DELETED, '/capabilities')).status, 403);
+    const result = await f.request(ALICE, '/sessions', 'POST');
     assert.equal(result.status, 201);
     assert.equal(result.data.key, undefined);
-    for (const user of [null, 'unverified']) {
+    for (const user of [null, UNVERIFIED]) {
       const socket = f.socket(user, result.data.id),
         rejected = once(socket, 'connect_error');
       socket.connect();
       assert.match((await rejected)[0].message, /Sign in/);
       socket.disconnect();
     }
-    const wrong = f.socket('bob', result.data.id),
+    const wrong = f.socket(BOB, result.data.id),
       rejected = once(wrong, 'voice:error');
     wrong.connect();
     await rejected;
     assert.equal(f.providers.length, 0);
-    assert.equal((await f.request('bob', `/sessions/${result.data.id}`, 'DELETE')).status, 204);
+    assert.equal((await f.request(BOB, `/sessions/${result.data.id}`, 'DELETE')).status, 204);
     let closed = false;
-    f.voice.claim('alice', result.data.id, () => {
+    f.voice.claim(ALICE, result.data.id, () => {
       closed = true;
     });
-    await f.request('alice', `/sessions/${result.data.id}`, 'DELETE');
+    await f.request(ALICE, `/sessions/${result.data.id}`, 'DELETE');
     assert.equal(closed, true);
   },
 );
@@ -128,8 +134,8 @@ test(
   { timeout: 10000 },
   async (t) => {
     const f = await fixture(t),
-      ticket = f.voice.start('alice');
-    const socket = f.socket('alice', ticket.id),
+      ticket = f.voice.start(ALICE);
+    const socket = f.socket(ALICE, ticket.id),
       connected = once(socket, 'connect');
     socket.connect();
     await connected;
@@ -142,7 +148,7 @@ test(
     upstream.message({ type: 'Welcome' });
     assert.deepEqual(JSON.parse(upstream.sent[0]), {
       type: 'Settings',
-      account: 'alice',
+      account: ALICE,
       sample_rate: 48000,
     });
     const ready = once(socket, 'voice:ready');
@@ -166,14 +172,14 @@ test(
     socket.emit('voice:end');
     await ended;
     assert.equal(upstream.terminated, true);
-    assert.throws(() => f.voice.claim('alice', ticket.id, () => {}), { status: 410 });
+    assert.throws(() => f.voice.claim(ALICE, ticket.id, () => {}), { status: 410 });
   },
 );
 
 test('provider failure ends the session without exposing its description', { timeout: 10000 }, async (t) => {
   const f = await fixture(t),
-    ticket = f.voice.start('alice'),
-    socket = f.socket('alice', ticket.id);
+    ticket = f.voice.start(ALICE),
+    socket = f.socket(ALICE, ticket.id);
   const connected = once(socket, 'connect');
   socket.connect();
   await connected;
@@ -214,7 +220,7 @@ test('tickets expire, cannot be replayed, replace prior sessions and limit start
 test('Deepgram settings use managed AI and expose only minimal owned records', async () => {
   const calls = [];
   const config = await agentSettings(
-    'alice',
+    ALICE,
     {
       query: async (sql, params) => {
         calls.push(params);
@@ -237,7 +243,7 @@ test('Deepgram settings use managed AI and expose only minimal owned records', a
     },
     48000,
   );
-  assert.deepEqual(calls, [['alice'], ['alice']]);
+  assert.deepEqual(calls, [[ALICE], [ALICE]]);
   assert.equal(config.audio.input.sample_rate, 48000);
   assert.equal(config.agent.think.provider.model, 'gpt-4o-mini');
   assert.equal(config.agent.think.endpoint, undefined);

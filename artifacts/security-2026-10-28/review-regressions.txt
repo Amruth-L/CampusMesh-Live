@@ -1,0 +1,77 @@
+TAP version 13
+# (node:71004) ExperimentalWarning: CommonJS module /Users/amruth/CampusMesh-Live/backend/test/review-regressions.test.js is loading ES Module /Users/amruth/CampusMesh-Live/shared/rental-dates.js using require().
+# Support for loading ES Module in require() is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: inclusive dates are calendar-based, including same day, leap/month boundary and invalid dates
+ok 1 - inclusive dates are calendar-based, including same day, leap/month boundary and invalid dates
+  ---
+  duration_ms: 12.333292
+  ...
+# Subtest: public listing contract cannot expose private or newly added database fields
+ok 2 - public listing contract cannot expose private or newly added database fields
+  ---
+  duration_ms: 0.37125
+  ...
+# Subtest: create/edit share field validation and preserve precise amounts
+ok 3 - create/edit share field validation and preserve precise amounts
+  ---
+  duration_ms: 0.786083
+  ...
+# Subtest: payment modes share authoritative price amounts and explicit due stages
+ok 4 - payment modes share authoritative price amounts and explicit due stages
+  ---
+  duration_ms: 0.236792
+  ...
+# [Backend Debug] GET /api/listings/:id request received for ID: "5e039285-dbbc-4993-acbc-681f843759a3"
+# [Backend Debug] Executing database query for listing ID: "5e039285-dbbc-4993-acbc-681f843759a3"
+# [Backend Debug] Listing found: Book
+# Error in updateProfile: name: enter a non-empty text value, up to 200 characters.
+# Error in updateProfile: username: enter a non-empty text value, up to 200 characters.
+# Error in updateProfile: department: enter a text value, up to 200 characters.
+# Subtest: isolated API regression journeys
+    # Subtest: both actual public endpoints omit private contact fields
+    ok 1 - both actual public endpoints omit private contact fields
+      ---
+      duration_ms: 80.031958
+      ...
+    # Subtest: malformed profile values return 400 without database errors
+    ok 2 - malformed profile values return 400 without database errors
+      ---
+      duration_ms: 1.003334
+      ...
+# [listing] update failed Error
+    # Subtest: create and update persist all fields and preserve photos and precision
+    ok 3 - create and update persist all fields and preserve photos and precision
+      ---
+      duration_ms: 4.01025
+      ...
+# [Payment] Warning: Razorpay credentials are not fully configured in .env. Payment creation will remain unavailable.
+    # Subtest: server quote ignores client price overrides; same day quote/cart/book agree
+    ok 4 - server quote ignores client price overrides; same day quote/cart/book agree
+      ---
+      duration_ms: 63.418833
+      ...
+    # Subtest: shared login limiter handles concurrency, Retry-After, expiry and another IP
+    ok 5 - shared login limiter handles concurrency, Retry-After, expiry and another IP
+      ---
+      duration_ms: 11.110292
+      ...
+    # Subtest: malformed socket payloads, unauthorized joins and database failure leave API alive
+    ok 6 - malformed socket payloads, unauthorized joins and database failure leave API alive
+      ---
+      duration_ms: 540.764916
+      ...
+    1..6
+ok 5 - isolated API regression journeys
+  ---
+  duration_ms: 994.569958
+  ...
+1..5
+# tests 11
+# suites 0
+# pass 11
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1083.192417

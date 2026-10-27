@@ -1,0 +1,55 @@
+TAP version 13
+# [Payment] Warning: Razorpay credentials are not fully configured in .env. Payment creation will remain unavailable.
+# (node:71027) ExperimentalWarning: CommonJS module /Users/amruth/CampusMesh-Live/backend/src/modules/rentals/rentals.controller.js is loading ES Module /Users/amruth/CampusMesh-Live/shared/rental-dates.js using require().
+# Support for loading ES Module in require() is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: booking retries preserve one draft and only paid requests reach the lender
+    # Subtest: concurrent retries and reopening checkout reuse the newest draft and original quote
+    ok 1 - concurrent retries and reopening checkout reuse the newest draft and original quote
+      ---
+      duration_ms: 77.39575
+      ...
+    # Subtest: different borrower, dates, delivery mode or destination never reuse someone else’s checkout
+    ok 2 - different borrower, dates, delivery mode or destination never reuse someone else’s checkout
+      ---
+      duration_ms: 22.06925
+      ...
+    # Subtest: unpaid abandoned attempts are excluded from owner requests and cannot be accepted
+    ok 3 - unpaid abandoned attempts are excluded from owner requests and cannot be accepted
+      ---
+      duration_ms: 19.033042
+      ...
+    # Subtest: recorded payments remain visible even if the stored status still needs reconciliation
+    ok 4 - recorded payments remain visible even if the stored status still needs reconciliation
+      ---
+      duration_ms: 11.460625
+      ...
+    # Subtest: a paid submitted booking has Accept and is transitioned only once
+    ok 5 - a paid submitted booking has Accept and is transitioned only once
+      ---
+      duration_ms: 18.715792
+      ...
+    # Subtest: payment settlement while a retry waits on the draft lock cannot create a replacement draft
+    ok 6 - payment settlement while a retry waits on the draft lock cannot create a replacement draft
+      ---
+      duration_ms: 11.101083
+      ...
+    # Subtest: invalid dates and malformed delivery selection do not create drafts
+    ok 7 - invalid dates and malformed delivery selection do not create drafts
+      ---
+      duration_ms: 2.594458
+      ...
+    1..7
+ok 1 - booking retries preserve one draft and only paid requests reach the lender
+  ---
+  duration_ms: 290.182166
+  ...
+1..1
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 364.144667

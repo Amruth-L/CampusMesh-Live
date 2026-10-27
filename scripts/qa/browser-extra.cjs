@@ -1,3 +1,4 @@
+const browserToken = require("./browser-auth.cjs");
 const { chromium } = require("playwright-core");
 const fs = require("fs");
 const assert = require("assert/strict");
@@ -32,6 +33,11 @@ const root = require("node:path").resolve(__dirname, "../.."),
   );
   const page = await ctx.newPage();
   page.setDefaultTimeout(10000);
+  fixture.users[0].token = await browserToken(
+    page.request,
+    base,
+    fixture.users[0],
+  );
   await page.goto(base);
   await page.evaluate(
     (t) => localStorage.setItem("token", t),

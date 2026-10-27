@@ -14,6 +14,8 @@ Render's free web services pause when idle and block outbound SMTP ports. Use a 
 
 A multi-stage `Dockerfile` is also included. It excludes `.env` files and runs as the non-root Node user. Docker is optional for the native Node deployment.
 
+Read [security hardening and deployment requirements](docs/SECURITY_HARDENING.md) before deploying the security release. It adds migration 023, revocable sessions, shared request limits, and production origin/key checks.
+
 ## Features
 
 - Student authentication with signup, email verification, login, logout, and password reset

@@ -3,12 +3,12 @@ const auth = require('../../middleware/authMiddleware');
 const { voiceService } = require('./voice.service');
 const { createAnnouncements } = require('./announcements');
 
-function createVoiceRouter({ authenticate = auth, db, service, announcements } = {}) {
+function createVoiceRouter({ authenticate, db, service, announcements } = {}) {
   db ||= require('../../config/database');
   service ||= voiceService;
   announcements ||= createAnnouncements({ db, capabilities: service.capabilities });
   const router = express.Router();
-  router.use(authenticate);
+  router.use(authenticate || auth.withDatabase(db));
   router.use(async (req, res, next) => {
     res.set('Cache-Control', 'no-store');
     try {

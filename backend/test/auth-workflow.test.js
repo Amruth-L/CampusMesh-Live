@@ -28,7 +28,7 @@ function database(t) {
       return result(state.user && [state.user.id, state.user.email].includes(p[0]) ? state.user : null);
     }
     if (sql.startsWith('INSERT INTO users')) {
-      state.user = { id: 'fixture-user', name: p[0], username: p[1], email: p[2], password: p[3], phone_number: p[4], email_verified: false };
+      state.user = { id: 'fixture-user', auth_version:0, name: p[0], username: p[1], email: p[2], password: p[3], phone_number: p[4], email_verified: false };
       return result(state.user);
     }
     if (sql.startsWith('INSERT INTO call_preferences')) {
@@ -46,7 +46,7 @@ function database(t) {
     if (sql.startsWith('UPDATE auth_codes SET attempts')) { state.codes[p[1]].attempts++; return result(); }
     if (sql.startsWith('DELETE FROM auth_codes')) { delete state.codes[p[1]]; return result(); }
     if (sql.startsWith('UPDATE users SET email_verified')) { state.user.email_verified = true; return result(state.user); }
-    if (sql.startsWith('UPDATE users SET password')) { state.user.password = p[0]; state.user.email_verified = true; return result(state.user); }
+    if (sql.startsWith('UPDATE users SET password')) { state.user.password = p[0]; state.user.email_verified = true; state.user.auth_version++; return result(state.user); }
     if (sql.startsWith('UPDATE users SET first_signed_in_at')) {
       if (state.user.first_signed_in_at) return result();
       state.user.first_signed_in_at = new Date().toISOString();

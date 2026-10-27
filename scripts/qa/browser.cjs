@@ -1,3 +1,4 @@
+const browserToken = require("./browser-auth.cjs");
 const { chromium } = require("playwright-core");
 const fs = require("fs");
 const assert = require("assert/strict");
@@ -34,6 +35,16 @@ const out = root + "/artifacts/review";
   page.on("pageerror", (e) => errors.push(e.message));
   const base = "http://127.0.0.1:5174";
   const measurements = [];
+  async function signOut() {
+    const [response] = await Promise.all([
+      page.waitForResponse(
+        (r) => r.request().method() === "POST" && r.url().endsWith("/logout"),
+      ),
+      page.getByRole("button", { name: "Log out", exact: true }).click(),
+    ]);
+    assert.equal(response.status(), 200);
+    await page.waitForURL(base + "/");
+  }
   const today = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Kolkata",
   }).format(new Date());
@@ -80,6 +91,16 @@ const out = root + "/artifacts/review";
       ),
     );
   }
+  fixture.users[1].token = await browserToken(
+    page.request,
+    base,
+    fixture.users[1],
+  );
+  fixture.users[0].token = await browserToken(
+    page.request,
+    base,
+    fixture.users[0],
+  );
   await page.goto(base);
   await page.evaluate(
     (token) => localStorage.setItem("token", token),
@@ -204,6 +225,7 @@ const out = root + "/artifacts/review";
   // Owner acceptance, using a separate authenticated local browser context.
   const ownerContext = await browser.newContext({
     viewport: { width: 1440, height: 900 },
+    reducedMotion: "reduce",
   });
   await ownerContext.route("**/*", (route) =>
     route.request().url().startsWith(base) ? route.continue() : route.abort(),
@@ -213,10 +235,11 @@ const out = root + "/artifacts/review";
     fixture.users[0].token,
   );
   const ownerPage = await ownerContext.newPage();
-  await ownerPage.request.put(base + "/api/direct-upi/profile", {
+  const upiResponse = await ownerPage.request.put(base + "/api/direct-upi/profile", {
     headers: { Authorization: "Bearer " + fixture.users[0].token },
     data: { upi_id: "qa-lender@bank", payee_name: "QA Lender", confirm: true },
   });
+  assert.equal(upiResponse.status(), 200);
   await ownerPage.goto(base + "/lend");
   await ownerPage
     .getByRole("button", { name: "Accept request", exact: true })
@@ -297,7 +320,7 @@ const out = root + "/artifacts/review";
   await measure("payments");
   console.log("PASS settings, text scale, payments");
   // Sign-in real local endpoint; recovery is validated without sending email.
-  await page.getByRole("button", { name: "Log out", exact: true }).click();
+  await signOut();
   await page.goto(base + "/login");
   await page
     .getByRole("textbox", { name: /email/i })
@@ -305,7 +328,7 @@ const out = root + "/artifacts/review";
   await page.getByLabel("Password", { exact: true }).fill("review-password");
   await page.getByRole("button", { name: /sign in|log in/i }).click();
   await page.waitForURL((url) => !url.pathname.includes("/login"));
-  await page.getByRole("button", { name: "Log out", exact: true }).click();
+  await signOut();
   await page.goto(base + "/forgot-password");
   await page
     .getByRole("textbox", { name: /email/i })

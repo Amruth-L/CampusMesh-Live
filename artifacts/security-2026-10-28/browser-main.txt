@@ -1,0 +1,4 @@
+PASS edit, 32 width checks
+PASS settings, text scale, payments
+PASS local sign-in and recovery validation
+PASS browser journeys 36 viewport checks

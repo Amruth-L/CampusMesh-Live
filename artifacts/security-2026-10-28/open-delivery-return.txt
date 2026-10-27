@@ -1,0 +1,53 @@
+TAP version 13
+# [Payment] Warning: Razorpay credentials are not fully configured in .env. Payment creation will remain unavailable.
+# Subtest: open availability, return destinations and marketplace demand
+    # Subtest: four couriers go online without a route, while invalid expiry is rejected
+    ok 1 - four couriers go online without a route, while invalid expiry is rejected
+      ---
+      duration_ms: 23.221166
+      ...
+    # Subtest: duplicate requests reuse one task and wait for the owner before broadcasting
+    ok 2 - duplicate requests reuse one task and wait for the owner before broadcasting
+      ---
+      duration_ms: 14.058666
+      ...
+    # Subtest: only the owner can choose a valid destination
+    ok 3 - only the owner can choose a valid destination
+      ---
+      duration_ms: 19.472666
+      ...
+    # Subtest: changing destination replaces offers and rejects a stale acceptance
+    ok 4 - changing destination replaces offers and rejects a stale acceptance
+      ---
+      duration_ms: 23.102208
+      ...
+# [DeliveryController] Courier f1af3954-e6ad-4de0-ae20-11cc5a76e018 accepted delivery 1b52486c-d3cc-4c1f-8152-d842b964a43d
+    # Subtest: decline persists and only one courier can accept; destination locks after acceptance
+    ok 5 - decline persists and only one courier can accept; destination locks after acceptance
+      ---
+      duration_ms: 36.885708
+      ...
+    # Subtest: marketplace demand counts paid bookings and distinct non-owner viewers only
+    ok 6 - marketplace demand counts paid bookings and distinct non-owner viewers only
+      ---
+      duration_ms: 6.196667
+      ...
+    # Subtest: offline courier cannot receive or accept new offers
+    ok 7 - offline courier cannot receive or accept new offers
+      ---
+      duration_ms: 7.137166
+      ...
+    1..7
+ok 1 - open availability, return destinations and marketplace demand
+  ---
+  duration_ms: 244.643875
+  ...
+1..1
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 311.656208

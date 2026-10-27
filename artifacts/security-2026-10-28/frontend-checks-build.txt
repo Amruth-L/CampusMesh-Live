@@ -1,0 +1,383 @@
+
+> frontend@0.0.0 lint
+> oxlint
+
+
+> frontend@0.0.0 typecheck
+> tsc --noEmit
+
+
+> frontend@0.0.0 test
+> node --test test/*.test.js
+
+TAP version 13
+# Subtest: autoplay fallback retains update, then plays once after a gesture and deduplicates polling
+ok 1 - autoplay fallback retains update, then plays once after a gesture and deduplicates polling
+  ---
+  duration_ms: 5.788209
+  ...
+# Subtest: logout/account switch or hidden tab aborts pending audio without late playback
+ok 2 - logout/account switch or hidden tab aborts pending audio without late playback
+  ---
+  duration_ms: 0.761375
+  ...
+# Subtest: mute stops audio and suppresses replay, but other accounts have independent history
+ok 3 - mute stops audio and suppresses replay, but other accounts have independent history
+  ---
+  duration_ms: 3.537375
+  ...
+# Subtest: network failure waits for explicit retry, never marks an unheard update delivered
+ok 4 - network failure waits for explicit retry, never marks an unheard update delivered
+  ---
+  duration_ms: 3.572708
+  ...
+# Subtest: expired offers and superseded payment updates cannot block later announcements
+ok 5 - expired offers and superseded payment updates cannot block later announcements
+  ---
+  duration_ms: 1.220417
+  ...
+# Subtest: outward checkpoints advance one step at a time from actual confirmations
+ok 6 - outward checkpoints advance one step at a time from actual confirmations
+  ---
+  duration_ms: 1.161417
+  ...
+# Subtest: active rental or completed label cannot fabricate pickup, handover or fee receipt
+ok 7 - active rental or completed label cannot fabricate pickup, handover or fee receipt
+  ---
+  duration_ms: 0.131875
+  ...
+# Subtest: return uses its own pickup, handover and payment instead of reusing outward ticks
+ok 8 - return uses its own pickup, handover and payment instead of reusing outward ticks
+  ---
+  duration_ms: 0.7215
+  ...
+# Subtest: zero-fee delivery has no fee step, and gateway booking precedes approval and deposit
+ok 9 - zero-fee delivery has no fee step, and gateway booking precedes approval and deposit
+  ---
+  duration_ms: 0.4475
+  ...
+# Subtest: cancelled or failed deliveries do not suggest a next actionable step
+ok 10 - cancelled or failed deliveries do not suggest a next actionable step
+  ---
+  duration_ms: 0.254625
+  ...
+# Subtest: delivery availability round-trips local time across offsets and midnight
+ok 11 - delivery availability round-trips local time across offsets and midnight
+  ---
+  duration_ms: 4.098458
+  ...
+# Subtest: accepted direct UPI requests remain ongoing before payment, despite legacy HISTORY phase
+ok 12 - accepted direct UPI requests remain ongoing before payment, despite legacy HISTORY phase
+  ---
+  duration_ms: 0.475334
+  ...
+# Subtest: acceptance moves a new request into accepted rentals
+ok 13 - acceptance moves a new request into accepted rentals
+  ---
+  duration_ms: 0.069625
+  ...
+# Subtest: completed delivery does not mark an active rental completed
+ok 14 - completed delivery does not mark an active rental completed
+  ---
+  duration_ms: 0.057958
+  ...
+# Subtest: return approval, inspection, refund and remaining return settlement stay visible
+ok 15 - return approval, inspection, refund and remaining return settlement stay visible
+  ---
+  duration_ms: 0.122167
+  ...
+# Subtest: closed rentals go to history even when their last delivery was a return
+ok 16 - closed rentals go to history even when their last delivery was a return
+  ---
+  duration_ms: 0.065125
+  ...
+# Subtest: unpaid requests offer Pay only to the payer
+ok 17 - unpaid requests offer Pay only to the payer
+  ---
+  duration_ms: 0.493292
+  ...
+# Subtest: reported transfers ask the recipient to confirm, never the sender to pay twice
+ok 18 - reported transfers ask the recipient to confirm, never the sender to pay twice
+  ---
+  duration_ms: 0.066917
+  ...
+# Subtest: deposit refunds reverse payer and recipient roles
+ok 19 - deposit refunds reverse payer and recipient roles
+  ---
+  duration_ms: 0.060542
+  ...
+# Subtest: confirmed receipts go to history and actionable payments precede waiting entries
+ok 20 - confirmed receipts go to history and actionable payments precede waiting entries
+  ---
+  duration_ms: 1.009541
+  ...
+# Subtest: disputed payments never offer another payment action
+ok 21 - disputed payments never offer another payment action
+  ---
+  duration_ms: 0.073792
+  ...
+# Subtest: only unpaid booking drafts can launch rental checkout
+ok 22 - only unpaid booking drafts can launch rental checkout
+  ---
+  duration_ms: 0.618583
+  ...
+# Subtest: recorded rental payment blocks another payment even with stale draft status
+ok 23 - recorded rental payment blocks another payment even with stale draft status
+  ---
+  duration_ms: 0.149
+  ...
+# Subtest: real checkout requires a server-issued order, key and positive INR amount
+ok 24 - real checkout requires a server-issued order, key and positive INR amount
+  ---
+  duration_ms: 0.389709
+  ...
+# Subtest: simulation never opens real checkout or invents a payment confirmation
+ok 25 - simulation never opens real checkout or invents a payment confirmation
+  ---
+  duration_ms: 0.140542
+  ...
+# Subtest: confirmation retries reuse the signed receipt for the same provider order
+ok 26 - confirmation retries reuse the signed receipt for the same provider order
+  ---
+  duration_ms: 1.221666
+  ...
+# Subtest: incomplete, mismatched or fake receipts cannot verify a payment
+ok 27 - incomplete, mismatched or fake receipts cannot verify a payment
+  ---
+  duration_ms: 0.100708
+  ...
+# Subtest: active rentals and pending handovers stay visible in Active
+ok 28 - active rentals and pending handovers stay visible in Active
+  ---
+  duration_ms: 0.466708
+  ...
+# Subtest: Requested includes booking and owner approval states
+ok 29 - Requested includes booking and owner approval states
+  ---
+  duration_ms: 0.076459
+  ...
+# Subtest: rental fee payment completes only Payment and waits for owner approval
+ok 30 - rental fee payment completes only Payment and waits for owner approval
+  ---
+  duration_ms: 0.576917
+  ...
+# Subtest: owner approval and fully paid bookings do not complete physical handover
+ok 31 - owner approval and fully paid bookings do not complete physical handover
+  ---
+  duration_ms: 0.720167
+  ...
+# Subtest: confirmed delivery completes Handover and return remains pending until confirmed
+ok 32 - confirmed delivery completes Handover and return remains pending until confirmed
+  ---
+  duration_ms: 0.202958
+  ...
+# Subtest: unpaid, stopped, unknown or refunded bookings never invent physical handover
+ok 33 - unpaid, stopped, unknown or refunded bookings never invent physical handover
+  ---
+  duration_ms: 0.114334
+  ...
+# Subtest: refund receipt gates rental closure after owner inspection and refund report
+ok 34 - refund receipt gates rental closure after owner inspection and refund report
+  ---
+  duration_ms: 0.303166
+  ...
+# Subtest: courier return acceptance, physical receipt, inspection and fee stay separate
+ok 35 - courier return acceptance, physical receipt, inspection and fee stay separate
+  ---
+  duration_ms: 0.20275
+  ...
+# Subtest: streams only after provider readiness, mutes mic, plays provider PCM and interrupts
+ok 36 - streams only after provider readiness, mutes mic, plays provider PCM and interrupts
+  ---
+  duration_ms: 1.615417
+  ...
+# Subtest: permission denial never connects provider and closes audio resources
+ok 37 - permission denial never connects provider and closes audio resources
+  ---
+  duration_ms: 0.219083
+  ...
+# Subtest: ending while permission is pending stops late microphone stream and never connects
+ok 38 - ending while permission is pending stops late microphone stream and never connects
+  ---
+  duration_ms: 0.133084
+  ...
+# Subtest: network failure and expiry stop mic and prevent late speech
+ok 39 - network failure and expiry stop mic and prevent late speech
+  ---
+  duration_ms: 0.276125
+  ...
+# Subtest: unsupported browsers do not request audio; playback can be muted separately
+ok 40 - unsupported browsers do not request audio; playback can be muted separately
+  ---
+  duration_ms: 0.224166
+  ...
+1..40
+# tests 40
+# suites 0
+# pass 40
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 208.668333
+
+> frontend@0.0.0 build
+> vite build
+
+vite v8.3.5 building client environment for production...
+transforming...
+✓ 2464 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                             0.78 kB │ gzip:   0.43 kB
+dist/assets/inter-vietnamese-400-normal-DMkecbls.woff2      4.97 kB
+dist/assets/inter-vietnamese-600-normal-Cc8MFFhd.woff2      5.10 kB
+dist/assets/inter-vietnamese-700-normal-DlLaEgI2.woff2      5.10 kB
+dist/assets/inter-vietnamese-500-normal-DOriooB6.woff2      5.11 kB
+dist/assets/inter-vietnamese-800-normal-Cm7tD1pz.woff2      5.17 kB
+dist/assets/inter-greek-ext-400-normal-DGGRlc-M.woff2       5.26 kB
+dist/assets/inter-greek-ext-500-normal-C4iEst2y.woff2       5.42 kB
+dist/assets/inter-greek-ext-600-normal-DRtmH8MT.woff2       5.43 kB
+dist/assets/inter-greek-ext-700-normal-qfdV9bQt.woff2       5.44 kB
+dist/assets/inter-greek-ext-800-normal-B--PVpEC.woff2       5.54 kB
+dist/assets/inter-vietnamese-400-normal-Bbgyi5SW.woff       6.50 kB
+dist/assets/inter-vietnamese-500-normal-mJboJaSs.woff       6.59 kB
+dist/assets/inter-vietnamese-700-normal-BZaoP0fm.woff       6.63 kB
+dist/assets/inter-vietnamese-600-normal-BuLX-rYi.woff       6.64 kB
+dist/assets/inter-vietnamese-800-normal-DDlpr_Ee.woff       6.64 kB
+dist/assets/inter-greek-ext-400-normal-KugGGMne.woff        7.06 kB
+dist/assets/inter-greek-ext-500-normal-2j5mBUwD.woff        7.19 kB
+dist/assets/inter-greek-ext-800-normal-DUe57HfS.woff        7.20 kB
+dist/assets/inter-greek-ext-600-normal-B8X0CLgF.woff        7.21 kB
+dist/assets/inter-greek-ext-700-normal-BoQ6DsYi.woff        7.21 kB
+dist/assets/inter-cyrillic-400-normal-obahsSVq.woff2        7.71 kB
+dist/assets/inter-greek-400-normal-B4URO6DV.woff2           7.77 kB
+dist/assets/inter-greek-800-normal-CLIouy3y.woff2           7.89 kB
+dist/assets/inter-cyrillic-500-normal-BasfLYem.woff2        7.90 kB
+dist/assets/inter-cyrillic-700-normal-CjBOestx.woff2        7.90 kB
+dist/assets/inter-greek-500-normal-BIZE56-Y.woff2           7.92 kB
+dist/assets/inter-greek-700-normal-C3JjAnD8.woff2           7.92 kB
+dist/assets/inter-greek-600-normal-plRanbMR.woff2           7.94 kB
+dist/assets/inter-cyrillic-600-normal-CWCymEST.woff2        7.97 kB
+dist/assets/inter-cyrillic-800-normal-C7MGvYyJ.woff2        7.99 kB
+dist/assets/inter-cyrillic-400-normal-HOLc17fK.woff         9.78 kB
+dist/assets/inter-cyrillic-700-normal-DrXBdSj3.woff         9.91 kB
+dist/assets/inter-greek-400-normal-q2sYcFCs.woff            9.92 kB
+dist/assets/inter-cyrillic-600-normal-4D_pXhcN.woff         9.93 kB
+dist/assets/inter-cyrillic-500-normal-CxZf_p3X.woff         9.94 kB
+dist/assets/inter-cyrillic-800-normal-CCHyn08d.woff         9.94 kB
+dist/assets/inter-greek-800-normal-BU00tryP.woff            9.96 kB
+dist/assets/inter-greek-500-normal-Xzm54t5V.woff            9.98 kB
+dist/assets/inter-greek-700-normal-BUv2fZ6O.woff            9.98 kB
+dist/assets/inter-greek-600-normal-BZpKdvQh.woff           10.03 kB
+dist/assets/inter-cyrillic-ext-400-normal-BQZuk6qB.woff2   10.23 kB
+dist/assets/inter-cyrillic-ext-500-normal-B0yAr1jD.woff2   10.43 kB
+dist/assets/inter-cyrillic-ext-800-normal-BZOjs1Xv.woff2   10.44 kB
+dist/assets/inter-cyrillic-ext-600-normal-Dfes3d0z.woff2   10.48 kB
+dist/assets/inter-cyrillic-ext-700-normal-BjwYoWNd.woff2   10.49 kB
+dist/assets/inter-cyrillic-ext-400-normal-DQukG94-.woff    13.33 kB
+dist/assets/inter-cyrillic-ext-700-normal-LO58E6JB.woff    13.40 kB
+dist/assets/inter-cyrillic-ext-500-normal-BmqWE9Dz.woff    13.45 kB
+dist/assets/inter-cyrillic-ext-600-normal-Bcila6Z-.woff    13.46 kB
+dist/assets/inter-cyrillic-ext-800-normal-Ca-gJeZY.woff    13.47 kB
+dist/assets/inter-latin-400-normal-C38fXH4l.woff2          23.66 kB
+dist/assets/inter-latin-500-normal-Cerq10X2.woff2          24.27 kB
+dist/assets/inter-latin-700-normal-Yt3aPRUw.woff2          24.35 kB
+dist/assets/inter-latin-800-normal-BYj_oED-.woff2          24.40 kB
+dist/assets/inter-latin-600-normal-LgqL8muc.woff2          24.45 kB
+dist/assets/inter-latin-400-normal-CyCys3Eg.woff           30.69 kB
+dist/assets/inter-latin-600-normal-CiBQ2DWP.woff           31.26 kB
+dist/assets/inter-latin-500-normal-BL9OpVg8.woff           31.28 kB
+dist/assets/inter-latin-800-normal-D1mf63XC.woff           31.29 kB
+dist/assets/inter-latin-700-normal-BLAVimhd.woff           31.32 kB
+dist/assets/inter-latin-ext-400-normal-C1nco2VV.woff2      35.00 kB
+dist/assets/inter-latin-ext-500-normal-CV4jyFjo.woff2      36.02 kB
+dist/assets/inter-latin-ext-800-normal-DZJjya6U.woff2      36.12 kB
+dist/assets/inter-latin-ext-700-normal-Ca8adRJv.woff2      36.24 kB
+dist/assets/inter-latin-ext-600-normal-D2bJ5OIk.woff2      36.26 kB
+dist/assets/inter-latin-ext-400-normal-77YHD8bZ.woff       47.56 kB
+dist/assets/inter-latin-ext-500-normal-BxGbmqWO.woff       48.49 kB
+dist/assets/inter-latin-ext-800-normal-BOMpwxm3.woff       48.59 kB
+dist/assets/inter-latin-ext-700-normal-TidjK2hL.woff       48.63 kB
+dist/assets/inter-latin-ext-600-normal-CIVaiw4L.woff       48.66 kB
+dist/assets/index-Ba3uVlP6.css                             90.87 kB │ gzip:  16.34 kB
+dist/assets/EditListing-C2Seovf0.js                         0.04 kB │ gzip:   0.06 kB
+dist/assets/assets-Bq2KAQVT.js                              0.12 kB │ gzip:   0.10 kB
+dist/assets/check-Cl-VhER5.js                               0.12 kB │ gzip:   0.14 kB
+dist/assets/chevron-left-CGBeogkx.js                        0.13 kB │ gzip:   0.14 kB
+dist/assets/chevron-right-CZ7NOFqg.js                       0.13 kB │ gzip:   0.14 kB
+dist/assets/listing-options-CGKylnnx.js                     0.16 kB │ gzip:   0.14 kB
+dist/assets/arrow-left-DCHrSrxC.js                          0.16 kB │ gzip:   0.16 kB
+dist/assets/arrow-right-CtjvYsZ3.js                         0.16 kB │ gzip:   0.16 kB
+dist/assets/circle-check-Ct6eyJJT.js                        0.17 kB │ gzip:   0.16 kB
+dist/assets/user-round-BryrCZmn.js                          0.18 kB │ gzip:   0.17 kB
+dist/assets/info-DCpoAARC.js                                0.20 kB │ gzip:   0.17 kB
+dist/assets/lock-DpylcRNi.js                                0.20 kB │ gzip:   0.19 kB
+dist/assets/headphones-DPMLRWGk.js                          0.23 kB │ gzip:   0.18 kB
+dist/assets/circle-alert-DuzWY0IA.js                        0.25 kB │ gzip:   0.18 kB
+dist/assets/route-A9AO1BkP.js                               0.25 kB │ gzip:   0.19 kB
+dist/assets/campus-hS0dz_Hr.js                              0.26 kB │ gzip:   0.19 kB
+dist/assets/pencil-BbyiRfPg.js                              0.27 kB │ gzip:   0.22 kB
+dist/assets/send-BL-7CKra.js                                0.29 kB │ gzip:   0.22 kB
+dist/assets/printer-DOhboRv3.js                             0.31 kB │ gzip:   0.23 kB
+dist/assets/shield-check-rHccIg4m.js                        0.32 kB │ gzip:   0.24 kB
+dist/assets/refresh-cw-D8XVeGT0.js                          0.32 kB │ gzip:   0.22 kB
+dist/assets/phone-Czg_fQq0.js                               0.32 kB │ gzip:   0.22 kB
+dist/assets/trash-2-CgcMpJIh.js                             0.32 kB │ gzip:   0.21 kB
+dist/assets/camera-CAmb-rbX.js                              0.33 kB │ gzip:   0.25 kB
+dist/assets/radio-DXYhN9ai.js                               0.37 kB │ gzip:   0.25 kB
+dist/assets/rotate-ccw-B4pxpafz.js                          0.38 kB │ gzip:   0.28 kB
+dist/assets/package-check-CJ8ErSgz.js                       0.41 kB │ gzip:   0.27 kB
+dist/assets/triangle-alert-D330FN69.js                      0.46 kB │ gzip:   0.30 kB
+dist/assets/calendar-days-CJgOzlQg.js                       0.49 kB │ gzip:   0.26 kB
+dist/assets/useDirectMode-tqFnZIin.js                       0.51 kB │ gzip:   0.37 kB
+dist/assets/eye-BFDpZxAD.js                                 0.63 kB │ gzip:   0.34 kB
+dist/assets/PrintSoon-CjAtM3nh.js                           0.69 kB │ gzip:   0.40 kB
+dist/assets/useRentalQuote-4zRLOZv1.js                      1.34 kB │ gzip:   0.80 kB
+dist/assets/auth.service-BzyuoVg5.js                        1.36 kB │ gzip:   0.60 kB
+dist/assets/createLucideIcon-C2MHhu5n.js                    1.38 kB │ gzip:   0.77 kB
+dist/assets/RazorpayService-0VqA5Rsz.js                     1.53 kB │ gzip:   0.87 kB
+dist/assets/ChooseModePage-CzRYQLvy.js                      1.63 kB │ gzip:   0.80 kB
+dist/assets/PaymentFailed-C7_JcxNA.js                       1.65 kB │ gzip:   0.77 kB
+dist/assets/categories-DpOxmjAE.js                          1.96 kB │ gzip:   0.87 kB
+dist/assets/useOtpCooldown-CS-7nHlR.js                      2.03 kB │ gzip:   1.07 kB
+dist/assets/rental-checkout-yx5lfgo5.js                     2.15 kB │ gzip:   1.10 kB
+dist/assets/PaymentSummary-CEQVGNW_.js                      2.40 kB │ gzip:   0.88 kB
+dist/assets/HandoverCredential-BVjnY1Im.js                  2.60 kB │ gzip:   1.29 kB
+dist/assets/CampusRouteMap-D1pLC5Mu.js                      2.76 kB │ gzip:   1.25 kB
+dist/assets/ConditionPhotos-DDq5zTDo.js                     2.91 kB │ gzip:   1.47 kB
+dist/assets/PaymentSuccess-DL1jFNp1.js                      3.05 kB │ gzip:   1.35 kB
+dist/assets/LandingPage-DQiij8yK.js                         3.31 kB │ gzip:   1.29 kB
+dist/assets/rental-status-O7hTPpJL.js                       3.96 kB │ gzip:   1.55 kB
+dist/assets/DeliveryTrackingPage-Cecl1TT7.js                4.11 kB │ gzip:   1.77 kB
+dist/assets/VerifyEmailPage-BDSwko2R.js                     4.56 kB │ gzip:   1.93 kB
+dist/assets/DepositPayment-BAj1QiSY.js                      5.37 kB │ gzip:   2.23 kB
+dist/assets/LoginPage-Cyj94Y8h.js                           5.92 kB │ gzip:   2.25 kB
+dist/assets/ListingDetailsPage-CFo9BCR7.js                  6.17 kB │ gzip:   2.13 kB
+dist/assets/InsightsPage-CEeZi8ip.js                        6.37 kB │ gzip:   2.23 kB
+dist/assets/SupportPage-DJegwYjR.js                         6.87 kB │ gzip:   2.64 kB
+dist/assets/RentalPayment-yKxMYVnV.js                       7.38 kB │ gzip:   3.02 kB
+dist/assets/ForgotPasswordPage-s0y5rvRN.js                  7.48 kB │ gzip:   2.44 kB
+dist/assets/jsx-runtime-MZURdZre.js                         8.56 kB │ gzip:   3.26 kB
+dist/assets/CartPage-CKwqfmqg.js                           10.04 kB │ gzip:   3.24 kB
+dist/assets/MarketplacePage-BKS9btpL.js                    10.74 kB │ gzip:   3.74 kB
+dist/assets/CheckoutPage-BE5FfVOB.js                       10.75 kB │ gzip:   4.00 kB
+dist/assets/RentalReturn-Dshz_jLX.js                       11.28 kB │ gzip:   3.21 kB
+dist/assets/SignupPage-C_WkXqBU.js                         12.36 kB │ gzip:   3.72 kB
+dist/assets/RentSummary-D8bSYUmx.js                        13.51 kB │ gzip:   4.11 kB
+dist/assets/ReminderPage-CmVte3Ew.js                       15.31 kB │ gzip:   5.26 kB
+dist/assets/VoicePage-CAoMCo-T.js                          15.36 kB │ gzip:   5.56 kB
+dist/assets/WishBoxPage-BKBGdDHZ.js                        15.52 kB │ gzip:   5.22 kB
+dist/assets/esm-BYceuok8.js                                16.13 kB │ gzip:   5.98 kB
+dist/assets/PayoutsPage-Brp2fzbE.js                        16.93 kB │ gzip:   5.69 kB
+dist/assets/DirectPayments-DuWZFomS.js                     17.05 kB │ gzip:   5.18 kB
+dist/assets/RentalDialog-BdSkOqwT.js                       17.10 kB │ gzip:   6.30 kB
+dist/assets/hooks-1n3xXFUw.js                              20.69 kB │ gzip:   7.97 kB
+dist/assets/AddListing-C4Pegn1s.js                         32.36 kB │ gzip:   8.04 kB
+dist/assets/DeliveryPage-CB9v3eZD.js                       37.16 kB │ gzip:  10.99 kB
+dist/assets/AccountPage-Dl0coIyr.js                        37.89 kB │ gzip:  10.58 kB
+dist/assets/RentDetails-B30iG9j2.js                        86.61 kB │ gzip:  24.21 kB
+dist/assets/react-DNHlMKkL.js                             120.51 kB │ gzip:  39.01 kB
+dist/assets/index-s3xgV6iI.js                             338.46 kB │ gzip: 109.62 kB
+
+✓ built in 499ms

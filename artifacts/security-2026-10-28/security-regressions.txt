@@ -1,0 +1,61 @@
+TAP version 13
+# Subtest: production rejects missing or insecure origins and short signing keys
+ok 1 - production rejects missing or insecure origins and short signing keys
+  ---
+  duration_ms: 1.655416
+  ...
+# Subtest: session checks reject revoked, deleted, expired and wrong-algorithm tokens
+ok 2 - session checks reject revoked, deleted, expired and wrong-algorithm tokens
+  ---
+  duration_ms: 8.554791
+  ...
+# Subtest: request limiter returns retry guidance and hides database errors
+ok 3 - request limiter returns retry guidance and hides database errors
+  ---
+  duration_ms: 0.676417
+  ...
+# Subtest: security HTTP and socket journeys use an isolated local schema
+    # Subtest: headers and origin filtering work without changing public listing access
+    ok 1 - headers and origin filtering work without changing public listing access
+      ---
+      duration_ms: 7.037
+      ...
+    # Subtest: large ordinary JSON is rejected; upload routes require authentication before body parsing
+    ok 2 - large ordinary JSON is rejected; upload routes require authentication before body parsing
+      ---
+      duration_ms: 165.816708
+      ...
+    # Subtest: request budgets are atomic and shared between limiter instances; expired windows recover
+    ok 3 - request budgets are atomic and shared between limiter instances; expired windows recover
+      ---
+      duration_ms: 15.456959
+      ...
+    # Subtest: logout invalidates all copied tokens, disconnects sockets and leaves other users signed in
+    ok 4 - logout invalidates all copied tokens, disconnects sockets and leaves other users signed in
+      ---
+      duration_ms: 58.279666
+      ...
+    # Subtest: password reset revokes copied tokens only after a valid code is consumed
+    ok 5 - password reset revokes copied tokens only after a valid code is consumed
+      ---
+      duration_ms: 207.337667
+      ...
+    # Subtest: profile password changes revoke existing sessions atomically
+    ok 6 - profile password changes revoke existing sessions atomically
+      ---
+      duration_ms: 258.26125
+      ...
+    1..6
+ok 4 - security HTTP and socket journeys use an isolated local schema
+  ---
+  duration_ms: 1671.130875
+  ...
+1..4
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1808.634875

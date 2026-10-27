@@ -230,7 +230,11 @@ test('reconciliation refuses multiple captured orders without making another cha
   assert.equal(f.stats.creates, 0);
 });
 
-test('reconciliation endpoint authenticates requests and ignores arbitrary provider IDs', async () => {
+test('reconciliation endpoint authenticates requests and ignores arbitrary provider IDs', async t => {
+  t.mock.method(require('../src/config/database'), 'query', async (sql, args) => {
+    assert.match(sql, /SELECT id,auth_version,email_verified FROM users/);
+    return { rows: args[0] === borrowerId ? [{ id:borrowerId,auth_version:0,email_verified:true }] : [] };
+  });
   const express = require('express');
   const jwt = require('jsonwebtoken');
   const singleton = require('../src/modules/payments/payment.service');

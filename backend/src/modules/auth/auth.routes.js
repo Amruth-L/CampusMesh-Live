@@ -13,6 +13,6 @@ router.post('/login', require('./login-throttle').loginThrottle(require('../../c
 router.get('/me', authMiddleware, profileController.getProfile);
 router.put('/mode', authMiddleware, authController.setMode);
 router.put('/delivery-availability', authMiddleware, authController.setDeliveryAvailability);
-router.post('/logout', authController.logout);
+router.post('/logout', authMiddleware, authController.logout);
 
 module.exports = router;

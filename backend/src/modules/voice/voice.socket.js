@@ -1,5 +1,5 @@
 /* global setInterval, clearInterval, clearTimeout */
-const jwt = require('jsonwebtoken');
+const { authenticateToken, watchSocketSession } = require('../../security/session');
 const WebSocket = require('ws');
 const { voiceService } = require('./voice.service');
 const { agentSettings } = require('./deepgram.settings');
@@ -24,7 +24,7 @@ function attachVoice(
   const namespace = io.of('/voice');
   namespace.use(async (socket, next) => {
     try {
-      const user = jwt.verify(socket.handshake.auth?.token, process.env.JWT_SECRET);
+      const user = await authenticateToken(socket.handshake.auth?.token, db);
       const result = await db.query('SELECT email_verified FROM users WHERE id=$1', [user.id]);
       if (!result.rows[0]?.email_verified) throw Error('unauthorized');
       socket.voiceUser = user;
@@ -34,6 +34,9 @@ function attachVoice(
     }
   });
   namespace.on('connection', async (socket) => {
+    socket.join(`user:${socket.voiceUser.id}`);
+    // Audio is already byte/turn limited. Poll revocation without a DB read for every PCM frame.
+    watchSocketSession(socket, socket.voiceUser, socket.handshake.auth.token, db, { checkPackets:false });
     const { id: userId, exp } = socket.voiceUser;
     const { sessionId, sampleRate } = socket.handshake.auth;
     let upstream,

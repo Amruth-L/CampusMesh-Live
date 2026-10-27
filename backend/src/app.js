@@ -16,6 +16,9 @@ const profileRoutes = require('./modules/profile/profile.routes');
 const rentalRoutes = require('./modules/rentals/rentals.routes');
 const wishlistRoutes = require('./modules/saved/saved.routes');
 const xeroxRoutes = require('./modules/xerox/xerox.routes');
+const auth = require('./middleware/authMiddleware');
+const { requestLimit } = require('./security/request-limits');
+const security = require('./security/policy').securityPolicy();
 
 const app = express();
 app.disable('x-powered-by');
@@ -23,9 +26,22 @@ app.disable('x-powered-by');
 const proxyHops = Number(process.env.TRUST_PROXY_HOPS || 0);
 if (!Number.isInteger(proxyHops) || proxyHops < 0 || proxyHops > 5) throw new Error('Invalid TRUST_PROXY_HOPS');
 app.set('trust proxy', proxyHops);
-app.use(cors({ origin: process.env.FRONTEND_ORIGIN?.split(',') || true, credentials: true }));
+app.use(security.middleware);
+app.use(cors({ origin: security.origin }));
 app.post('/api/payment/webhook', express.raw({ type: 'application/json', limit: '1mb' }), require('./modules/payments/payment-webhook').createWebhook());
-app.use(express.json({ limit: '50mb' }));
+const apiBudget = requestLimit({ scope:'api-ip',limit:security.apiLimit,seconds:60 });
+const authBudget = requestLimit({ scope:'account-recovery-ip',limit:security.authLimit,seconds:900 });
+const uploadBudget = requestLimit({ scope:'photo-user',limit:20,seconds:60,user:true });
+app.use((req,res,next) => /^\/(api|listings)(\/|$)/.test(req.path) ? apiBudget(req,res,next) : next());
+app.use(['/signup','/verify-email','/resend-otp','/forgot-password','/reset-password'], (req,res,next) => req.method==='POST' ? authBudget(req,res,next) : next());
+// Authenticate photo writes before accepting/allocating a large JSON body.
+app.use((req,res,next) => {
+  const listing = ['POST','PUT'].includes(req.method) && /^\/listings(?:\/[^/]+)?$/.test(req.path);
+  const evidence = req.method==='POST' && /^\/api\/delivery\/[^/]+\/condition-photos$/.test(req.path);
+  if (!listing && !evidence) return next();
+  auth(req,res,() => uploadBudget(req,res,() => express.json({limit:listing?'36mb':'8mb'})(req,res,next)));
+});
+app.use(express.json({ limit: '128kb' }));
 app.use((req,res,next) => {
   if (req.body === undefined) req.body = {};
   if (['POST','PUT','PATCH'].includes(req.method) && (req.body === null || typeof req.body !== 'object' || Array.isArray(req.body)))

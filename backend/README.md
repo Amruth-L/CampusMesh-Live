@@ -200,7 +200,7 @@ Provider references: [Voice calls](https://www.twilio.com/docs/voice/api/call-re
 - **Framework**: Express.js
 - **Database**: PostgreSQL (Supabase)
 - **Database Driver**: `pg`
-- **Security**: `bcrypt` for hashing, `jsonwebtoken` for stateless authentication
+- **Security**: `bcrypt` for hashing, signed JWTs checked against a revocable database session version; see [security deployment requirements](../docs/SECURITY_HARDENING.md).
 
 ## Folder Structure
 ```

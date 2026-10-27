@@ -35,11 +35,17 @@ export const AuthProvider = ({ children }) => {
     try {
       if (activeToken) {
         const res = await api.get('/me');
+        if (localStorage.getItem('token') !== activeToken) return;
         setUser(res.data.profile);
         setToken(activeToken);
         setIsAuthenticated(true);
+      } else {
+        setToken(null);
+        setUser(null);
+        setIsAuthenticated(false);
       }
     } catch (error) {
+      if (localStorage.getItem('token') !== activeToken) return;
       if ([401, 403, 404].includes(error.response?.status)) {
         localStorage.removeItem('token');
         setToken(null);
@@ -51,6 +57,11 @@ export const AuthProvider = ({ children }) => {
     } finally { setLoading(false); }
   }, [api]);
   useEffect(() => { retrySession(); }, [retrySession]);
+  useEffect(() => {
+    const changed = event => { if (event.key === 'token') retrySession(); };
+    window.addEventListener('storage', changed);
+    return () => window.removeEventListener('storage', changed);
+  }, [retrySession]);
 
   const login = async (newToken) => {
     localStorage.setItem('token', newToken);
@@ -72,20 +83,37 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const clearSession = (destination = '/') => {
     setVoicePrompt(false);
     setSessionError('');
     localStorage.removeItem('token');
     setToken(null);
     setUser(null);
     setIsAuthenticated(false);
-    navigate('/');
+    navigate(destination);
+  };
+
+  const logout = async () => {
+    try {
+      await api.post('/logout');
+    } catch (error) {
+      if (![401,403].includes(error.response?.status)) {
+        setSessionError('Could not sign out securely. Check your connection and try again.');
+        return false;
+      }
+    }
+    clearSession();
+    return true;
   };
 
   const updateProfile = async (profileData) => {
     try {
       const res = await api.put('/api/profile', profileData);
       const updatedUser = res.data.profile;
+      if (profileData.new_password) {
+        clearSession('/login');
+        return updatedUser;
+      }
       setUser(updatedUser);
       return updatedUser;
     } catch (err) {
