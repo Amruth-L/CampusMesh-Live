@@ -1,5 +1,7 @@
 # CampusMesh
 
+**Live website:** [https://campusmesh-amruth.onrender.com/](https://campusmesh-amruth.onrender.com/)
+
 CampusMesh is a campus-only rental, route-matched courier, and private Xerox delivery platform. Lender, borrower, and courier are actions available to every verified student account.
 
 ## Cloud deployment
