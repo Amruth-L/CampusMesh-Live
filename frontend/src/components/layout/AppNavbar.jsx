@@ -24,6 +24,7 @@ export default function AppNavbar() {
   const { user, logout } = useAuth();
   const { pathname } = useLocation();
   const secondaryNav = useRef(null);
+  const initials = user?.name?.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase() || "CM";
   useEffect(() => {
     const nav = secondaryNav.current;
     const active = nav?.querySelector('[aria-current="page"]');
@@ -132,15 +133,10 @@ export default function AppNavbar() {
               <DeliveryNotifications />
               <Link
                 to="/account/settings"
-                aria-label="Account settings"
+                aria-label={`${initials} — Account settings`}
                 className="grid size-10 shrink-0 place-items-center rounded-full border border-ink/20 bg-paper text-sm font-bold text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mesh-700"
               >
-                {user.name
-                  ?.split(" ")
-                  .map((x) => x[0])
-                  .join("")
-                  .slice(0, 2)
-                  .toUpperCase() || "CM"}
+                {initials}
               </Link>
               <button
                 onClick={logout}
