@@ -10,6 +10,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/auth-context";
 import { listingFallback } from "../../lib/assets";
+import { rentalPaymentTiming } from "../../lib/rental-payment-timing";
 const money = (value) =>
   `₹${Number(value || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const dateValue = (value) => new Date(value).toISOString().slice(0, 10);
@@ -87,6 +88,14 @@ export default function Cart() {
     };
   }, [chosen]);
   const direct = chosen.length > 0 && chosen.every(item=>item.quote?.paymentMethod === "DIRECT_UPI");
+  const paymentTiming = rentalPaymentTiming(direct ? {
+    paymentMethod: "DIRECT_UPI",
+    rentalFee: breakdown.rentalTotal,
+    securityDeposit: breakdown.depositTotal,
+    payNow: 0,
+    payAfterAcceptance: breakdown.rentalTotal + breakdown.depositTotal,
+    payAfterHandover: breakdown.deliveryTotal,
+  } : { paymentMethod: "RAZORPAY", payNow: breakdown.bookingTotal });
   const checkout = () =>
     navigate("/checkout", {
       state: {
@@ -275,14 +284,14 @@ export default function Cart() {
                   </p>
                 ))}
                 <p className="flex justify-between border-t border-ink/10 pt-4 text-lg font-extrabold">
-                  <span>Pay now</span>
-                  <span>{money(direct ? 0 : breakdown.bookingTotal)}</span>
+                  <span>{paymentTiming.primaryLabel}</span>
+                  <span>{money(paymentTiming.primaryAmount)}</span>
                 </p>
                 <div className="rounded-xl bg-mesh-50 p-3 text-xs leading-5 text-mesh-800">
                   <Check className="mb-1" size={16} />
                   <b>{money(breakdown.depositTotal)} refundable deposits</b>
                   <p className="text-ink/50">
-                    {direct ? `After acceptance: ${money(breakdown.rentalTotal + breakdown.depositTotal)} rent + deposit. After handover: ${money(breakdown.deliveryTotal)} delivery.` : "Deposit follows lender acceptance."}
+                    {direct ? `Due today: ${money(paymentTiming.payNow)}. Delivery: ${money(paymentTiming.dueAfterHandover)} after handover.` : "Deposit follows lender acceptance."}
                   </p>
                 </div>
               </div>
@@ -291,7 +300,7 @@ export default function Cart() {
                 onClick={checkout}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-mesh-600 px-5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-mesh-700 hover:shadow-lg active:translate-y-0 disabled:pointer-events-none disabled:opacity-50 mt-5 w-full disabled:opacity-40"
               >
-                Continue to checkout
+                {direct ? 'Review rental requests' : 'Continue to checkout'}
               </button>
             </aside>
           </div>

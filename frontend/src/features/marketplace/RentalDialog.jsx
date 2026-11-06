@@ -16,6 +16,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/auth-context";
 import { listingImage } from "../../lib/assets";
 import { campusLocationLabel, normalizeCampusLocations } from "../../lib/campus";
+import { rentalPaymentTiming } from "../../lib/rental-payment-timing";
 
 
 const iso = (date) =>
@@ -162,7 +163,8 @@ export default function RentalDialog({ listing, onClose }) {
   }, [api, listing, availabilityRetry]);
   const quoteState = useRentalQuote(listing?.id,iso(range.from),iso(range.to),deliveryMode==='DELIVERY');
   const quote = quoteState.quote;
-  const pricing = {days:rentalDays(iso(range.from),iso(range.to)),rate:Number(listing?.rent_price),rental:quote?.rentalFee,deposit:quote?.securityDeposit,delivery:quote?.deliveryFee,platform:quote?.platformFee,total:quote?.payNow};
+  const timing = rentalPaymentTiming(quote);
+  const pricing = {days:rentalDays(iso(range.from),iso(range.to)),rate:Number(listing?.rent_price),rental:quote?.rentalFee,deposit:quote?.securityDeposit,delivery:quote?.deliveryFee,platform:quote?.platformFee,total:timing.primaryAmount};
   if (!listing) return null;
   const valid =
     range.from && range.to && quote && availabilityReady && !overlaps(iso(range.from),iso(range.to),blocked) && !listing.demo_slug && (deliveryMode === "SELF_PICKUP" || dropLocation);
@@ -342,12 +344,17 @@ export default function RentalDialog({ listing, onClose }) {
                   </div>
                 ))}
                 <div className="mt-3 flex justify-between border-t border-white/15 pt-4 text-lg font-extrabold">
-                  <span>Pay now</span>
-                  <span>{quote ? money(pricing.total) : "—"}</span>
+                  <span>{quote ? timing.primaryLabel : "Next payment"}</span>
+                  <span>{quote ? money(timing.primaryAmount) : "—"}</span>
                 </div>
+                {timing.direct && (
+                  <p className="mt-2 text-sm leading-5 text-white/80">
+                    Due today: {money(timing.payNow)}. Delivery: {money(timing.dueAfterHandover)} after handover.
+                  </p>
+                )}
               </div>
               <div role="status" className="text-sm">
-                {quoteState.loading ? 'Loading quote…' : quoteState.error ? <>{quoteState.error} <button className="underline" onClick={quoteState.retry}>Retry quote</button></> : quote?.paymentMethod==='DIRECT_UPI' ? `After acceptance: ${money(quote.payAfterAcceptance)} rent + deposit. After handover: ${money(quote.payAfterHandover)} delivery. Recipient confirms receipt.` : 'Deposit is paid after lender acceptance.'}
+                {quoteState.loading ? 'Loading quote…' : quoteState.error ? <>{quoteState.error} <button className="underline" onClick={quoteState.retry}>Retry quote</button></> : timing.direct ? `No payment is taken today. After the owner accepts, pay ${money(timing.dueAfterAcceptance)} directly to the lender. The delivery fee is paid after handover.` : 'Deposit is paid after lender acceptance.'}
               </div>
               {notice && (
                 <motion.p role="status"

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Calendar, AlertTriangle, Lock, CheckCircle2, ClipboardList, MapPin, Info } from 'lucide-react';
 import { API_BASE_URL } from '../lib/api';
+import { rentalPaymentTiming } from '../lib/rental-payment-timing';
 
 
 const formatCurrency = (n) => {
@@ -39,7 +40,15 @@ export default function RentSummary() {
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
   const quoteState = useRentalQuote(id,startDate,endDate,Boolean(rentalConfiguration.delivery_requested));
-  const breakdown = quoteState.quote ? {...quoteState.quote,bookingAmount:quoteState.quote.totalAmount,depositAmount:quoteState.quote.securityDeposit} : null;
+  const timing = rentalPaymentTiming(quoteState.quote);
+  const breakdown = quoteState.quote ? {
+    ...quoteState.quote,
+    bookingAmount: timing.primaryAmount,
+    depositAmount: quoteState.quote.securityDeposit,
+    dueToday: timing.payNow,
+    dueAfterAcceptance: timing.dueAfterAcceptance,
+    dueAfterHandover: timing.dueAfterHandover,
+  } : null;
 
 
   useEffect(() => {
@@ -208,10 +217,10 @@ export default function RentSummary() {
                 
                 <button
                   type="submit"
-                  className="mt-2 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-mesh-600 px-5 text-sm font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-mesh-700 hover:shadow-lg disabled:pointer-events-none disabled:bg-ink/15 disabled:text-ink/35 disabled:shadow-none"
+                  className="mt-2 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-mesh-600 px-5 text-sm font-extrabold !text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-mesh-700 hover:shadow-lg disabled:pointer-events-none disabled:!bg-ink/15 disabled:!text-ink/65 disabled:shadow-none"
                   disabled={isBtnDisabled}
                 >
-                  {!breakdown ? 'Quote unavailable' : submitting ? 'Processing…' : breakdown?.paymentMethod==='DIRECT_UPI' ? 'Send request — pay after acceptance' : `Pay rental fee · ${breakdown ? formatCurrency(breakdown.bookingAmount) : '₹0.00'}`}
+                  {!breakdown ? 'Quote unavailable' : submitting ? 'Processing…' : breakdown?.paymentMethod==='DIRECT_UPI' ? 'Send rental request' : `Pay rental fee · ${breakdown ? formatCurrency(breakdown.bookingAmount) : '₹0.00'}`}
                 </button>
               </form>
             </div>
@@ -239,6 +248,12 @@ export default function RentSummary() {
                     <span>Rental Fee</span>
                     <span>{formatCurrency(breakdown.rentalFee)}</span>
                   </div>
+                  {breakdown.paymentMethod === 'DIRECT_UPI' && (
+                    <div className="flex justify-between items-center [font-size:0.95rem] [color:var(--text-muted,_#6b7280)]">
+                      <span>Refundable Deposit</span>
+                      <span>{formatCurrency(breakdown.depositAmount)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between items-center [font-size:0.95rem] [color:var(--text-muted,_#6b7280)]">
                     <span>{breakdown.paymentMethod==='DIRECT_UPI'?'Delivery — paid after handover':'Delivery Fee'}</span>
                     <span>{(listing.delivery_available || listing.deliveryAvailable) ? formatCurrency(breakdown.deliveryFee) : 'Free (Pickup)'}</span>
@@ -249,9 +264,14 @@ export default function RentSummary() {
                   </div>
                   <div className="border-0 [border-top:1px_solid_var(--border-color,_#e5e7eb)] [margin:6px_0]" />
                   <div className="flex justify-between items-center [font-size:0.95rem] [color:var(--text-muted,_#6b7280)] [color:var(--text-dark,_#1f2937)] [font-size:1.15rem] font-extrabold [padding-top:8px]">
-                    <span>{breakdown.paymentMethod==='DIRECT_UPI'?'Rental fee after acceptance':'Booking Total'}</span>
+                    <span>{breakdown.paymentMethod==='DIRECT_UPI'?'Due after acceptance':'Booking Total'}</span>
                     <span>{formatCurrency(breakdown.bookingAmount)}</span>
                   </div>
+                  {breakdown.paymentMethod === 'DIRECT_UPI' && (
+                    <p className="m-0 text-sm leading-5 text-ink/60">
+                      Due today: {formatCurrency(breakdown.dueToday)}. Delivery is {formatCurrency(breakdown.dueAfterHandover)} after handover.
+                    </p>
+                  )}
                 </div>
               ) : (
                 <div className="text-center [color:var(--text-muted,_#6b7280)] [padding:24px_0] [font-size:0.95rem]">
@@ -267,7 +287,7 @@ export default function RentSummary() {
                   <Lock size={15} strokeWidth={2} /> Security Deposit
                 </h3>
                 <div className="[font-size:1.75rem] font-extrabold [color:var(--text-dark,_#1f2937)] [margin-bottom:12px]">{formatCurrency(breakdown.depositAmount)}</div>
-                <p className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-sm font-medium leading-6 text-amber-700">Pay the lender after acceptance.</p>
+                <p className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-sm font-medium leading-6 text-amber-700">Included in the amount due after acceptance.</p>
                 <p className="m-0 flex items-center gap-1.5 rounded-lg border border-mesh-100 bg-mesh-50 px-3 py-2 text-sm font-medium leading-6 text-mesh-700">
                   <CheckCircle2 size={14} className="shrink-0 text-green-500" />
                   <span>Refund follows the lender’s return inspection.</span>
